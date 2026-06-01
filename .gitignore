@@ -1,0 +1,26 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+dist-ssr/
+
+# Capacitor native projects
+android/
+ios/
+
+# Environment — API keys must never be committed
+.env.*.local
+.env.local
+
+# Editor & OS
+.DS_Store
+.vscode/settings.json
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
+
+# TypeScript cache
+*.tsbuildinfo

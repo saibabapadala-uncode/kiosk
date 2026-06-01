@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell(if \\(-not $?\\) { \"Directory is empty or does not exist\" })",
+      "Bash(find \"d:/\" -maxdepth 3 -type d -name \"*kiosk*straunt*\" 2>/dev/null | head -20)",
+      "Read(//d//**)",
+      "Bash(Get-ChildItem -Path \"d:\\\\kiosk_straunt_storefront\\\\src\" -Recurse -Directory)",
+      "Bash(Select-Object -ExpandProperty FullName)",
+      "WebSearch",
+      "WebFetch(domain:mobbin.com)",
+      "WebFetch(domain:brand.toasttab.com)"
+    ]
+  }
+}

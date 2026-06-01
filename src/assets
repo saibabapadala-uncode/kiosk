@@ -1,0 +1,290 @@
+<style type="text/css">.transprod:hover {
+    animation: myAnimation 1s linear;
+    animation-fill-mode: forwards;
+  }
+
+  @keyframes myAnimation {
+    0% {
+      transform: translateY(-3.38px);
+    }
+
+    25% {
+      transform: translateY(-4.38px);
+    }
+
+    50% {
+      transform: translateY(-6.38px);
+    }
+
+    75% {
+      transform: translateY(-7.38px);
+    }
+
+    100% {
+      transform: translateY(-4.38px);
+    }
+  }
+
+  .active-diet {
+    border-color: #ff792b !important;
+    color: #ff792b !important;
+  }
+
+  .d-none {
+    display: none;
+  }
+</style>
+<div class="bg-gray-50 pt-2">
+<div class="p-2 landscape:h-[calc(100dvh_-_72px)] portrait:h-[calc(100dvh_-_132px)] overflow-auto">
+<div class="relative border-2 border-solid border-gray-300 w-full my-4 mb-5">
+<p class="text-gray-400 uppercase font-medium absolute absolute top-2/4 left-2/4 -translate-x-1/2 -translate-y-1/2 bg-gray-50 px-3 whitespace-nowrap">{rv.currentCategory.name}</p>
+</div>
+<!-- <div class="h-12 w-12 rounded-full flex items-center justify-center bg-blue-600 absolute bottom-10 right-16 shadow"><svg aria-hidden="true" class="w-6 h-6 text-white" fill="none" height="24" viewbox="0 0 24 24" width="24" xmlns="http://www.w3.org/2000/svg"> <path d="m5 15 7-7 7 7" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path> </svg></div> -->
+
+<div class="grid xl:grid-cols-3 lg:grid-cols-2 grid-cols-2 gap-4"><!-- <div rv-each-product="rv.products" rv-id="product.id" rv-on-click="rv.viewProduct">
+  <div class="min-w-[150px] rounded-lg [box-shadow:rgba(60,_64,_67,_0.3)_0px_1px_2px_0px,_rgba(60,_64,_67,_0.15)_0px_2px_6px_2px] cursor-pointer">
+  <div class="min-w-[150px] bg-white [box-shadow:rgba(60,_64,_67,_0.3)_0px_1px_2px_0px,_rgba(60,_64,_67,_0.15)_0px_1px_3px_1px] rounded-lg space-y-2">
+  <div class="p-2">
+  <div class="h-32 w-full mb-1.5"><img class="w-full h-full rounded-lg object-cover" rv-if="product.image | isNotEmpty" rv-on-error="rv.setDefaultImage" rv-src="product.image" />
+  <div class="h-32 w-full"><img class="w-full h-full rounded-lg object-cover" rv-if="product.image | isEmpty" rv-src="rv.defaultImage" /></div>
+  </div>
+  
+  <div>
+  <div>
+  <div class="text-primary-100 font-semibold text-sm line-clamp-2 mb-1 h-10">{product.name}</div>
+  
+  <div class="text-primary-300 font-normal text-xs line-clamp-2 mb-1.5 italic h-8">{product.description}</div>
+  </div>
+  
+  <div class="flex justify-between items-center">
+  <div class="text-[#ff8a47] font-medium text-base">{product.price | currency}</div>
+  
+  <div><button class="bg-[#fa7d34] font-semibold hover:bg-[#ff8a47] rounded-lg text-center text-sm text-white w-8 h-8" rv-on-click="rv.addToCart"><span class="flex justify-center items-center gap-2"><span><svg aria-hidden="true" class="w-5 h-5 text-white" fill="none" height="24" viewbox="0 0 24 24" width="24" xmlns="http://www.w3.org/2000/svg"> <path d="M5 12h14m-7 7V5" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path> </svg> </span></button></div></span>
+  </div>
+  </div>
+  </div>
+  </div>
+  </div>
+  </div> -->
+<div class="rounded-lg transprod cursor-pointer text-card-foreground shadow-sm group overflow-hidden transition-all duration-500 hover:shadow-md border border-gray-200 bg-white h-[360px] flex flex-col" rv-class-d-none="product.hidden" rv-each-product="rv.products" rv-id="product.id" rv-on-click="rv.viewProduct">
+<div class="relative overflow-hidden h-[160px]"><img alt="product" class="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105" rv-if="product.image | isNotEmpty" rv-on-error="rv.setDefaultImage" rv-src="product.image" /> <img alt="product" class="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105" rv-if="product.image | isEmpty" rv-src="rv.defaultImage" />
+<div class="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 transition-opacity duration-500 group-hover:opacity-100">&nbsp;</div>
+
+<div class="absolute top-3 right-3 px-2.5 py-1 rounded-full bg-[#b0642d] text-white text-xs font-medium shadow-lg border border-white/20" rv-if="product.is_customizable">Modify</div>
+
+<div class="absolute bottom-3 left-3 px-1 rounded-full bg-[#e7e3d9] shadow-lg border border-white/20 flex" rv-if="rv.showDiets"><img class="h-3 w-3 m-1" rv-if="product.is_veg" src="https://straunt-kiosk.vercel.app/images/vegetarian.svg" /> <img class="h-3 w-3 m-1" rv-if="product.is_vegan" src="https://straunt-kiosk.vercel.app/images/vegan.svg" /> <img class="h-3 w-3 m-1" rv-if="product.is_glutten_free" src="https://venus-scocu-assets.s3.amazonaws.com/3882973525330452" /></div>
+</div>
+
+<div class="p-4 lg:p-2 xl:p-4 flex flex-col flex-1 justify-between">
+<div>
+<div class="mb-2 flex items-start justify-between lg:flex-col-reverse xl:flex-row">
+<h3 class="font-medium text-[16px] lg:text-[15px] xl:text-[16px] lg:mt-1 xl:mt-0 text-gray-900 line-clamp-2 capitalize">{product.name}</h3>
+
+<p class="font-semibold text-[#f97316] text-lg lg:text-[19px] text-end lg:text-start xl:text-end">{product.price | currency}</p>
+</div>
+
+<p class="mb-3 text-sm lg:text-xs text-gray-600 line-clamp-3 capitalize">{product.description}</p>
+</div>
+
+<div class="flex items-center"><button class="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-50 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 h-10 lg:h-9 xl:h-10 px-4 py-2 w-full bg-gradient-to-r from-orange-500 to-orange-600 text-white transition-all duration-300 hover:from-orange-600 hover:to-orange-700 hover:shadow-sm mt-auto" rv-on-click="rv.addToCart">Add to Cart</button></div>
+</div>
+</div>
+</div>
+<no-data icon="'https://assets.scocu.net/3830375668925515'" rv-if="rv.showLoading | not | and rv.products | prop 'length' | eq 0" text="'No Items Found'"></no-data> <script>
+      if (!window.rv) window.rv = {};
+      var storeDetails = window.libAuth.store;
+
+      var productBadges = storeDetails.product_badges || [];
+      rv.storeTypesData = storeDetails.store_type_json_data;
+      [
+        "show_products_add_to_cart",
+        "show_products_description",
+        "show_products_price",
+        "show_products_price_after_login",
+      ].forEach((prop) => {
+        if (!rv.storeTypesData.hasOwnProperty(prop)) rv.storeTypesData[prop] = true;
+      });
+      rv.currentCategory = storeDetails.currentCategory;
+      rv.showPrice = rv.storeTypesData.show_products_price;
+      rv.showPlus = rv.storeTypesData.show_products_add_to_cart;
+      rv.defaultImage = storeDetails.default_product_icon;
+      rv.showDiets = storeDetails.settings.is_enable_daietry_attribute;
+      rv.showViewPriceAfterLoginButton = false;
+      rv.activeDiet = "";
+      if (
+        rv.storeTypesData.show_products_price_after_login &&
+        !storeDetails.current_user
+      ) {
+        rv.showPrice = false;
+        rv.showPlus = false;
+      }
+      if (rv.storeTypesData.show_products_price_after_login && !rv.showPrice)
+        rv.showViewPriceAfterLoginButton = true;
+      rv.imageBaseUrl = storeDetails.image_base_url;
+      rv.showLoading = false;
+      rv.products = [];
+
+      rv.viewProduct = (e, model) => {
+        e.stopImmediatePropagation();
+        window.sendData({
+          type: "openView",
+          name: "procuct-quick-view",
+          data: model.product,
+        });
+      };
+
+      function filterByDiet(type) {
+        rv.activeDiet = type;
+        rv.products.map(p => p.hidden = p.type != type);
+      }
+
+      function clearDiet() {
+        rv.activeDiet = "";
+        rv.products.map(p => p.hidden = false);
+      }
+
+      rv.addToCart = (e, model) => {
+        if (!model.product.is_single_variant || model.product.modifier?.modifiers.length > 0)
+          return;
+        e.stopImmediatePropagation();
+        const product = JSON.parse(JSON.stringify(model.product));
+        product.product_id = product.id;
+        if (!product.variant_ids || product.variant_ids.length == 0) {
+          toastr.error("Missing variant_id");
+          return;
+        }
+        product.id = product.variant_ids[0];
+        product.quantity = 1;
+        if (storeDetails.tax_rates)
+          product.tax =
+            (
+              storeDetails.tax_rates.find(
+                (r) => r.tax_category_id == product.tax_category_id
+              ) || {}
+            ).amount || 0;
+        window.sendData({ type: "setCartItem", item: product, operation: "plus" });
+        setCartCountToProducts();
+      };
+
+      function setCartCountToProducts() {
+        rv.products.forEach((p) => {
+          const cartItem = (window.cartItems || []).find(
+            (c) => c.id == p.variant_id
+          );
+          p.cart_count = cartItem ? cartItem.quantity : 0;
+        });
+      }
+
+      function getPCartItem(id) {
+        return (window.cartItems || []).find((c) => c.id == id);
+      }
+
+      rv.pCartIncrease = (e, model) => {
+        e.stopImmediatePropagation();
+        window.sendData({
+          type: "setCartItem",
+          item: getPCartItem(model.product.variant_id),
+          operation: "plus",
+          isFromCart: true,
+        });
+        setCartCountToProducts();
+      };
+
+      rv.pCartDecrease = (e, model) => {
+        e.stopImmediatePropagation();
+        if (model.product.cart_count == 1)
+          window.sendData({
+            type: "removeCartItem",
+            item: getPCartItem(model.product.variant_id),
+          });
+        else
+          window.sendData({
+            type: "setCartItem",
+            item: getPCartItem(model.product.variant_id),
+            operation: "minus",
+          });
+        setCartCountToProducts();
+      };
+
+      rv.viewProductDetails = (e, model) => {
+        if (!rv.showPrice) return;
+        window.sendData({
+          type: "navigate",
+          path: "productDetails",
+          id: model.product.id,
+          data: model.product,
+        });
+      };
+
+      function setProducts(data) {
+        rv.currentCategory = storeDetails.currentCategory;
+        data.forEach((d) => {
+          d.images = [];
+          if (d.files) {
+            d.files = typeof d.files == "string" ? JSON.parse(d.files) : d.files;
+            d.files.forEach((f) => {
+              if (!f.file_url && f.file_id)
+                f.file_url = "https://assets.growith.io/images/" + f.file_id;
+              else if (f.file_url)
+                f.file_url = f.file_url.replace(
+                  "https://venus-scocu-assets.s3.amazonaws.com/",
+                  rv.imageBaseUrl
+                );
+            });
+            d.images = d.files.map((f) => f.file_url);
+          }
+          d.image = d.images[0] ? d.images[0] : "";
+        });
+        rv.products = data;
+        rv.products.forEach((p) => {
+          p.badges = productBadges
+            .filter((b) => p[b.name])
+            .map((b) => b.display_label);
+          p.variant_id = p.variant_ids ? p.variant_ids[0] : null;
+          p.cart_count = 0;
+          if (storeDetails.brand) {
+            p.name = storeDetails.brand.settings?.item_and_price_configuration?.item_name == 'pos' ? p.pos_name : p.name;
+            p.description = storeDetails.brand.settings?.item_and_price_configuration?.item_description == 'pos' ? p.pos_description : p.description;
+            p.price = storeDetails.brand.settings?.item_and_price_configuration?.price_configuration_type == 'base' && storeDetails.brand.settings?.item_and_price_configuration?.base_price == 'pos' ? p.pos_price != null && p.pos_price != undefined ? p.pos_price : p.price : p.price;
+          }
+          p.is_veg = p.dietary_attributes.includes('Veg');
+          p.is_vegan = p.dietary_attributes.includes('Vegan');
+          p.is_glutten_free = p.dietary_attributes.includes('Gluten Free');
+          p.is_customizable = p.modifier && p.modifier.modifiers && p.modifier.modifiers.length ? true : false;
+        });
+        setCartCountToProducts();
+        if (storeDetails.searchText) blinkProduct();
+      }
+
+      rv.setDefaultImage = (event, model) => {
+        console.log(
+          "Setting Default Image: ",
+          model.product.name,
+          " - ",
+          model.product.image
+        );
+        model.product.image = "";
+      };
+
+      function gotoLogin() {
+        window.sendData({ type: "navigate", path: "login" });
+      }
+
+      function blinkProduct() {
+        setTimeout(() => {
+          const product = rv.products.find(
+            (p) => p.name == storeDetails.searchText
+          );
+          if (product) {
+            const el = document.getElementById(product.id);
+            el.classList.add("blink");
+            setTimeout(() => {
+              el.classList.remove("blink");
+            }, 3500);
+          }
+        }, 500);
+      }
+      window.bindRivets(document.currentScript);
+    </script></div>
+</div>
+ 

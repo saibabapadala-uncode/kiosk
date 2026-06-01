@@ -1,0 +1,31 @@
+{
+  "useStaticPaymentFlow": true,
+  "readers": [
+    {
+      "serialNumber": "SIM-STATIC-001",
+      "label": "Static Demo Reader",
+      "deviceType": "simulated",
+      "batteryLevel": 1,
+      "simulated": true,
+      "locationId": "tml_static_demo",
+      "status": "online",
+      "ipAddress": "192.168.0.25"
+    }
+  ],
+  "delays": {
+    "connectionTestMs": 250,
+    "catalogMs": 250,
+    "categoriesMs": 150,
+    "productsPageMs": 250,
+    "recommendationsMs": 150,
+    "paymentIntentMs": 600,
+    "paymentConfirmMs": 900,
+    "discoverReadersMs": 700,
+    "connectReaderMs": 600,
+    "collectPaymentMs": 1500,
+    "submitOrderMs": 300,
+    "receiptEmailMs": 600,
+    "receiptPrintMs": 700,
+    "printerHealthMs": 250
+  }
+}

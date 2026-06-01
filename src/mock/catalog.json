@@ -1,0 +1,448 @@
+{
+  "categories": [
+    { "id": "featured",  "name": "Featured",  "description": "Our most-loved dishes.",           "sortOrder": 0, "available": true },
+    { "id": "burgers",   "name": "Burgers",   "description": "Stacked signatures on brioche.",    "sortOrder": 1, "available": true },
+    { "id": "chicken",   "name": "Chicken",   "description": "Crispy, grilled, and sauced.",      "sortOrder": 2, "available": true },
+    { "id": "bowls",     "name": "Bowls",     "description": "Fresh grains and warm proteins.",   "sortOrder": 3, "available": true },
+    { "id": "sides",     "name": "Sides",     "description": "The perfect sidekick.",             "sortOrder": 4, "available": true },
+    { "id": "drinks",    "name": "Drinks",    "description": "Cold drinks and coffee.",           "sortOrder": 5, "available": true },
+    { "id": "desserts",  "name": "Desserts",  "description": "Sweet finishes.",                   "sortOrder": 6, "available": true }
+  ],
+  "products": [
+    {
+      "id": "burger-classic", "categoryId": "burgers",
+      "name": "Classic Smash Burger",
+      "description": "Double smashed beef patties, American cheese, pickles, diced onion, and house sauce on a toasted brioche bun.",
+      "basePrice": 10.95,
+      "image": { "label": "Smash Burger", "bg": "#b91c1c", "fg": "#fbbf24", "accent": "#7c2d12" },
+      "available": true, "popular": true,
+      "modifierGroups": [
+        { "id": "sauce", "name": "Sauce", "required": true, "minSelections": 1, "maxSelections": 1,
+          "options": [
+            { "id": "house",  "name": "House Sauce",  "price": 0,    "default": true,  "available": true },
+            { "id": "spicy",  "name": "Spicy Aioli",  "price": 0,    "default": false, "available": true },
+            { "id": "garlic", "name": "Garlic Mayo",  "price": 0,    "default": false, "available": true },
+            { "id": "bbq",    "name": "Smoky BBQ",    "price": 0,    "default": false, "available": true }
+          ]
+        },
+        { "id": "addons", "name": "Add Ons", "required": false, "minSelections": 0, "maxSelections": 5,
+          "options": [
+            { "id": "avocado",      "name": "Avocado",          "price": 1.75, "available": true },
+            { "id": "bacon",        "name": "Smoked Bacon",      "price": 2.25, "available": true },
+            { "id": "egg",          "name": "Fried Egg",         "price": 1.50, "available": true },
+            { "id": "jalapeno",     "name": "Pickled Jalapeños", "price": 0.75, "available": true },
+            { "id": "extra-cheese", "name": "Extra Cheese",     "price": 0.75, "available": true }
+          ]
+        }
+      ],
+      "variants": [
+        { "id": "single", "name": "Single Patty",  "price": 8.95,  "available": true },
+        { "id": "double", "name": "Double Patty",  "price": 10.95, "available": true },
+        { "id": "triple", "name": "Triple Patty",  "price": 13.95, "available": true }
+      ],
+      "tags": ["burger","beef","popular","cheese"], "allergens": ["milk","wheat","egg"], "calories": 780, "sortOrder": 1
+    },
+    {
+      "id": "burger-bbq-bacon", "categoryId": "burgers",
+      "name": "BBQ Bacon Burger",
+      "description": "Beef patty, sharp cheddar, thick-cut smoked bacon, crispy onion straws, and tangy BBQ sauce.",
+      "basePrice": 13.95,
+      "image": { "label": "BBQ Bacon", "bg": "#78350f", "fg": "#fbbf24", "accent": "#1c1917" },
+      "available": true, "popular": true,
+      "modifierGroups": [
+        { "id": "addons", "name": "Add Ons", "required": false, "minSelections": 0, "maxSelections": 3,
+          "options": [
+            { "id": "avocado",     "name": "Avocado",          "price": 1.75, "available": true },
+            { "id": "extra-bacon", "name": "Extra Bacon",      "price": 2.25, "available": true },
+            { "id": "jalapeno",    "name": "Pickled Jalapeños","price": 0.75, "available": true }
+          ]
+        }
+      ],
+      "variants": [],
+      "tags": ["burger","beef","bacon","bbq"], "allergens": ["milk","wheat","egg"], "calories": 920, "sortOrder": 2
+    },
+    {
+      "id": "burger-mushroom-swiss", "categoryId": "burgers",
+      "name": "Mushroom Swiss Burger",
+      "description": "Beef patty, sautéed wild mushrooms, Swiss cheese, caramelized onions, and truffle aioli.",
+      "basePrice": 13.50,
+      "image": { "label": "Mushroom Swiss", "bg": "#374151", "fg": "#d1d5db", "accent": "#78350f" },
+      "available": true, "popular": false,
+      "modifierGroups": [],
+      "variants": [],
+      "tags": ["burger","beef","mushroom"], "allergens": ["milk","wheat","egg"], "calories": 840, "sortOrder": 3
+    },
+    {
+      "id": "burger-crispy-chicken", "categoryId": "burgers",
+      "name": "Crispy Chicken Sandwich",
+      "description": "Buttermilk fried chicken, house slaw, dill pickles, and pepper honey on a brioche bun.",
+      "basePrice": 11.50,
+      "image": { "label": "Crispy Chicken", "bg": "#d97706", "fg": "#fef3c7", "accent": "#7c2d12" },
+      "available": true, "popular": true,
+      "modifierGroups": [
+        { "id": "heat", "name": "Heat Level", "required": true, "minSelections": 1, "maxSelections": 1,
+          "options": [
+            { "id": "classic",   "name": "Classic",          "price": 0, "default": true, "available": true },
+            { "id": "medium",    "name": "Medium Hot 🌶",     "price": 0, "available": true },
+            { "id": "nashville", "name": "Nashville Hot 🌶🌶", "price": 0, "available": true }
+          ]
+        },
+        { "id": "addons", "name": "Add Ons", "required": false, "minSelections": 0, "maxSelections": 3,
+          "options": [
+            { "id": "avocado",    "name": "Avocado",     "price": 1.75, "available": true },
+            { "id": "bacon",      "name": "Bacon",       "price": 2.25, "available": true },
+            { "id": "extra-slaw", "name": "Extra Slaw",  "price": 0,    "available": true }
+          ]
+        }
+      ],
+      "variants": [],
+      "tags": ["chicken","sandwich","crispy","popular"], "allergens": ["wheat","egg","milk"], "calories": 720, "sortOrder": 4
+    },
+    {
+      "id": "burger-veggie", "categoryId": "burgers",
+      "name": "Garden Veggie Burger",
+      "description": "House-made roasted vegetable patty, lettuce, tomato, red onion, and herb tahini.",
+      "basePrice": 9.95,
+      "image": { "label": "Veggie", "bg": "#15803d", "fg": "#86efac", "accent": "#14532d" },
+      "available": true, "popular": false,
+      "modifierGroups": [
+        { "id": "addons", "name": "Add Ons", "required": false, "minSelections": 0, "maxSelections": 3,
+          "options": [
+            { "id": "avocado",      "name": "Avocado",      "price": 1.75, "available": true },
+            { "id": "vegan-cheese", "name": "Vegan Cheese", "price": 1.00, "available": true },
+            { "id": "jalapeno",     "name": "Jalapeños",    "price": 0.75, "available": true }
+          ]
+        }
+      ],
+      "variants": [],
+      "tags": ["vegetarian","burger","garden"], "allergens": ["wheat","sesame"], "calories": 560, "sortOrder": 5
+    },
+    {
+      "id": "chicken-tenders", "categoryId": "chicken",
+      "name": "Nashville Hot Tenders",
+      "description": "Hand-breaded chicken tenders in Nashville hot sauce, served with pickles and ranch.",
+      "basePrice": 13.95,
+      "image": { "label": "Hot Tenders", "bg": "#dc2626", "fg": "#fca5a5", "accent": "#7c2d12" },
+      "available": true, "popular": true,
+      "modifierGroups": [
+        { "id": "heat", "name": "Heat Level", "required": true, "minSelections": 1, "maxSelections": 1,
+          "options": [
+            { "id": "mild",      "name": "Mild",            "price": 0, "default": true, "available": true },
+            { "id": "medium",    "name": "Medium 🌶",        "price": 0, "available": true },
+            { "id": "hot",       "name": "Hot 🌶🌶",          "price": 0, "available": true },
+            { "id": "extra-hot", "name": "Extra Hot 🌶🌶🌶",  "price": 0, "available": true }
+          ]
+        },
+        { "id": "dipping", "name": "Dipping Sauce", "required": false, "minSelections": 0, "maxSelections": 1,
+          "options": [
+            { "id": "ranch",        "name": "Ranch",         "price": 0,    "default": true, "available": true },
+            { "id": "honey-mustard","name": "Honey Mustard", "price": 0,    "available": true },
+            { "id": "blue-cheese",  "name": "Blue Cheese",   "price": 0.50, "available": true },
+            { "id": "bbq",          "name": "Smoky BBQ",     "price": 0,    "available": true }
+          ]
+        }
+      ],
+      "variants": [
+        { "id": "4pc", "name": "4 Piece", "price": 13.95, "available": true },
+        { "id": "6pc", "name": "6 Piece", "price": 18.95, "available": true }
+      ],
+      "tags": ["chicken","spicy","tenders","nashville"], "allergens": ["wheat","egg","milk"], "calories": 680, "sortOrder": 6
+    },
+    {
+      "id": "chicken-grilled", "categoryId": "chicken",
+      "name": "Grilled Chicken Platter",
+      "description": "Herb-marinated grilled chicken breast, seasonal roasted vegetables, and lemon vinaigrette.",
+      "basePrice": 14.50,
+      "image": { "label": "Grilled Chicken", "bg": "#0f766e", "fg": "#99f6e4", "accent": "#134e4a" },
+      "available": true, "popular": false,
+      "modifierGroups": [
+        { "id": "side", "name": "Choose a Side", "required": true, "minSelections": 1, "maxSelections": 1,
+          "options": [
+            { "id": "vegetables", "name": "Seasonal Vegetables", "price": 0, "default": true, "available": true },
+            { "id": "rice",       "name": "Jasmine Rice",         "price": 0, "available": true },
+            { "id": "fries",      "name": "Seasoned Fries",       "price": 0, "available": true },
+            { "id": "salad",      "name": "House Salad",          "price": 0, "available": true }
+          ]
+        }
+      ],
+      "variants": [],
+      "tags": ["chicken","grilled","healthy"], "allergens": [], "calories": 480, "sortOrder": 7
+    },
+    {
+      "id": "chicken-wings", "categoryId": "chicken",
+      "name": "Crispy Wings",
+      "description": "Double-fried for maximum crunch. Served with celery sticks and your choice of sauce.",
+      "basePrice": 15.95,
+      "image": { "label": "Wings", "bg": "#ea580c", "fg": "#fed7aa", "accent": "#431407" },
+      "available": true, "popular": true,
+      "modifierGroups": [
+        { "id": "sauce", "name": "Wing Sauce", "required": true, "minSelections": 1, "maxSelections": 1,
+          "options": [
+            { "id": "buffalo",    "name": "Classic Buffalo",     "price": 0, "default": true, "available": true },
+            { "id": "bbq",        "name": "Smoky BBQ",           "price": 0, "available": true },
+            { "id": "honey-garlic","name": "Honey Garlic",       "price": 0, "available": true },
+            { "id": "mango-hab",  "name": "Mango Habanero 🌶🌶",  "price": 0, "available": true },
+            { "id": "lemon-pepper","name": "Lemon Pepper (dry)", "price": 0, "available": true }
+          ]
+        }
+      ],
+      "variants": [
+        { "id": "6pc",  "name": "6 Wings",  "price": 12.95, "available": true },
+        { "id": "10pc", "name": "10 Wings", "price": 15.95, "available": true },
+        { "id": "20pc", "name": "20 Wings", "price": 27.95, "available": true }
+      ],
+      "tags": ["chicken","wings","shareable"], "allergens": ["wheat","egg","milk"], "calories": 820, "sortOrder": 8
+    },
+    {
+      "id": "bowl-salmon", "categoryId": "bowls",
+      "name": "Miso Salmon Bowl",
+      "description": "Seared salmon, jasmine rice, cucumber, edamame, pickled carrots, and miso ginger glaze.",
+      "basePrice": 15.95,
+      "image": { "label": "Salmon Bowl", "bg": "#0369a1", "fg": "#bae6fd", "accent": "#6d28d9" },
+      "available": true, "popular": true,
+      "modifierGroups": [
+        { "id": "base", "name": "Bowl Base", "required": true, "minSelections": 1, "maxSelections": 1,
+          "options": [
+            { "id": "rice",      "name": "Jasmine Rice",           "price": 0, "default": true, "available": true },
+            { "id": "greens",    "name": "Mixed Greens",           "price": 0, "available": true },
+            { "id": "half-half", "name": "Half Rice / Half Greens","price": 0, "available": true }
+          ]
+        },
+        { "id": "extras", "name": "Extras", "required": false, "minSelections": 0, "maxSelections": 3,
+          "options": [
+            { "id": "avocado",      "name": "Avocado",       "price": 1.75, "available": true },
+            { "id": "extra-salmon", "name": "Extra Salmon",  "price": 4.00, "available": true },
+            { "id": "crispy-onion", "name": "Crispy Onion",  "price": 0.50, "available": true }
+          ]
+        }
+      ],
+      "variants": [],
+      "tags": ["salmon","rice","healthy","bowl"], "allergens": ["fish","soy","sesame"], "calories": 690, "sortOrder": 9
+    },
+    {
+      "id": "bowl-harvest", "categoryId": "bowls",
+      "name": "Harvest Grain Bowl",
+      "description": "Farro, roasted sweet potato, kale, chickpeas, feta, pumpkin seeds, and lemon vinaigrette.",
+      "basePrice": 12.75,
+      "image": { "label": "Harvest Bowl", "bg": "#7c3aed", "fg": "#c4b5fd", "accent": "#15803d" },
+      "available": true, "popular": false,
+      "modifierGroups": [
+        { "id": "protein", "name": "Add Protein", "required": false, "minSelections": 0, "maxSelections": 1,
+          "options": [
+            { "id": "chicken", "name": "Grilled Chicken", "price": 3.50, "available": true },
+            { "id": "salmon",  "name": "Seared Salmon",   "price": 5.50, "available": true },
+            { "id": "tofu",    "name": "Crispy Tofu",     "price": 2.50, "available": true }
+          ]
+        }
+      ],
+      "variants": [],
+      "tags": ["vegetarian","grain","bowl","healthy"], "allergens": ["milk","wheat","sesame"], "calories": 640, "sortOrder": 10
+    },
+    {
+      "id": "bowl-southwest", "categoryId": "bowls",
+      "name": "Southwest Chicken Bowl",
+      "description": "Grilled chicken, cilantro lime rice, black beans, corn salsa, pico de gallo, and chipotle crema.",
+      "basePrice": 13.95,
+      "image": { "label": "Southwest Bowl", "bg": "#b45309", "fg": "#fde68a", "accent": "#15803d" },
+      "available": true, "popular": true,
+      "modifierGroups": [
+        { "id": "base", "name": "Base", "required": true, "minSelections": 1, "maxSelections": 1,
+          "options": [
+            { "id": "rice",      "name": "Cilantro Lime Rice",        "price": 0, "default": true, "available": true },
+            { "id": "greens",    "name": "Romaine Lettuce",           "price": 0, "available": true },
+            { "id": "half-half", "name": "Half Rice / Half Romaine",  "price": 0, "available": true }
+          ]
+        },
+        { "id": "extras", "name": "Extras", "required": false, "minSelections": 0, "maxSelections": 3,
+          "options": [
+            { "id": "avocado",        "name": "Avocado",         "price": 1.75, "available": true },
+            { "id": "extra-chicken",  "name": "Extra Chicken",   "price": 3.50, "available": true },
+            { "id": "guac",           "name": "Fresh Guacamole", "price": 2.00, "available": true },
+            { "id": "sour-cream",     "name": "Sour Cream",      "price": 0.50, "available": true }
+          ]
+        }
+      ],
+      "variants": [],
+      "tags": ["chicken","bowl","southwest","tex-mex"], "allergens": ["milk"], "calories": 720, "sortOrder": 11
+    },
+    {
+      "id": "side-fries", "categoryId": "sides",
+      "name": "Seasoned Fries",
+      "description": "Crispy golden fries tossed in our house seasoning blend with chipotle ketchup.",
+      "basePrice": 3.95,
+      "image": { "label": "Fries", "bg": "#ca8a04", "fg": "#fef08a", "accent": "#451a03" },
+      "available": true, "popular": true,
+      "modifierGroups": [],
+      "variants": [
+        { "id": "regular", "name": "Regular",                   "price": 3.95, "available": true },
+        { "id": "large",   "name": "Large",                     "price": 5.25, "available": true },
+        { "id": "loaded",  "name": "Loaded (cheese + bacon)",   "price": 6.95, "available": true }
+      ],
+      "tags": ["fries","sides","popular"], "allergens": [], "calories": 380, "sortOrder": 12
+    },
+    {
+      "id": "side-sweet-potato", "categoryId": "sides",
+      "name": "Sweet Potato Fries",
+      "description": "Lightly seasoned sweet potato fries with chipotle honey dipping sauce.",
+      "basePrice": 4.75,
+      "image": { "label": "Sweet Fries", "bg": "#ea580c", "fg": "#fed7aa", "accent": "#431407" },
+      "available": true, "popular": false,
+      "modifierGroups": [],
+      "variants": [],
+      "tags": ["fries","sides","sweet potato"], "allergens": [], "calories": 340, "sortOrder": 13
+    },
+    {
+      "id": "side-onion-rings", "categoryId": "sides",
+      "name": "Beer-Battered Onion Rings",
+      "description": "Thick-cut onion rings in a crispy beer batter, served with house ranch.",
+      "basePrice": 4.50,
+      "image": { "label": "Onion Rings", "bg": "#d97706", "fg": "#fef3c7", "accent": "#92400e" },
+      "available": true, "popular": false,
+      "modifierGroups": [],
+      "variants": [],
+      "tags": ["sides","onion rings"], "allergens": ["wheat","egg","milk"], "calories": 460, "sortOrder": 14
+    },
+    {
+      "id": "side-mac-cheese", "categoryId": "sides",
+      "name": "Truffle Mac & Cheese",
+      "description": "Three-cheese blend, house pasta, black truffle oil, and toasted breadcrumb crust.",
+      "basePrice": 5.50,
+      "image": { "label": "Mac & Cheese", "bg": "#f59e0b", "fg": "#fef3c7", "accent": "#78350f" },
+      "available": true, "popular": true,
+      "modifierGroups": [],
+      "variants": [],
+      "tags": ["sides","mac and cheese","comfort"], "allergens": ["milk","wheat","egg"], "calories": 520, "sortOrder": 15
+    },
+    {
+      "id": "drink-lemonade", "categoryId": "drinks",
+      "name": "Fresh Squeezed Lemonade",
+      "description": "Real lemons, cane sugar, and a hint of mint. Order regular or large.",
+      "basePrice": 3.95,
+      "image": { "label": "Lemonade", "bg": "#ca8a04", "fg": "#fef9c3", "accent": "#0369a1" },
+      "available": true, "popular": true,
+      "modifierGroups": [
+        { "id": "flavor", "name": "Flavor", "required": false, "minSelections": 0, "maxSelections": 1,
+          "options": [
+            { "id": "classic",    "name": "Classic",    "price": 0,    "default": true, "available": true },
+            { "id": "strawberry", "name": "Strawberry", "price": 0.50, "available": true },
+            { "id": "raspberry",  "name": "Raspberry",  "price": 0.50, "available": true },
+            { "id": "mint",       "name": "Extra Mint", "price": 0,    "available": true }
+          ]
+        }
+      ],
+      "variants": [
+        { "id": "regular", "name": "Regular 16 oz", "price": 3.95, "available": true },
+        { "id": "large",   "name": "Large 24 oz",   "price": 4.95, "available": true }
+      ],
+      "tags": ["drink","lemonade","cold","popular"], "allergens": [], "calories": 140, "sortOrder": 16
+    },
+    {
+      "id": "drink-cold-brew", "categoryId": "drinks",
+      "name": "Vanilla Cold Brew",
+      "description": "24-hour slow-steeped cold brew coffee with house-made vanilla cream.",
+      "basePrice": 4.75,
+      "image": { "label": "Cold Brew", "bg": "#292524", "fg": "#e7e5e4", "accent": "#d97706" },
+      "available": true, "popular": false,
+      "modifierGroups": [
+        { "id": "milk", "name": "Milk", "required": false, "minSelections": 0, "maxSelections": 1,
+          "options": [
+            { "id": "whole",  "name": "Whole Milk",  "price": 0,    "default": true, "available": true },
+            { "id": "oat",    "name": "Oat Milk",    "price": 0.50, "available": true },
+            { "id": "almond", "name": "Almond Milk", "price": 0.50, "available": true }
+          ]
+        }
+      ],
+      "variants": [],
+      "tags": ["coffee","drink","cold brew"], "allergens": ["milk"], "calories": 180, "sortOrder": 17
+    },
+    {
+      "id": "drink-milkshake", "categoryId": "drinks",
+      "name": "Hand-Spun Milkshake",
+      "description": "Premium ice cream, hand-spun with whole milk. Pick your flavor below.",
+      "basePrice": 6.50,
+      "image": { "label": "Milkshake", "bg": "#be185d", "fg": "#fbcfe8", "accent": "#9d174d" },
+      "available": true, "popular": true,
+      "modifierGroups": [],
+      "variants": [
+        { "id": "vanilla",    "name": "Vanilla Bean",      "price": 6.50, "available": true },
+        { "id": "chocolate",  "name": "Dark Chocolate",    "price": 6.50, "available": true },
+        { "id": "strawberry", "name": "Fresh Strawberry",  "price": 6.50, "available": true },
+        { "id": "oreo",       "name": "Cookies & Cream",   "price": 6.95, "available": true },
+        { "id": "pb",         "name": "Peanut Butter Cup", "price": 6.95, "available": true }
+      ],
+      "tags": ["milkshake","drink","popular"], "allergens": ["milk","wheat","egg"], "calories": 640, "sortOrder": 18
+    },
+    {
+      "id": "drink-soda", "categoryId": "drinks",
+      "name": "Fountain Soda",
+      "description": "Free refills on Coke, Diet Coke, Sprite, Dr Pepper, and more.",
+      "basePrice": 2.75,
+      "image": { "label": "Fountain Soda", "bg": "#1d4ed8", "fg": "#bfdbfe", "accent": "#1e3a5f" },
+      "available": true, "popular": false,
+      "modifierGroups": [
+        { "id": "flavor", "name": "Choose Your Drink", "required": true, "minSelections": 1, "maxSelections": 1,
+          "options": [
+            { "id": "coke",      "name": "Coca-Cola",        "price": 0, "default": true, "available": true },
+            { "id": "diet-coke", "name": "Diet Coke",        "price": 0, "available": true },
+            { "id": "sprite",    "name": "Sprite",           "price": 0, "available": true },
+            { "id": "dr-pepper", "name": "Dr Pepper",        "price": 0, "available": true },
+            { "id": "water",     "name": "Sparkling Water",  "price": 0, "available": true }
+          ]
+        }
+      ],
+      "variants": [
+        { "id": "medium", "name": "Medium 21 oz", "price": 2.75, "available": true },
+        { "id": "large",  "name": "Large 32 oz",  "price": 3.25, "available": true }
+      ],
+      "tags": ["drink","soda","fountain"], "allergens": [], "calories": 200, "sortOrder": 19
+    },
+    {
+      "id": "dessert-cookie", "categoryId": "desserts",
+      "name": "Warm Chocolate Cookie",
+      "description": "Baked to order with dark chocolate chunks, flaky sea salt, and vanilla ice cream.",
+      "basePrice": 5.25,
+      "image": { "label": "Cookie", "bg": "#78350f", "fg": "#d4a76a", "accent": "#f59e0b" },
+      "available": true, "popular": true,
+      "modifierGroups": [
+        { "id": "extras", "name": "Extras", "required": false, "minSelections": 0, "maxSelections": 2,
+          "options": [
+            { "id": "ice-cream", "name": "Scoop of Ice Cream", "price": 1.75, "available": true },
+            { "id": "hot-fudge", "name": "Hot Fudge Drizzle",  "price": 0.75, "available": true }
+          ]
+        }
+      ],
+      "variants": [],
+      "tags": ["dessert","cookie","chocolate","popular"], "allergens": ["milk","wheat","egg"], "calories": 380, "sortOrder": 20
+    },
+    {
+      "id": "dessert-cheesecake", "categoryId": "desserts",
+      "name": "Berry Cheesecake Cup",
+      "description": "New York-style vanilla cheesecake, house-made berry compote, and graham cracker crumble.",
+      "basePrice": 5.95,
+      "image": { "label": "Cheesecake", "bg": "#be185d", "fg": "#fbcfe8", "accent": "#7c3aed" },
+      "available": true, "popular": false,
+      "modifierGroups": [],
+      "variants": [],
+      "tags": ["dessert","berry","cheesecake"], "allergens": ["milk","wheat","egg"], "calories": 430, "sortOrder": 21
+    },
+    {
+      "id": "dessert-brownie-sundae", "categoryId": "desserts",
+      "name": "Brownie Sundae",
+      "description": "Warm fudge brownie, two scoops of vanilla ice cream, hot fudge, and whipped cream.",
+      "basePrice": 7.95,
+      "image": { "label": "Brownie Sundae", "bg": "#1c1917", "fg": "#d6d3d1", "accent": "#f59e0b" },
+      "available": true, "popular": true,
+      "modifierGroups": [
+        { "id": "topping", "name": "Extra Toppings", "required": false, "minSelections": 0, "maxSelections": 3,
+          "options": [
+            { "id": "caramel",   "name": "Caramel Drizzle",   "price": 0.50, "available": true },
+            { "id": "sprinkles", "name": "Rainbow Sprinkles", "price": 0,    "available": true },
+            { "id": "cherry",    "name": "Maraschino Cherry", "price": 0,    "available": true }
+          ]
+        }
+      ],
+      "variants": [],
+      "tags": ["dessert","brownie","sundae","popular"], "allergens": ["milk","wheat","egg"], "calories": 820, "sortOrder": 22
+    }
+  ]
+}

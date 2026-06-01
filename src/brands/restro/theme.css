@@ -1,0 +1,24 @@
+/* src/brands/restro/theme.css
+   Restro — White base + warm amber accent (light mode only)
+*/
+
+:root[data-brand='restro'] {
+  --color-brand-primary:     #F59E0B;   /* amber-400  — warm amber CTA                     */
+  --color-brand-secondary:   #F97316;   /* orange-500 — gradient endpoint                  */
+  --color-brand-accent:      #F59E0B;   /* amber-400                                       */
+  --color-brand-bg:          #FFFFFF;   /* pure white                                      */
+  --color-brand-surface:     #F8F9FA;   /* gray-50    — near-white surface                 */
+  --color-brand-text:        #111827;   /* gray-900   — rich dark text                     */
+  --color-brand-muted:       #6B7280;   /* gray-500   — neutral muted text                 */
+  --color-brand-border:      #E5E7EB;   /* gray-200   — subtle border                      */
+  --color-brand-error:       #EF4444;
+  --color-brand-success:     #22C55E;
+
+  --color-brand-primary-rgb: 245,158,11;
+
+  --color-ui-card:           #FFFFFF;
+  --color-ui-surface-alt:    #F8F9FA;
+
+  --font-brand:   'Nunito', system-ui, sans-serif;
+  --radius-brand: 0.625rem;
+}
