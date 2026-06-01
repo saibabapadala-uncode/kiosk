@@ -687,6 +687,8 @@ async function _load(): Promise<void> {
     const resp = await axios.post<{
       status?: string;
       data?: {
+        menu_organizers__id?: string | number;
+        menu_organizers__name?: string;
         menu_organizers__json_data?: {
           meta_data?: RawMenuCategory[];
         };

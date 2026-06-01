@@ -8,6 +8,7 @@
     "dev:straunt": "vite --mode straunt",
     "dev:holiq": "vite --mode holiq",
     "dev:restro": "vite --mode restro",
+    "build": "npm run build:straunt",
     "build:straunt": "tsc -b && vite build --mode straunt",
     "build:holiq": "tsc -b && vite build --mode holiq",
     "build:restro": "tsc -b && vite build --mode restro",
