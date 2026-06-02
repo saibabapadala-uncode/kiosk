@@ -291,3 +291,16 @@ body {
   animation:  shimmer 3s ease-in-out infinite 1s;
 }
 .animate-bounce-sm            { animation: bounce-sm 1.4s ease-in-out infinite; }
+
+/* ─── Product highlight — fires when navigating from Menu Highlights strip ──── */
+@keyframes product-spotlight {
+  0%   { box-shadow: 0 0 0 0   rgba(245,158,11,0),    0 2px 16px rgba(0,0,0,0.06); }
+  25%  { box-shadow: 0 0 0 4px rgba(245,158,11,0.55), 0 8px 32px rgba(245,158,11,0.22); transform: scale(1.03); }
+  60%  { box-shadow: 0 0 0 4px rgba(245,158,11,0.30), 0 6px 20px rgba(245,158,11,0.14); transform: scale(1.01); }
+  100% { box-shadow: 0 0 0 0   rgba(245,158,11,0),    0 2px 16px rgba(0,0,0,0.06); transform: scale(1); }
+}
+.product-highlight {
+  animation: product-spotlight 1.8s ease-out both;
+  z-index: 1;
+  position: relative;
+}

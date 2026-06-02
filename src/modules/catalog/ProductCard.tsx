@@ -40,9 +40,10 @@ export default function ProductCard({ product, onOpenModal }: ProductCardProps) 
 
   return (
     <article
+      id={`product-${product.id}`}
       onClick={() => product.available && onOpenModal(product)}
       className={[
-        'group relative flex flex-col overflow-hidden cursor-pointer ui-card',
+        'group relative flex flex-col overflow-hidden cursor-pointer ui-card product-card',
         'transition-all duration-200 hover:-translate-y-1 hover:shadow-xl active:scale-[0.97]',
         !product.available && 'opacity-50 cursor-not-allowed',
       ].filter(Boolean).join(' ')}

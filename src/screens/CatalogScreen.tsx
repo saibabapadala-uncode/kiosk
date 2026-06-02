@@ -5,18 +5,26 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { IonPage, IonContent, useIonViewWillEnter } from '@ionic/react';
-import { useHistory } from 'react-router-dom';
+import { useHistory, useLocation } from 'react-router-dom';
 import { useCatalog, useFilteredProducts } from '@/modules/catalog/hooks/useCatalog';
 import { loadCatalog } from '@/services/catalog.service';
 import { useCartStore } from '@/store/cartStore';
 import { useCartDrawerStore } from '@/store/cartDrawerStore';
 import { useDebounce } from '@/modules/catalog/hooks/useDebounce';
 import { useBrand } from '@/hooks/useBrand';
+import { useIsLandscape } from '@/hooks/useOrientation';
+import StaffPinModal from '@/components/StaffPinModal';
 import { useStoreConfigStore } from '@/store/storeConfigStore';
+import { useKioskChannelStore } from '@/store/kioskChannelStore';
 import ProductGrid from '@/modules/catalog/ProductGrid';
 import ProductModal from '@/modules/catalog/ProductModal';
 import { formatPrice } from '@/utils/format';
 import type { Product, Category } from '@/types/catalog';
+
+interface CatalogNavState {
+  highlightProductId?: string;
+  highlightCategoryId?: string;
+}
 
 // ─── Category icon resolver ────────────────────────────────────────────────────
 // Derives an emoji icon from the category name.
@@ -487,14 +495,19 @@ function ModernSearchBar({
 function CatalogHeader({
   search,
   onSearchChange,
+  onSettingsClick,
 }: {
   search: string;
   onSearchChange: (v: string) => void;
+  onSettingsClick: () => void;
 }) {
-  const { environment } = useBrand();
-  const itemCount       = useCartStore((s) => s.items.reduce((n, i) => n + i.quantity, 0));
-  const openCart        = useCartDrawerStore((s) => s.open);
-  const history         = useHistory();
+  const { environment }  = useBrand();
+  const channel          = useKioskChannelStore((s) => s.channel);
+  // Header shows channel name (e.g. "Spice Kitchen Kiosk") — more specific than brand name
+  const displayName      = channel?.name || environment.displayName;
+  const itemCount        = useCartStore((s) => s.items.reduce((n, i) => n + i.quantity, 0));
+  const openCart         = useCartDrawerStore((s) => s.open);
+  const history          = useHistory();
 
   return (
     <header
@@ -538,15 +551,15 @@ function CatalogHeader({
             }}
           >
             <span className="font-brand font-black text-white" style={{ fontSize: '21px', lineHeight: 1 }}>
-              {environment.displayName[0].toUpperCase()}
+              {displayName[0].toUpperCase()}
             </span>
           </div>
-          <span
-            className="hidden sm:block font-brand font-bold"
-            style={{ fontSize: '18px', color: '#111827', letterSpacing: '-0.3px', whiteSpace: 'nowrap' }}
-          >
-            {environment.displayName}
-          </span>
+          <div className="hidden sm:flex flex-col">
+            <span className="font-brand font-bold leading-tight"
+              style={{ fontSize: '16px', color: '#111827', letterSpacing: '-0.3px', whiteSpace: 'nowrap', maxWidth: '200px', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+              {displayName}
+            </span>
+          </div>
         </button>
 
         {/* ── Modern animated search bar ───────────────────────────────── */}
@@ -613,24 +626,27 @@ function CatalogHeader({
             )}
           </div>
 
-          {/* Help — outlined circle, muted */}
+          {/* Staff settings gear */}
           <button
-            aria-label="Help"
+            onClick={onSettingsClick}
+            aria-label="Staff settings"
             className="flex items-center justify-center transition-all active:scale-90"
             style={{
               width:        '42px',
               height:       '42px',
               borderRadius: '50%',
-              border:       '1.5px solid rgba(0,0,0,0.13)',
+              border:       '1.5px solid rgba(0,0,0,0.10)',
               background:   'transparent',
               color:        '#94A3B8',
-              fontSize:     '17px',
-              fontWeight:   700,
               flexShrink:   0,
               cursor:       'pointer',
             }}
           >
-            ?
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="12" cy="12" r="3"/>
+              <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/>
+            </svg>
           </button>
         </div>
 
@@ -711,9 +727,20 @@ function ErrorState({ onRetry }: { onRetry: () => void }) {
 // ─── Main screen ───────────────────────────────────────────────────────────────
 
 export default function CatalogScreen() {
+  const location                = useLocation<CatalogNavState>();
+  const routerHistory           = useHistory();
+  const isLandscape = useIsLandscape();
   const [activeCategoryId, setActiveCategoryId] = useState<string | null>(null);
   const [searchInput,      setSearchInput]       = useState('');
   const [modalProduct,     setModalProduct]      = useState<Product | null>(null);
+  const [pinOpen,          setPinOpen]           = useState(false);
+
+  // panelContainer: the DOM node ProductModal portals into for landscape mode.
+  // Using state (not ref) so React re-renders when the element is mounted.
+  const [panelContainer, setPanelContainer] = useState<HTMLDivElement | null>(null);
+  const panelContainerCb = useCallback((el: HTMLDivElement | null) => setPanelContainer(el), []);
+
+  const panelOpen = isLandscape && modalProduct !== null;
   const searchTerm = useDebounce(searchInput, 300);
   const contentRef = useRef<HTMLDivElement>(null);
 
@@ -722,11 +749,30 @@ export default function CatalogScreen() {
   const products   = useFilteredProducts(data?.products, activeCategoryId, searchTerm);
 
   // TRIGGER: fires on EVERY Ionic page activation (fresh mount OR Ionic keep-alive reveal).
-  // Calls loadCatalog() directly — no React Query, no caching — guaranteed fresh API call.
   useIonViewWillEnter(() => {
     console.log('[CatalogScreen] ionViewWillEnter → loadCatalog()');
     void loadCatalog();
   });
+
+  // Highlight + scroll when arriving from "Menu Highlights" product strip
+  useEffect(() => {
+    const { highlightProductId, highlightCategoryId } = location.state ?? {};
+    if (!highlightProductId || !data) return;
+
+    // Switch to that product's category first
+    if (highlightCategoryId) setActiveCategoryId(highlightCategoryId);
+
+    // Wait for the grid to render, then scroll + pulse
+    const timer = setTimeout(() => {
+      const el = document.getElementById(`product-${highlightProductId}`);
+      if (!el) return;
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      el.classList.add('product-highlight');
+      setTimeout(() => el.classList.remove('product-highlight'), 2200);
+    }, 350);
+
+    return () => clearTimeout(timer);
+  }, [location.state, data]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // TRIGGER: Retry button — always calls loadCatalog() fresh
   const handleRetry = useCallback(() => {
@@ -752,7 +798,7 @@ export default function CatalogScreen() {
       <IonPage>
         <IonContent fullscreen scrollY={false}>
           <div className="h-full">
-            <CatalogHeader search={searchInput} onSearchChange={setSearchInput} />
+            <CatalogHeader search={searchInput} onSearchChange={setSearchInput} onSettingsClick={() => setPinOpen(true)} />
             <div className="flex-1">
               <LoadingSkeleton />
             </div>
@@ -768,7 +814,7 @@ export default function CatalogScreen() {
         <div className="flex flex-col h-full overflow-hidden" style={{ background: 'var(--color-brand-bg)' }}>
 
           {/* ── Header ─────────────────────────────────────────────────── */}
-          <CatalogHeader search={searchInput} onSearchChange={setSearchInput} />
+          <CatalogHeader search={searchInput} onSearchChange={setSearchInput} onSettingsClick={() => setPinOpen(true)} />
 
           {/* ── Mobile category tabs (hidden while searching) ─────────── */}
           {!searchTerm && categories.length > 0 && (
@@ -792,8 +838,19 @@ export default function CatalogScreen() {
               />
             )}
 
-            {/* Products area */}
-            <div ref={contentRef} className="flex-1 overflow-y-auto">
+            {/* Inner split: grid (left) + optional detail panel (right) */}
+            <div className="flex flex-1 min-w-0 min-h-0 overflow-hidden">
+
+            {/* Products grid — shrinks to 70 % when landscape panel is open */}
+            <div
+              ref={contentRef}
+              className="overflow-y-auto overflow-x-hidden"
+              style={{
+                flex: panelOpen ? '0 0 58%' : '1 1 auto',
+                minWidth: 0,
+                transition: 'flex-basis 280ms cubic-bezier(0.32,0.72,0,1)',
+              }}
+            >
 
               {/* Section heading */}
               {!searchTerm ? (
@@ -835,14 +892,42 @@ export default function CatalogScreen() {
                 />
               )}
             </div>
+            {/* end grid */}
+
+            {/* Landscape detail panel — 30 % slot, always mounted so the ref is stable */}
+            <div
+              ref={panelContainerCb}
+              style={{
+                flex:         panelOpen ? '0 0 42%' : '0 0 0px',
+                overflow:     'hidden',
+                minWidth:     0,
+                display:      'flex',
+                flexDirection:'column',
+                borderLeft:   panelOpen ? '1px solid var(--ui-glass-border)' : 'none',
+                transition:   'flex-basis 280ms cubic-bezier(0.32,0.72,0,1)',
+                background:   'var(--color-ui-card)',
+              }}
+            />
+            {/* end inner split */}
+            </div>
+
           </div>
+          {/* end outer content area */}
         </div>
 
-        {/* Product customization modal */}
+        {/* Product detail modal / panel */}
         <ProductModal
           product={modalProduct}
           isOpen={modalProduct !== null}
           onClose={() => setModalProduct(null)}
+          landscapeContainer={panelContainer}
+        />
+
+        {/* Staff PIN modal */}
+        <StaffPinModal
+          isOpen={pinOpen}
+          onSuccess={() => { setPinOpen(false); routerHistory.replace('/settings'); }}
+          onCancel={() => setPinOpen(false)}
         />
       </IonContent>
     </IonPage>

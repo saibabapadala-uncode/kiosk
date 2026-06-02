@@ -1,7 +1,22 @@
 {
   "attract": {
+    "welcomeTo": "BIENVENIDO A",
     "tagline": "Orden fresca. Orden rápida.",
-    "tapToOrder": "Toca en cualquier lugar para ordenar"
+    "orderHero1": "Ordenar",
+    "orderHero2": "Aquí.",
+    "tapToOrder": "Toca en cualquier lugar para comenzar",
+    "startOrder": "Comenzar tu orden",
+    "browseMenu": "VER MENÚ",
+    "items_one": "{{count}} Artículo",
+    "items_other": "{{count}} Artículos",
+    "badge1": "Ingredientes Frescos",
+    "badge2": "Servicio Rápido",
+    "badge3": "Buen Sabor",
+    "footerHelp": "¿Necesitas ayuda? Presiona el botón de ayuda al lado.",
+    "footerLang": "Te atendemos en varios idiomas.",
+    "loadingMenu": "Cargando menú…",
+    "selectLanguage": "Seleccionar idioma",
+    "moreLangs": "Más idiomas"
   },
   "catalog": {
     "searchPlaceholder": "Buscar en el menú…",

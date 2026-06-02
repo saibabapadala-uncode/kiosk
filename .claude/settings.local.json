@@ -8,7 +8,8 @@
       "Bash(Select-Object -ExpandProperty FullName)",
       "WebSearch",
       "WebFetch(domain:mobbin.com)",
-      "WebFetch(domain:brand.toasttab.com)"
+      "WebFetch(domain:brand.toasttab.com)",
+      "Bash(npx tsc *)"
     ]
   }
 }

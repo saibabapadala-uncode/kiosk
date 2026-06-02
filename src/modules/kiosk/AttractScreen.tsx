@@ -1,219 +1,322 @@
 // src/modules/kiosk/AttractScreen.tsx
+// ─────────────────────────────────────────────────────────────────────────────
+// Attract screen — pixel-faithful reimplementation of the provided reference.
 //
-// ── Trigger: loadCatalog() on every Ionic page activation ────────────────────
-//   useIonViewWillEnter fires whether the page is freshly mounted OR revealed
-//   from Ionic's keep-alive DOM cache. Calling loadCatalog() here guarantees
-//   the menu_organizer + products APIs are called on:
-//     • First login  →  attract screen
-//     • Every "Start Over"  →  back to attract
-//   catalog.service.ts deduplicates concurrent calls via a module-level promise.
+// Layout (top → bottom)
+//   ① Header bar   — store logo + name + tagline  |  clock + LanguageSelector
+//   ② Hero         — floating food doodles background
+//                    "WELCOME TO" with amber rules
+//                    "Order / Here." display type
+//                    three feature badges
+//                    instruction copy + CTA button
+//   ③ Browse menu  — "BROWSE MENU" + scrollable category chip row
+//   ④ Footer bar   — assistance text | multilingual notice
 //
-// ── Dynamic sections — zero hardcoded promotional labels ─────────────────────
-//   Sections render ONLY when the API returned data for them:
-//   • ≥ 2 available products with popular=true  → "Popular Items" strip
-//   • ≥ 2 available products, none popular      → "Menu Highlights" strip
-//   • < 2 available products                    → no strip
-//   • ≥ 1 category from menu organizer          → category row
-//   • 0 categories                              → category row hidden
-//   • Loading / no data yet                     → hero only (clean brand state)
+// All text keys come from i18n so every label is translated dynamically.
+// RTL is handled by setting dir="rtl" on <html> via i18n/index.ts.
 
 import { useEffect, useRef, useState } from 'react';
-import { useHistory } from 'react-router-dom';
-import { useIonViewWillEnter } from '@ionic/react';
-import { useBrand } from '@/hooks/useBrand';
-import { useCartStore } from '@/store/cartStore';
-import { useSessionStore } from '@/store/sessionStore';
-import { usePaymentStore } from '@/store/paymentStore';
-import { useSettingsStore } from '@/store/settingsStore';
-import { useKioskChannelStore } from '@/store/kioskChannelStore';
-import { useStoreConfigStore } from '@/store/storeConfigStore';
-import { useCatalogStore } from '@/store/catalogStore';
-import { loadCatalog } from '@/services/catalog.service';
-import type { Product, Category } from '@/types/catalog';
-import { formatPrice } from '@/utils/format';
+import { useHistory }            from 'react-router-dom';
+import { useIonViewWillEnter }   from '@ionic/react';
+import { useTranslation }        from 'react-i18next';
 
-const SETTINGS_TAPS   = 5;
-const SETTINGS_WIN_MS = 3_000;
+import { useBrand }              from '@/hooks/useBrand';
+import { useCartStore }          from '@/store/cartStore';
+import { useSessionStore }       from '@/store/sessionStore';
+import { usePaymentStore }       from '@/store/paymentStore';
+import { useSettingsStore }      from '@/store/settingsStore';
+import { useKioskChannelStore }  from '@/store/kioskChannelStore';
+import { useStoreConfigStore }   from '@/store/storeConfigStore';
+import { useCatalogStore }       from '@/store/catalogStore';
+import { loadCatalog }           from '@/services/catalog.service';
+import type { Category }         from '@/types/catalog';
+
+import LanguageSelector          from '@/components/LanguageSelector';
+import StaffPinModal             from '@/components/StaffPinModal';
+
+// ─── Colour tokens ────────────────────────────────────────────────────────────
+
+const C = {
+  bg:        '#FFF8EF',          // warm cream background
+  amber:     '#E8720C',          // primary orange-amber
+  amberLight:'#FFA53D',          // lighter amber for gradients
+  amberTint: '#FFF3E0',          // very light amber tint
+  amberBg:   'rgba(232,114,12,0.08)', // badge background
+  stone900:  '#1C1917',
+  stone700:  '#44403C',
+  stone500:  '#78716C',
+  stone300:  '#D6D3D1',
+  white:     '#FFFFFF',
+  cardBg:    'rgba(255,255,255,0.92)',
+};
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function catIcon(name: string): string {
-  const n = name.toLowerCase();
-  if (n.includes('burger') || n.includes('sandwich'))                           return '🍔';
-  if (n.includes('chicken') || n.includes('wing'))                              return '🍗';
-  if (n.includes('bowl') || n.includes('rice'))                                 return '🥗';
-  if (n.includes('side') || n.includes('frie') || n.includes('appetizer'))     return '🍟';
-  if (n.includes('drink') || n.includes('bev') || n.includes('juice'))         return '🥤';
-  if (n.includes('dessert') || n.includes('sweet') || n.includes('cake'))      return '🍰';
-  if (n.includes('pizza') || n.includes('flatbread'))                           return '🍕';
-  if (n.includes('salad') || n.includes('veggie'))                              return '🥦';
-  if (n.includes('coffee') || n.includes('tea'))                                return '☕';
-  if (n.includes('soup'))                                                        return '🍲';
-  if (n.includes('wrap') || n.includes('taco') || n.includes('burrito'))       return '🌮';
-  if (n.includes('seafood') || n.includes('fish'))                              return '🦐';
-  if (n.includes('steak') || n.includes('beef') || n.includes('meat'))         return '🥩';
-  if (n.includes('pasta') || n.includes('noodle'))                              return '🍝';
-  if (n.includes('whiskey') || n.includes('bourbon'))                           return '🥃';
-  if (n.includes('wine'))                                                        return '🍷';
-  if (n.includes('beer') || n.includes('ipa'))                                  return '🍺';
-  if (n.includes('spirit') || n.includes('cocktail'))                           return '🫙';
-  if (n.includes('combo') || n.includes('meal') || n.includes('special'))      return '🍱';
+  const s = name.toLowerCase();
+  if (s.includes('chicken') || s.includes('wing'))                      return '🍗';
+  if (s.includes('burger') || s.includes('sandwich'))                   return '🍔';
+  if (s.includes('pizza') || s.includes('flat'))                        return '🍕';
+  if (s.includes('drink') || s.includes('bev') || s.includes('juice'))  return '🥤';
+  if (s.includes('dessert') || s.includes('sweet') || s.includes('cake'))return '🍰';
+  if (s.includes('side') || s.includes('snack') || s.includes('fry'))   return '🍟';
+  if (s.includes('bread') || s.includes('naan') || s.includes('roti'))  return '🫓';
+  if (s.includes('rice') || s.includes('bowl'))                         return '🍚';
+  if (s.includes('salad') || s.includes('veg'))                         return '🥗';
+  if (s.includes('soup'))                                                return '🍲';
+  if (s.includes('coffee') || s.includes('tea'))                        return '☕';
+  if (s.includes('wrap') || s.includes('taco') || s.includes('roll'))   return '🌮';
+  if (s.includes('seafood') || s.includes('fish'))                      return '🦐';
+  if (s.includes('late') || s.includes('night') || s.includes('bite'))  return '🌙';
+  if (s.includes('indian') || s.includes('south'))                      return '🍛';
   return '🍽';
 }
 
-const CAT_GRADIENTS = [
-  'linear-gradient(135deg,#b91c1c,#dc2626)',
-  'linear-gradient(135deg,#d97706,#f59e0b)',
-  'linear-gradient(135deg,#047857,#10b981)',
-  'linear-gradient(135deg,#1d4ed8,#3b82f6)',
-  'linear-gradient(135deg,#7c3aed,#a855f7)',
-  'linear-gradient(135deg,#0f766e,#14b8a6)',
-  'linear-gradient(135deg,#9d174d,#ec4899)',
-  'linear-gradient(135deg,#92400e,#d97706)',
+function padCount(n: number): string {
+  return n < 10 ? `0${n}` : `${n}`;
+}
+
+// ─── Floating food doodles ────────────────────────────────────────────────────
+// Outline-style SVG icons scattered in the background.
+// Using emoji in divs with border + low opacity to match the reference.
+
+const DOODLES: Array<{ emoji: string; top: string; left?: string; right?: string; size: number; rot: number; opacity: number }> = [
+  { emoji: '🍔', top: '8%',  left: '5%',   size: 72, rot: -15, opacity: 0.22 },
+  { emoji: '🍕', top: '14%', right: '6%',  size: 60, rot: 12,  opacity: 0.20 },
+  { emoji: '🥤', top: '38%', left: '3%',   size: 56, rot: -8,  opacity: 0.18 },
+  { emoji: '🍟', top: '55%', right: '4%',  size: 64, rot: 10,  opacity: 0.20 },
+  { emoji: '🍗', top: '70%', left: '6%',   size: 58, rot: -12, opacity: 0.18 },
+  { emoji: '🍰', top: '22%', right: '3%',  size: 52, rot: 8,   opacity: 0.16 },
+  { emoji: '🫓', top: '80%', right: '7%',  size: 54, rot: -6,  opacity: 0.16 },
+  { emoji: '🌿', top: '12%', left: '22%',  size: 32, rot: 20,  opacity: 0.28 },
+  { emoji: '🌿', top: '35%', right: '20%', size: 28, rot: -18, opacity: 0.24 },
+  { emoji: '🌿', top: '60%', left: '28%',  size: 30, rot: 15,  opacity: 0.22 },
+  { emoji: '⭕', top: '28%', left: '15%',  size: 14, rot: 0,   opacity: 0.14 },
+  { emoji: '⭕', top: '48%', right: '18%', size: 10, rot: 0,   opacity: 0.12 },
 ];
+
+function FoodDoodles() {
+  return (
+    <div aria-hidden="true" style={{ position: 'absolute', inset: 0, overflow: 'hidden', pointerEvents: 'none', zIndex: 1 }}>
+      {DOODLES.map((d, i) => {
+        const isCircle = (d.emoji as string) === '⭕';
+        return (
+          <div key={i} style={{
+            position: 'absolute', top: d.top, left: d.left, right: d.right,
+            ...(isCircle ? {} : {
+              fontSize: d.size, lineHeight: 1, opacity: d.opacity,
+              transform: `rotate(${d.rot}deg)`,
+            }),
+          }}>
+            {isCircle ? (
+              <div style={{ width: d.size, height: d.size, borderRadius: '50%',
+                border: `2px solid ${C.amber}`, opacity: d.opacity }} />
+            ) : (d.emoji as string)}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
 
 // ─── Live clock ───────────────────────────────────────────────────────────────
 
 function LiveClock() {
+  const locale = useSettingsStore((s) => s.localization.locale);
   const [t, setT] = useState(new Date());
   useEffect(() => {
     const id = setInterval(() => setT(new Date()), 1_000);
     return () => clearInterval(id);
   }, []);
+
+  const timeStr = t.toLocaleTimeString(locale, { hour: 'numeric', minute: '2-digit', hour12: true });
+  const dateStr = t.toLocaleDateString(locale, { weekday: 'short', month: 'short', day: 'numeric' });
+
   return (
-    <div className="flex flex-col items-center leading-tight">
-      <span className="text-white/95 font-brand font-bold tabular-nums tracking-wide drop-shadow"
-        style={{ fontSize: 'clamp(1.2rem,2.5vw,1.6rem)' }}>
-        {t.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}
-      </span>
-      <span className="text-white/55 font-brand tracking-wider"
-        style={{ fontSize: 'clamp(0.6rem,1.2vw,0.75rem)' }}>
-        {t.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}
-      </span>
+    <div style={{ textAlign: 'right' }}>
+      <p style={{ margin: 0, fontWeight: 700, fontSize: 'clamp(0.95rem,1.6vw,1.1rem)',
+        color: C.stone900, fontVariantNumeric: 'tabular-nums', letterSpacing: '0.01em' }}>
+        {timeStr}
+      </p>
+      <p style={{ margin: 0, fontSize: 'clamp(0.7rem,1.1vw,0.8rem)', color: C.stone500, marginTop: 1 }}>
+        {dateStr}
+      </p>
     </div>
   );
 }
 
-// ─── Product card ─────────────────────────────────────────────────────────────
+// ─── Header ───────────────────────────────────────────────────────────────────
 
-function ProductCard({ product }: { product: Product }) {
+function HeaderBar({
+  logoUrl, displayName, tagline, onSettingsTap, settingsTaps, settingsNeeded,
+}: {
+  logoUrl: string; displayName: string; tagline: string;
+  onSettingsTap: (e: React.MouseEvent) => void;
+  settingsTaps: number; settingsNeeded: number;
+}) {
   return (
-    <div
-      className="flex-shrink-0 flex flex-col overflow-hidden rounded-2xl"
-      style={{
-        width:      'clamp(130px,13vw,168px)',
-        background: 'var(--color-ui-card)',
-        border:     '1px solid var(--ui-glass-border)',
-        boxShadow:  'var(--ui-card-shadow)',
-      }}
-    >
-      <div className="relative overflow-hidden" style={{ aspectRatio: '4/3' }}>
-        {product.imageUrl ? (
-          <img src={product.imageUrl} alt={product.name} loading="lazy"
-            className="w-full h-full object-cover" />
-        ) : (
-          <div className="w-full h-full flex items-center justify-center text-3xl"
-            style={{ background: 'linear-gradient(135deg,var(--color-brand-surface),var(--color-brand-border))' }}>
-            {catIcon(product.name)}
-          </div>
-        )}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
-        {product.calories != null && (
-          <span className="absolute top-1.5 right-1.5 px-1.5 py-0.5 rounded-full text-[9px] font-bold"
-            style={{ background: 'rgba(0,0,0,0.58)', color: 'rgba(255,255,255,0.80)' }}>
-            {product.calories} cal
-          </span>
-        )}
-      </div>
-      <div className="px-2.5 py-2">
-        <p className="text-xs font-bold font-brand line-clamp-1 leading-tight"
-          style={{ color: 'var(--color-brand-text)' }}>
-          {product.name}
-        </p>
-        <p className="text-xs font-bold font-brand mt-1"
-          style={{ color: 'var(--color-brand-primary)' }}>
-          {formatPrice(product.basePrice)}
-        </p>
-      </div>
-    </div>
-  );
-}
+    <div style={{
+      position:   'relative', zIndex: 20, flexShrink: 0,
+      display:    'flex', alignItems: 'center', justifyContent: 'space-between',
+      padding:    'clamp(10px,1.8vh,18px) clamp(16px,3vw,32px)',
+      background: C.white,
+      borderBottom: `1px solid rgba(0,0,0,0.06)`,
+      boxShadow:  '0 1px 8px rgba(0,0,0,0.05)',
+    }}>
+      {/* ── Left: logo card + name + tagline ── */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 'clamp(10px,1.8vw,16px)' }}>
+        {/* Logo / monogram card */}
+        <div style={{
+          width: 'clamp(52px,7vh,72px)', height: 'clamp(52px,7vh,72px)',
+          borderRadius: 'clamp(10px,1.5vw,16px)',
+          background: logoUrl ? C.white : `linear-gradient(135deg,${C.amberLight},${C.amber})`,
+          border:  logoUrl ? `1.5px solid ${C.stone300}` : 'none',
+          boxShadow: '0 3px 12px rgba(0,0,0,0.10)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          flexShrink: 0, overflow: 'hidden',
+        }}>
+          {logoUrl ? (
+            <img src={logoUrl} alt={displayName}
+              style={{ width: '100%', height: '100%', objectFit: 'contain', padding: 6 }}
+              onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }} />
+          ) : (
+            <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth={2} strokeLinecap="round"
+              style={{ width: '55%', height: '55%' }}>
+              <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/>
+              <polyline points="9 22 9 12 15 12 15 22"/>
+            </svg>
+          )}
+        </div>
 
-// ─── Scrolling product strip ──────────────────────────────────────────────────
-// label is derived from API data — never a hardcoded promotional claim.
-
-function ProductStrip({ products, label }: { products: Product[]; label: string }) {
-  const items = [...products, ...products]; // double for seamless marquee
-  return (
-    <div
-      className="flex flex-col justify-center"
-      style={{
-        flex:         '0 0 21%',
-        borderTop:    '1px solid var(--ui-glass-border)',
-        borderBottom: '1px solid var(--ui-glass-border)',
-        background:   'var(--color-brand-bg)',
-        overflow:     'hidden',
-      }}
-    >
-      <div className="flex items-center gap-1.5 px-5 mb-1.5 flex-shrink-0" style={{ paddingTop: '0.4rem' }}>
-        <span className="text-sm" aria-hidden="true">🔥</span>
-        <span className="font-bold font-brand"
-          style={{ fontSize: 'clamp(0.7rem,1.4vw,0.85rem)', color: 'var(--color-brand-text)' }}>
-          {label}
-        </span>
-      </div>
-      <div className="relative overflow-hidden flex-1 flex items-center">
-        <div className="absolute left-0 top-0 bottom-0 w-12 z-10 pointer-events-none"
-          style={{ background: 'linear-gradient(to right,var(--color-brand-bg),transparent)' }} />
-        <div className="absolute right-0 top-0 bottom-0 w-12 z-10 pointer-events-none"
-          style={{ background: 'linear-gradient(to left,var(--color-brand-bg),transparent)' }} />
-        <div className="flex gap-3 px-5 animate-marquee"
-          style={{ height: 'calc(100% - 6px)', alignItems: 'stretch' }}>
-          {items.map((p, i) => <ProductCard key={`${p.id}-${i}`} product={p} />)}
+        {/* Name + tagline */}
+        <div>
+          <h1 style={{ margin: 0, fontWeight: 900, fontSize: 'clamp(1rem,2.2vw,1.5rem)',
+            color: C.stone900, letterSpacing: '-0.02em', lineHeight: 1.1 }}>
+            {displayName}
+          </h1>
+          {tagline && (
+            <p style={{ margin: '3px 0 0', fontWeight: 500, fontSize: 'clamp(0.7rem,1.3vw,0.88rem)',
+              color: C.stone500, letterSpacing: '0.01em' }}>
+              {tagline}
+            </p>
+          )}
         </div>
       </div>
+
+      {/* ── Right: clock + language selector ── */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 'clamp(12px,2vw,20px)', flexShrink: 0 }}>
+        {/* Clock — double as settings tap zone */}
+        <button type="button" onClick={onSettingsTap} aria-label="Settings"
+          style={{ position: 'relative', background: 'none', border: 'none', padding: 0,
+            cursor: 'default' }}>
+          <LiveClock />
+          {settingsTaps > 0 && (
+            <span style={{
+              position: 'absolute', top: -3, right: -5,
+              width: 16, height: 16, borderRadius: '50%',
+              background: C.amber, color: C.white,
+              fontSize: '0.55rem', fontWeight: 800,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+            }}>
+              {settingsNeeded - settingsTaps}
+            </span>
+          )}
+        </button>
+
+        <LanguageSelector variant="header" />
+      </div>
     </div>
   );
 }
 
-// ─── Category row ─────────────────────────────────────────────────────────────
+// ─── Feature badges ───────────────────────────────────────────────────────────
 
-function CategoryRow({ categories, onStart }: { categories: Category[]; onStart: () => void }) {
+const BADGE_ICONS = [
+  // Bolt
+  <svg key="b" width="16" height="16" viewBox="0 0 24 24" fill={C.amber}><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>,
+  // Clock
+  <svg key="c" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={C.amber} strokeWidth={2.2} strokeLinecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>,
+  // Heart
+  <svg key="h" width="16" height="16" viewBox="0 0 24 24" fill={C.amber}><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg>,
+];
+
+function FeatureBadges({ labels }: { labels: string[] }) {
   return (
-    <div
-      className="flex flex-col justify-center px-5"
-      style={{ flex: '0 0 18%', background: 'var(--color-brand-bg)' }}
-    >
-      <p className="font-bold font-brand uppercase tracking-widest mb-2 flex-shrink-0"
-        style={{ fontSize: 'clamp(0.55rem,1.1vw,0.7rem)', color: 'var(--color-brand-muted)' }}>
-        Browse the Menu
-      </p>
-      <div className="flex gap-2.5 overflow-x-auto no-scrollbar flex-1 items-stretch pb-0.5">
-        {categories.map((cat, idx) => (
-          <button
-            key={cat.id}
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center',
+      flexWrap: 'wrap', gap: 'clamp(6px,1.5vw,16px)', marginBottom: 'clamp(14px,2.5vh,24px)' }}>
+      {labels.map((label, i) => (
+        <span key={i} style={{ display: 'flex', alignItems: 'center', gap: 6,
+          fontSize: 'clamp(0.78rem,1.4vw,0.92rem)', fontWeight: 600, color: C.stone700 }}>
+          {BADGE_ICONS[i]}
+          {label}
+          {i < labels.length - 1 && (
+            <span style={{ width: 1, height: 14, background: C.stone300, marginInlineStart: 8 }} />
+          )}
+        </span>
+      ))}
+    </div>
+  );
+}
+
+// ─── Browse menu section ──────────────────────────────────────────────────────
+
+function BrowseMenu({ categories, onStart }: { categories: Category[]; onStart: () => void }) {
+  const { t } = useTranslation();
+  return (
+    <div style={{
+      flexShrink: 0, padding: 'clamp(14px,2.2vh,20px) clamp(16px,3vw,32px) clamp(10px,1.8vh,16px)',
+      background: C.white, borderTop: `1px solid rgba(0,0,0,0.06)`,
+    }}>
+      {/* Section title with amber rules */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12, justifyContent: 'center',
+        marginBottom: 'clamp(10px,1.8vh,16px)' }}>
+        <div style={{ flex: 1, height: 1.5, background: `linear-gradient(to right, transparent, ${C.amber})` }} />
+        <span style={{ fontWeight: 800, fontSize: 'clamp(0.72rem,1.3vw,0.84rem)',
+          color: C.amber, letterSpacing: '0.12em', textTransform: 'uppercase' as const }}>
+          {t('attract.browseMenu')}
+        </span>
+        <div style={{ flex: 1, height: 1.5, background: `linear-gradient(to left, transparent, ${C.amber})` }} />
+      </div>
+
+      {/* Category chips */}
+      <div style={{ display: 'flex', gap: 'clamp(8px,1.4vw,14px)', overflowX: 'auto',
+        scrollbarWidth: 'none', justifyContent: 'center', flexWrap: 'wrap' }}
+        className="no-scrollbar">
+        {categories.map((cat) => (
+          <button key={cat.id} type="button"
             onClick={(e) => { e.stopPropagation(); onStart(); }}
-            aria-label={`Browse ${cat.name}`}
-            className="flex-shrink-0 flex flex-col items-center justify-center gap-1 rounded-2xl transition-all active:scale-90 hover:scale-105"
             style={{
-              background: CAT_GRADIENTS[idx % CAT_GRADIENTS.length],
-              minWidth:   'clamp(64px,7vw,96px)',
-              height:     '100%',
-              padding:    '0.5rem 0.4rem',
-              boxShadow:  '0 4px 14px rgba(0,0,0,0.20)',
+              flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'center',
+              gap: 6, padding: 'clamp(10px,1.6vh,14px) clamp(14px,2vw,20px)',
+              borderRadius: 'clamp(12px,1.8vw,18px)',
+              background: C.white,
+              border: `1.5px solid ${C.stone300}`,
+              boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
+              cursor: 'pointer', transition: 'all 140ms',
+              minWidth: 'clamp(72px,10vw,96px)',
+            }}
+            onMouseEnter={(e) => {
+              const el = e.currentTarget as HTMLButtonElement;
+              el.style.borderColor = C.amber;
+              el.style.boxShadow = `0 4px 14px rgba(232,114,12,0.18)`;
+            }}
+            onMouseLeave={(e) => {
+              const el = e.currentTarget as HTMLButtonElement;
+              el.style.borderColor = C.stone300;
+              el.style.boxShadow = '0 2px 8px rgba(0,0,0,0.06)';
             }}
           >
-            <span className="leading-none" style={{ fontSize: 'clamp(1.3rem,2.5vw,1.75rem)' }}>
+            <span style={{ fontSize: 'clamp(1.6rem,3vw,2rem)', lineHeight: 1 }}>
               {catIcon(cat.name)}
             </span>
-            <span className="text-white font-bold font-brand text-center leading-tight line-clamp-2"
-              style={{ fontSize: 'clamp(0.6rem,1.1vw,0.75rem)' }}>
+            <span style={{ fontWeight: 700, fontSize: 'clamp(0.7rem,1.2vw,0.82rem)',
+              color: C.stone900, textAlign: 'center', lineHeight: 1.2 }}>
               {cat.name}
             </span>
             {(cat.itemCount ?? 0) > 0 && (
-              <span className="text-white/60 font-brand"
-                style={{ fontSize: 'clamp(0.5rem,0.9vw,0.65rem)' }}>
-                {cat.itemCount} items
+              <span style={{ fontWeight: 700, fontSize: 'clamp(0.6rem,1vw,0.7rem)',
+                color: C.amber }}>
+                {padCount(cat.itemCount ?? 0)} Items
               </span>
             )}
           </button>
@@ -223,282 +326,290 @@ function CategoryRow({ categories, onStart }: { categories: Category[]; onStart:
   );
 }
 
-// ─── Root component ────────────────────────────────────────────────────────────
+// ─── Footer bar ───────────────────────────────────────────────────────────────
+
+function FooterBar() {
+  const { t } = useTranslation();
+  return (
+    <div style={{
+      flexShrink: 0,
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      flexWrap: 'wrap', gap: '4px 24px',
+      padding: 'clamp(8px,1.4vh,12px) clamp(16px,3vw,32px)',
+      background: 'rgba(255,255,255,0.75)',
+      borderTop: `1px solid rgba(0,0,0,0.06)`,
+      backdropFilter: 'blur(8px)',
+    }}>
+      <span style={{ display: 'flex', alignItems: 'center', gap: 6,
+        fontSize: 'clamp(0.68rem,1.1vw,0.78rem)', color: C.stone500 }}>
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
+          stroke={C.stone500} strokeWidth={2} strokeLinecap="round">
+          <circle cx="12" cy="12" r="10"/>
+          <line x1="12" y1="8" x2="12" y2="12"/>
+          <line x1="12" y1="16" x2="12.01" y2="16"/>
+        </svg>
+        {t('attract.footerHelp')}
+      </span>
+      <div style={{ width: 1, height: 14, background: C.stone300 }} />
+      <span style={{ display: 'flex', alignItems: 'center', gap: 6,
+        fontSize: 'clamp(0.68rem,1.1vw,0.78rem)', color: C.stone500 }}>
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
+          stroke={C.stone500} strokeWidth={2} strokeLinecap="round">
+          <circle cx="12" cy="12" r="10"/>
+          <line x1="2" y1="12" x2="22" y2="12"/>
+          <path d="M12 2a15.3 15.3 0 010 20M12 2a15.3 15.3 0 000 20"/>
+        </svg>
+        {t('attract.footerLang')}
+      </span>
+    </div>
+  );
+}
+
+// ─── Main component ────────────────────────────────────────────────────────────
+
+const SETTINGS_TAPS   = 5;
+const SETTINGS_WIN_MS = 3_000;
 
 export default function AttractScreenContent() {
-  const history                  = useHistory();
-  const { brandId, environment } = useBrand();
-  const logoUrl                  = useSettingsStore((s) => s.theme.logoUrl);
-  const channel                  = useKioskChannelStore((s) => s.channel);
-  const storeName                = useStoreConfigStore((s) => s.store?.name ?? '');
-  const clearCart                = useCartStore((s) => s.clearCart);
-  const resetSession             = useSessionStore((s) => s.resetSession);
-  const resetPayment             = usePaymentStore((s) => s.reset);
-  const startOrder               = useSessionStore((s) => s.startOrder);
-
-  // ── Read catalog data from Zustand store ───────────────────────────────────
-  // catalogStore is populated by loadCatalog() called in useIonViewWillEnter.
-  // These selectors re-render this component whenever the store updates.
+  const { t }            = useTranslation();
+  const history          = useHistory();
+  const { environment }  = useBrand();
+  const logoUrl          = useSettingsStore((s) => s.theme.logoUrl);
+  const tagline          = useSettingsStore((s) => s.theme.tagline ?? '');
+  const channel          = useKioskChannelStore((s) => s.channel);
+  const storeName        = useStoreConfigStore((s) => s.store?.name ?? '');
+  const clearCart        = useCartStore((s) => s.clearCart);
+  const resetSession     = useSessionStore((s) => s.resetSession);
+  const resetPayment     = usePaymentStore((s) => s.reset);
+  const startOrder       = useSessionStore((s) => s.startOrder);
   const catalogCategories = useCatalogStore((s) => s.categories);
-  const catalogProducts   = useCatalogStore((s) => s.products);
-  const catalogLoading    = useCatalogStore((s) => s.isLoading);
+  const catalogLoading   = useCatalogStore((s) => s.isLoading);
 
-  // ── TRIGGER: call loadCatalog() on every Ionic page activation ─────────────
-  // This fires on fresh mount AND when Ionic reveals a cached page.
-  // menu_organizer + products APIs are called every time, no caching.
-  useIonViewWillEnter(() => {
-    console.log('[AttractScreen] ionViewWillEnter → loadCatalog()');
-    void loadCatalog();
-  });
+  useIonViewWillEnter(() => { void loadCatalog(); });
 
-  // ── Derive what sections to show — driven entirely by API data ─────────────
-  const allAvailable   = catalogProducts.filter((p) => p.available);
-  const popularItems   = allAvailable.filter((p) => p.popular);
+  const displayName = (channel?.name || storeName || environment.displayName).trim();
+  const subLabel    = storeName && storeName !== displayName ? storeName : null;
+  const categories  = catalogCategories.slice(0, 10);
+  const showBrowse  = categories.length > 0;
 
-  const usePopular     = popularItems.length >= 2;
-  const stripItems     = usePopular ? popularItems.slice(0, 12) : allAvailable.slice(0, 12);
-  // Label derived from data — no hardcoded "Fan Favourites" / "Best Sellers" etc.
-  const stripLabel     = usePopular ? 'Popular Items' : 'Menu Highlights';
-  const showStrip      = stripItems.length >= 2; // need ≥2 for a meaningful scroll
-
-  const categories     = catalogCategories.slice(0, 8);
-  const showCategories = categories.length > 0;
-
-  // Display name: real store name from API > channel name > brand name
-  const displayName    = storeName || channel?.store_name || environment.displayName;
-
-  // ── Settings tap counter ────────────────────────────────────────────────────
   const [settingsTaps, setSettingsTaps] = useState(0);
+  const [pinOpen, setPinOpen]           = useState(false);
   const tapTimer = useRef<ReturnType<typeof setTimeout>>();
 
-  // Clean slate on every attract screen visit
   useEffect(() => {
     clearCart(); resetSession(); resetPayment();
   }, [clearCart, resetSession, resetPayment]);
 
-  function handleStart() {
-    startOrder();
-    history.push('/menu');
-  }
+  function handleStart() { startOrder(); history.push('/menu'); }
 
-  function handleSettingsTap(e: React.MouseEvent | React.TouchEvent) {
+  function handleSettingsTap(e: React.MouseEvent) {
     e.stopPropagation();
     const next = settingsTaps + 1;
     setSettingsTaps(next);
     clearTimeout(tapTimer.current);
     if (next >= SETTINGS_TAPS) {
       setSettingsTaps(0);
-      history.push('/settings');
+      setPinOpen(true);
       return;
     }
     tapTimer.current = setTimeout(() => setSettingsTaps(0), SETTINGS_WIN_MS);
   }
 
-  const heroGradient = brandId === 'holiq'
-    ? 'linear-gradient(145deg,#020617 0%,#0f172a 20%,#1e3a5f 45%,#0c4a6e 65%,var(--color-brand-accent) 100%)'
-    : 'linear-gradient(145deg,var(--color-brand-primary) 0%,var(--color-brand-secondary) 28%,color-mix(in srgb,var(--color-brand-primary) 70%,#f59e0b) 55%,color-mix(in srgb,var(--color-brand-primary) 60%,black) 100%)';
-
   return (
     <div
+      style={{
+        position:      'relative',
+        display:       'flex',
+        flexDirection: 'column',
+        width:         '100%',
+        height:        '100%',
+        overflow:      'hidden',
+        background:    C.bg,
+        userSelect:    'none',
+      }}
       onClick={handleStart}
-      className="flex flex-col w-full h-full select-none overflow-hidden"
-      style={{ background: 'var(--color-brand-bg)', cursor: 'pointer' }}
     >
+      {/* ① Header */}
+      <div onClick={(e) => e.stopPropagation()}>
+        <HeaderBar
+          logoUrl={logoUrl}
+          displayName={displayName}
+          tagline={tagline || (subLabel ? subLabel : '')}
+          onSettingsTap={handleSettingsTap}
+          settingsTaps={settingsTaps}
+          settingsNeeded={SETTINGS_TAPS}
+        />
+      </div>
 
-      {/* ── Top bar ──────────────────────────────────────────────────────── */}
-      <div
-        className="flex items-center justify-between px-5 flex-shrink-0 relative z-20"
-        style={{ height: '9%', background: 'rgba(0,0,0,0.72)', backdropFilter: 'blur(6px)' }}
-        onClick={(e) => e.stopPropagation()}
-      >
-        {/* Brand chip */}
-        <div className="flex items-center gap-2">
-          <div
-            className="flex items-center justify-center text-white font-bold font-brand"
-            style={{
-              width: '1.6rem', height: '1.6rem', borderRadius: '0.4rem', fontSize: '0.7rem',
-              background: 'linear-gradient(135deg,var(--color-brand-primary),var(--color-brand-secondary))',
-            }}
-          >
-            {environment.displayName[0]}
-          </div>
-          <span className="font-brand font-medium hidden sm:block"
-            style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.65)' }}>
-            Welcome to&nbsp;<span className="text-white font-bold">{displayName}</span>
+      {/* ② Hero — fills remaining vertical space */}
+      <div style={{ flex: 1, position: 'relative', display: 'flex',
+        flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+        padding: 'clamp(24px,4vh,48px) clamp(20px,5vw,80px) clamp(12px,2vh,24px)',
+        textAlign: 'center', overflow: 'hidden' }}>
+
+        <FoodDoodles />
+
+        {/* "WELCOME TO" with flanking rules */}
+        <div style={{ position: 'relative', zIndex: 2,
+          display: 'flex', alignItems: 'center', gap: 12,
+          marginBottom: 'clamp(6px,1.2vh,10px)', width: '100%', maxWidth: 520 }}>
+          <div style={{ flex: 1, height: 1.5,
+            background: `linear-gradient(to right, transparent, ${C.amber})` }} />
+          <span style={{ fontWeight: 800, fontSize: 'clamp(0.7rem,1.2vw,0.82rem)',
+            color: C.amber, letterSpacing: '0.14em', textTransform: 'uppercase' as const, whiteSpace: 'nowrap' }}>
+            {t('attract.welcomeTo')}
+          </span>
+          <div style={{ flex: 1, height: 1.5,
+            background: `linear-gradient(to left, transparent, ${C.amber})` }} />
+        </div>
+
+        {/* "Order" — dark */}
+        <div style={{ position: 'relative', zIndex: 2, lineHeight: 0.88,
+          marginBottom: 0 }}>
+          <span style={{
+            display: 'block', fontWeight: 900,
+            fontSize: 'clamp(4rem,12vw,9rem)',
+            color: C.stone900, letterSpacing: '-0.048em', lineHeight: 0.9,
+          }}>
+            {t('attract.orderHero1')}
+          </span>
+
+          {/* "Here." — amber with sparkle dots matching reference */}
+          <span style={{ position: 'relative', display: 'inline-block', fontWeight: 900,
+            fontSize: 'clamp(4rem,12vw,9rem)',
+            color: C.amber, letterSpacing: '-0.048em', lineHeight: 0.9 }}>
+            {t('attract.orderHero2')}
+            {/* Decorative sparkle dots (reference has 3 orange dots beside the period) */}
+            <span aria-hidden="true" style={{
+              position: 'absolute', top: '10%', insetInlineEnd: '-5%',
+              display: 'flex', flexDirection: 'column', gap: 'clamp(3px,0.5vw,6px)',
+            }}>
+              {[0, 1, 2].map((i) => (
+                <span key={i} style={{
+                  display: 'block',
+                  width:  `clamp(6px,1vw,10px)`,
+                  height: `clamp(6px,1vw,10px)`,
+                  borderRadius: '50%',
+                  background: C.amber,
+                  opacity: 0.9 - i * 0.2,
+                  transform: `translateX(${i * 3}px)`,
+                }} />
+              ))}
+            </span>
           </span>
         </div>
 
-        {/* Clock */}
-        <div className="absolute left-1/2 -translate-x-1/2">
-          <LiveClock />
+        {/* Feature badges */}
+        <div style={{ position: 'relative', zIndex: 2, marginTop: 'clamp(14px,2.5vh,22px)' }}>
+          <FeatureBadges labels={[
+            t('attract.badge1'),
+            t('attract.badge2'),
+            t('attract.badge3'),
+          ]} />
         </div>
 
-        {/* Subtle loading indicator while APIs are in-flight */}
-        {catalogLoading && (
-          <span
-            className="absolute w-1.5 h-1.5 rounded-full animate-pulse"
-            style={{ right: '3.5rem', top: '50%', transform: 'translateY(-50%)', background: 'rgba(255,255,255,0.40)' }}
-            aria-hidden="true"
-          />
-        )}
+        {/* Instruction */}
+        <p style={{ position: 'relative', zIndex: 2,
+          margin: '0 0 clamp(16px,3vh,28px)',
+          fontWeight: 400, fontSize: 'clamp(0.8rem,1.5vw,0.96rem)',
+          color: C.stone500, letterSpacing: '0.01em' }}>
+          {t('attract.tapToOrder')}
+        </p>
 
-        {/* Settings tap zone */}
+        {/* CTA button — amber pill with fork/knife icon + arrow */}
         <button
-          onClick={handleSettingsTap}
-          aria-label="Settings"
-          className="w-8 h-8 flex items-center justify-center rounded-full relative"
-          style={{ color: 'rgba(255,255,255,0.25)', background: 'rgba(255,255,255,0.06)' }}
+          type="button"
+          onClick={(e) => { e.stopPropagation(); handleStart(); }}
+          style={{
+            position:       'relative', zIndex: 2,
+            display:        'flex', alignItems: 'center', justifyContent: 'center',
+            gap:            'clamp(8px,1.5vw,14px)',
+            width:          'clamp(240px,52vw,440px)',
+            height:         'clamp(58px,8.5vh,76px)',
+            borderRadius:   999,
+            background:     `linear-gradient(135deg, ${C.amberLight}, ${C.amber})`,
+            color:          C.white,
+            fontWeight:     800,
+            fontSize:       'clamp(1rem,2vw,1.2rem)',
+            letterSpacing:  '-0.01em',
+            border:         'none',
+            cursor:         'pointer',
+            boxShadow:      `0 8px 32px rgba(232,114,12,0.40), 0 2px 8px rgba(232,114,12,0.20)`,
+            transition:     'transform 130ms ease, box-shadow 130ms ease',
+          }}
+          onMouseEnter={(e) => {
+            const el = e.currentTarget as HTMLButtonElement;
+            el.style.transform   = 'translateY(-2px)';
+            el.style.boxShadow   = `0 14px 40px rgba(232,114,12,0.48), 0 4px 12px rgba(232,114,12,0.24)`;
+          }}
+          onMouseLeave={(e) => {
+            const el = e.currentTarget as HTMLButtonElement;
+            el.style.transform   = '';
+            el.style.boxShadow   = `0 8px 32px rgba(232,114,12,0.40), 0 2px 8px rgba(232,114,12,0.20)`;
+          }}
         >
-          {settingsTaps > 0 && (
-            <span className="absolute inset-0 rounded-full border border-white/40 flex items-center justify-center text-[10px] text-white/60 font-bold font-brand">
-              {SETTINGS_TAPS - settingsTaps}
-            </span>
-          )}
-          <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round">
-            <circle cx="12" cy="12" r="3"/>
-            <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/>
-          </svg>
+          {/* Fork & knife icon circle */}
+          <span style={{
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            width: 'clamp(34px,5vw,44px)', height: 'clamp(34px,5vw,44px)',
+            borderRadius: '50%', background: 'rgba(255,255,255,0.22)', flexShrink: 0,
+          }}>
+            <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth={2} strokeLinecap="round"
+              style={{ width: '52%', height: '52%' }}>
+              <path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 002-2V2M7 2v20M21 15V2a5 5 0 00-5 5v6h3.5"/>
+              <line x1="16" y1="15" x2="16" y2="22"/>
+            </svg>
+          </span>
+
+          <span>{t('attract.startOrder')}</span>
+
+          {/* Arrow icon */}
+          <span style={{
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            width: 'clamp(28px,4vw,38px)', height: 'clamp(28px,4vw,38px)',
+            borderRadius: '50%', background: 'rgba(255,255,255,0.18)', flexShrink: 0,
+          }}>
+            <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth={2.5}
+              strokeLinecap="round" strokeLinejoin="round"
+              style={{ width: '55%', height: '55%' }}>
+              <line x1="5" y1="12" x2="19" y2="12"/>
+              <polyline points="12 5 19 12 12 19"/>
+            </svg>
+          </span>
         </button>
+
+        {/* Catalogue loading indicator */}
+        {catalogLoading && (
+          <div style={{ position: 'relative', zIndex: 2,
+            marginTop: 'clamp(10px,1.8vh,16px)',
+            display: 'flex', alignItems: 'center', gap: 6 }}>
+            <span style={{ width: 7, height: 7, borderRadius: '50%',
+              background: C.amber, display: 'block', animation: 'pulse 1.5s ease infinite' }} />
+            <span style={{ fontSize: '0.72rem', color: C.stone500 }}>
+              {t('attract.loadingMenu')}
+            </span>
+          </div>
+        )}
       </div>
 
-      {/* ── Hero ─────────────────────────────────────────────────────────── */}
-      <div
-        className="relative flex flex-col items-center justify-center text-center px-6 overflow-hidden"
-        style={{ flex: showStrip || showCategories ? '0 0 43%' : '1 1 auto' }}
-        onClick={handleStart}
-      >
-        <div className="absolute inset-0 animate-gradient-shift"
-          style={{ background: heroGradient, backgroundSize: '300% 300%' }} aria-hidden="true" />
-        <div className="absolute inset-0 pointer-events-none" aria-hidden="true"
-          style={{ background: 'linear-gradient(to bottom,rgba(0,0,0,0.08) 0%,rgba(0,0,0,0.32) 100%)' }} />
-        <div aria-hidden="true" className="absolute inset-0 overflow-hidden pointer-events-none">
-          <div className="absolute -top-20 -right-20 w-80 h-80 rounded-full animate-float"
-            style={{ background: 'rgba(255,255,255,0.07)' }} />
-          <div className="absolute -bottom-24 -left-12 w-64 h-64 rounded-full animate-float-slow"
-            style={{ background: 'rgba(255,255,255,0.05)' }} />
+      {/* ③ Browse menu */}
+      {showBrowse && (
+        <div onClick={(e) => e.stopPropagation()}>
+          <BrowseMenu categories={categories} onStart={handleStart} />
         </div>
-
-        <div className="relative z-10 flex flex-col items-center gap-2">
-          {/* Logo */}
-          <div className="animate-fade-in-up mb-1">
-            {logoUrl ? (
-              <img src={logoUrl} alt={environment.displayName} loading="eager"
-                className="object-contain drop-shadow-2xl"
-                style={{ height: 'clamp(2.5rem,5vw,3.5rem)' }}
-                onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }} />
-            ) : (
-              <div
-                className="flex items-center justify-center font-bold text-white font-brand shadow-2xl"
-                style={{
-                  width: 'clamp(3rem,6vw,3.8rem)', height: 'clamp(3rem,6vw,3.8rem)',
-                  fontSize: 'clamp(1.4rem,3vw,2rem)', borderRadius: '1rem',
-                  background: 'rgba(255,255,255,0.18)', backdropFilter: 'blur(10px)',
-                  border: '1.5px solid rgba(255,255,255,0.28)',
-                }}
-              >
-                {environment.displayName[0]}
-              </div>
-            )}
-          </div>
-
-          <h1
-            className="font-bold text-white tracking-tight animate-fade-in-up-d1"
-            style={{
-              fontFamily: 'var(--font-brand)',
-              fontSize:   'clamp(2rem,5.5vw,3.8rem)',
-              textShadow: '0 2px 24px rgba(0,0,0,0.28)',
-              lineHeight:  1.05,
-            }}
-          >
-            {displayName}
-          </h1>
-
-          <p className="font-medium animate-fade-in-up-d2"
-            style={{
-              fontFamily: 'var(--font-brand)',
-              fontSize:   'clamp(0.9rem,2.2vw,1.35rem)',
-              color:      'rgba(255,255,255,0.80)',
-              marginTop:  '0.15rem',
-            }}>
-            {storeName && storeName !== environment.displayName
-              ? storeName
-              : 'Fresh. Fast. Made for You.'}
-          </p>
-
-          <p className="animate-fade-in-up-d2"
-            style={{
-              fontFamily: 'var(--font-brand)',
-              fontSize:   'clamp(0.7rem,1.4vw,0.875rem)',
-              color:      'rgba(255,255,255,0.50)',
-            }}>
-            Tap anywhere to start your order
-          </p>
-
-          {/* CTA pill */}
-          <div className="animate-fade-in-up-d3 animate-breathe animate-glow-pulse"
-            style={{ marginTop: 'clamp(0.75rem,1.5vw,1.25rem)' }}>
-            <div
-              className="relative overflow-hidden rounded-full font-bold"
-              style={{
-                background: 'rgba(255,255,255,0.96)',
-                color:      'var(--color-brand-primary)',
-                fontFamily: 'var(--font-brand)',
-                fontSize:   'clamp(0.85rem,1.8vw,1.1rem)',
-                padding:    'clamp(0.6rem,1.2vw,0.9rem) clamp(1.8rem,4vw,3.5rem)',
-                boxShadow:  '0 8px 32px rgba(0,0,0,0.22)',
-              }}
-            >
-              Tap Anywhere to Order
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* ── Product strip — only when API returned ≥ 2 products ─────────── */}
-      {showStrip && (
-        <ProductStrip products={stripItems} label={stripLabel} />
       )}
 
-      {/* ── Category row — only when API returned ≥ 1 category ──────────── */}
-      {showCategories && (
-        <CategoryRow categories={categories} onStart={handleStart} />
-      )}
-
-      {/* ── Bottom CTA strip — always shown ──────────────────────────────── */}
-      <div
-        className="relative flex items-center overflow-hidden cursor-pointer flex-shrink-0"
-        style={{ height: '11%', minHeight: '52px' }}
-        onClick={handleStart}
-      >
-        <div className="absolute inset-0"
-          style={{ background: 'linear-gradient(135deg,var(--color-brand-primary) 0%,var(--color-brand-secondary) 100%)' }} />
-        <div className="absolute right-0 top-1/2 w-40 h-40 rounded-full opacity-15 blur-3xl pointer-events-none"
-          style={{ background: 'white', transform: 'translate(35%,-50%)' }} aria-hidden="true" />
-        <div className="relative z-10 flex items-center gap-4 px-5 lg:px-8 w-full">
-          <div className="flex flex-col flex-1 min-w-0">
-            <h3 className="font-bold font-brand text-white leading-tight line-clamp-1"
-              style={{ fontSize: 'clamp(0.85rem,1.8vw,1.15rem)' }}>
-              {displayName ? `Order at ${displayName}` : 'Start Your Order'}
-            </h3>
-            <p className="font-brand leading-snug"
-              style={{ fontSize: 'clamp(0.65rem,1.2vw,0.78rem)', color: 'rgba(255,255,255,0.65)' }}>
-              Tap to explore the full menu
-            </p>
-          </div>
-          <div
-            className="flex-shrink-0 rounded-full font-bold font-brand whitespace-nowrap active:scale-90 transition-transform"
-            style={{
-              background: 'rgba(255,255,255,0.92)',
-              color:      'var(--color-brand-primary)',
-              fontSize:   'clamp(0.65rem,1.2vw,0.8rem)',
-              padding:    'clamp(0.35rem,0.8vw,0.5rem) clamp(0.8rem,1.8vw,1.25rem)',
-              boxShadow:  '0 4px 14px rgba(0,0,0,0.18)',
-            }}
-          >
-            View Menu →
-          </div>
-        </div>
+      {/* ④ Footer */}
+      <div onClick={(e) => e.stopPropagation()}>
+        <FooterBar />
       </div>
+
+      {/* Staff PIN modal */}
+      <StaffPinModal
+        isOpen={pinOpen}
+        onSuccess={() => { setPinOpen(false); history.push('/settings'); }}
+        onCancel={() => setPinOpen(false)}
+      />
     </div>
   );
 }

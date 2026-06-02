@@ -4,18 +4,169 @@ import { useSettingsStore } from '@/store/settingsStore';
 import { testPrinter } from '@/services/printer.service';
 import { SettingsField, SettingsSection, SettingsInput, ToggleSwitch } from '../shared';
 
+// ─── Staff PIN section ────────────────────────────────────────────────────────
+// Renders the full PIN-protection configuration block:
+//   • Toggle to enable / disable PIN gate (off by default — staff opts in)
+//   • PIN change fields (visible only when protection is enabled)
+//   • Clear status messaging so staff understand the current state
+
+function StaffAccessSection() {
+  const { kiosk, setKiosk } = useSettingsStore();
+  const [draft,   setDraft]   = useState('');
+  const [confirm, setConfirm] = useState('');
+  const [saved,   setSaved]   = useState(false);
+  const [pinErr,  setPinErr]  = useState('');
+
+  function handleToggle(enabled: boolean) {
+    setKiosk({ staffPinEnabled: enabled });
+    // Clear pending PIN fields when disabling
+    if (!enabled) { setDraft(''); setConfirm(''); setPinErr(''); setSaved(false); }
+  }
+
+  function handleSavePin() {
+    if (!/^\d{4}$/.test(draft))  { setPinErr('PIN must be exactly 4 digits.'); return; }
+    if (draft !== confirm)        { setPinErr('PINs do not match.'); return; }
+    setKiosk({ staffPin: draft });
+    setDraft(''); setConfirm(''); setPinErr('');
+    setSaved(true);
+    setTimeout(() => setSaved(false), 3000);
+  }
+
+  return (
+    <SettingsSection title="Staff Access">
+
+      {/* ── Enable / disable toggle ── */}
+      <SettingsField
+        label="Require PIN for Settings"
+        description={
+          kiosk.staffPinEnabled
+            ? 'Settings are protected — customers cannot access this screen without the PIN.'
+            : 'Settings are open — no PIN required. Enable this once the device is configured.'
+        }
+      >
+        <div className="flex flex-col gap-3">
+          <ToggleSwitch
+            checked={kiosk.staffPinEnabled}
+            onChange={handleToggle}
+            label="Enable staff PIN protection"
+          />
+
+          {/* Status badge */}
+          <div className={[
+            'flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold font-brand',
+            kiosk.staffPinEnabled
+              ? 'bg-green-50 text-green-700 border border-green-200'
+              : 'bg-amber-50 text-amber-700 border border-amber-200',
+          ].join(' ')}>
+            <span>{kiosk.staffPinEnabled ? '🔒' : '🔓'}</span>
+            {kiosk.staffPinEnabled
+              ? 'Settings are locked — PIN required to access'
+              : 'Settings are unlocked — anyone can open them from the kiosk'}
+          </div>
+        </div>
+      </SettingsField>
+
+      {/* ── PIN change (only visible when PIN protection is on) ── */}
+      {kiosk.staffPinEnabled && kiosk.staffPin === '1234' && (
+        <SettingsField label="" description="">
+          <div className="flex items-start gap-3 px-4 py-3 rounded-xl w-full"
+            style={{ background: '#FEF3C7', border: '1.5px solid #FDE68A' }}>
+            <span className="text-xl flex-shrink-0 mt-0.5">⚠️</span>
+            <div>
+              <p className="font-bold font-brand text-sm" style={{ color: '#92400E' }}>
+                Default PIN in use — change it before leaving the kiosk unattended
+              </p>
+              <p className="font-brand text-xs mt-1" style={{ color: '#B45309' }}>
+                Anyone who knows the default PIN (1234) can access these settings.
+                Set a custom PIN below to secure this device.
+              </p>
+            </div>
+          </div>
+        </SettingsField>
+      )}
+
+      {kiosk.staffPinEnabled && (
+        <SettingsField
+          label="Staff PIN"
+          htmlFor="staff-pin-new"
+          description="Change the 4-digit PIN staff use to unlock Settings from the kiosk screen."
+        >
+          <div className="flex flex-col gap-3 w-full max-w-xs">
+
+            {/* Current PIN indicator */}
+            <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-brand-surface border border-brand-border">
+              <span className="text-xs font-brand text-brand-muted">Current PIN:</span>
+              <span className="text-sm font-bold font-brand text-brand-text tracking-[0.3em]">
+                {'●'.repeat(kiosk.staffPin.length)}
+              </span>
+            </div>
+
+            <SettingsInput
+              id="staff-pin-new"
+              type="password"
+              inputMode="numeric"
+              maxLength={4}
+              value={draft}
+              placeholder="New 4-digit PIN"
+              onChange={(e) => {
+                setDraft((e.target as HTMLInputElement).value.replace(/\D/g, '').slice(0, 4));
+                setPinErr('');
+                setSaved(false);
+              }}
+            />
+            <SettingsInput
+              id="staff-pin-confirm"
+              type="password"
+              inputMode="numeric"
+              maxLength={4}
+              value={confirm}
+              placeholder="Confirm new PIN"
+              onChange={(e) => {
+                setConfirm((e.target as HTMLInputElement).value.replace(/\D/g, '').slice(0, 4));
+                setPinErr('');
+                setSaved(false);
+              }}
+            />
+
+            {pinErr && (
+              <p className="text-xs font-brand" style={{ color: '#DC2626' }}>{pinErr}</p>
+            )}
+            {saved && (
+              <p className="text-xs font-bold font-brand" style={{ color: '#16a34a' }}>
+                ✓ PIN updated successfully
+              </p>
+            )}
+
+            <button
+              type="button"
+              onClick={handleSavePin}
+              disabled={draft.length !== 4 || confirm.length !== 4}
+              className="px-4 py-2 rounded-brand text-xs font-bold font-brand bg-brand-primary text-white hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed transition-opacity"
+            >
+              Update PIN
+            </button>
+          </div>
+        </SettingsField>
+      )}
+    </SettingsSection>
+  );
+}
+
+// ─── Seconds label ────────────────────────────────────────────────────────────
+
 function secondsLabel(s: number): string {
   if (s < 60) return `${s}s`;
   const m = Math.floor(s / 60);
-  const rem = s % 60;
-  return rem === 0 ? `${m}m` : `${m}m ${rem}s`;
+  return s % 60 === 0 ? `${m}m` : `${m}m ${s % 60}s`;
 }
 
 type PrintTestState = 'idle' | 'testing' | 'ok' | 'error';
 
+// ─── Main tab ─────────────────────────────────────────────────────────────────
+
 export default function KioskBehaviorTab() {
   const { kiosk, setKiosk } = useSettingsStore();
-  const [printTest, setPrintTest] = useState<PrintTestState>('idle');
+  const [printTest,   setPrintTest]   = useState<PrintTestState>('idle');
   const [printResult, setPrintResult] = useState<{ latencyMs: number; mode?: string } | null>(null);
 
   async function handleTestPrint() {
@@ -29,6 +180,7 @@ export default function KioskBehaviorTab() {
 
   return (
     <div className="p-5">
+
       {/* Idle & attract */}
       <SettingsSection title="Idle Behaviour">
         <SettingsField
@@ -41,14 +193,9 @@ export default function KioskBehaviorTab() {
               <span className="text-xs font-brand text-brand-muted w-6">30s</span>
               <input
                 id="idle-timeout"
-                type="range"
-                min={30}
-                max={300}
-                step={10}
+                type="range" min={30} max={300} step={10}
                 value={kiosk.idleTimeoutSeconds}
-                onChange={(e) =>
-                  setKiosk({ idleTimeoutSeconds: Number(e.target.value) })
-                }
+                onChange={(e) => setKiosk({ idleTimeoutSeconds: Number(e.target.value) })}
                 aria-label={`Idle timeout: ${secondsLabel(kiosk.idleTimeoutSeconds)}`}
                 className="flex-1 accent-[var(--color-brand-primary)]"
               />
@@ -72,7 +219,7 @@ export default function KioskBehaviorTab() {
         </SettingsField>
       </SettingsSection>
 
-      {/* Tax */}
+      {/* Pricing */}
       <SettingsSection title="Pricing">
         <SettingsField
           label="Tax Rate"
@@ -82,10 +229,7 @@ export default function KioskBehaviorTab() {
           <div className="flex items-center gap-2">
             <SettingsInput
               id="tax-rate"
-              type="number"
-              min="0"
-              max="50"
-              step="0.01"
+              type="number" min="0" max="50" step="0.01"
               value={(kiosk.taxRate * 100).toFixed(2)}
               onChange={(e) => {
                 const pct = parseFloat((e.target as HTMLInputElement).value);
@@ -110,9 +254,7 @@ export default function KioskBehaviorTab() {
               id="printer-ip"
               type="text"
               value={kiosk.receiptPrinterIp}
-              onChange={(e) =>
-                setKiosk({ receiptPrinterIp: (e.target as HTMLInputElement).value.trim() })
-              }
+              onChange={(e) => setKiosk({ receiptPrinterIp: (e.target as HTMLInputElement).value.trim() })}
               placeholder="192.168.1.100"
             />
             {kiosk.receiptPrinterIp.trim() && (
@@ -135,9 +277,7 @@ export default function KioskBehaviorTab() {
                   </span>
                 )}
                 {printTest === 'error' && (
-                  <span className="text-xs text-brand-error font-brand">
-                    ✕ Unreachable
-                  </span>
+                  <span className="text-xs text-brand-error font-brand">✕ Unreachable</span>
                 )}
               </div>
             )}
@@ -156,6 +296,9 @@ export default function KioskBehaviorTab() {
         </SettingsField>
       </SettingsSection>
 
+      {/* Staff Access PIN */}
+      <StaffAccessSection />
+
       {/* Accessibility */}
       <SettingsSection title="Accessibility">
         <SettingsField
@@ -169,6 +312,7 @@ export default function KioskBehaviorTab() {
           />
         </SettingsField>
       </SettingsSection>
+
     </div>
   );
 }

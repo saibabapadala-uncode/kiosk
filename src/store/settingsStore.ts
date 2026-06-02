@@ -22,6 +22,8 @@ export interface ThemeSettings {
   logoUrl: string;
   radius: string;
   themeMode: ThemeMode;
+  /** Optional short tagline shown under the store name on the attract screen */
+  tagline?: string;
 }
 
 export interface ApiSettings {
@@ -34,6 +36,12 @@ export interface PaymentSettings {
   stripePublishableKey: string;
   terminalLocationId: string;
   readerSerialNumber: string;
+  /** How to connect to the reader */
+  connectionMethod: 'bluetooth' | 'internet' | 'localMobile';
+  /** Automatically try to reconnect when reader drops unexpectedly */
+  autoReconnect: boolean;
+  /** Disconnect reader after N minutes of no payment activity (0 = never) */
+  sessionTimeoutMinutes: number;
 }
 
 export interface KioskSettings {
@@ -43,10 +51,28 @@ export interface KioskSettings {
   barcodeScannerEnabled: boolean;
   taxRate: number; // e.g. 0.0825 for 8.25%
   highContrastMode: boolean;
+  /** Whether the staff PIN gate is active. Starts false — staff opts in after first login. */
+  staffPinEnabled: boolean;
+  /** 4-digit PIN used when staffPinEnabled = true. */
+  staffPin: string;
 }
 
+/** All supported UI locales. RTL languages have their own dir attribute. */
+export type SupportedLocale =
+  | 'en-US'   // English
+  | 'es-US'   // Spanish
+  | 'hi'      // Hindi      — Devanagari, LTR
+  | 'ta'      // Tamil      — Tamil script, LTR
+  | 'te'      // Telugu     — Telugu script, LTR
+  | 'kn'      // Kannada    — Kannada script, LTR
+  | 'ml'      // Malayalam  — Malayalam script, LTR
+  | 'bn'      // Bengali    — Bengali script, LTR
+  | 'ar';     // Arabic     — RTL
+
+export const RTL_LOCALES: SupportedLocale[] = ['ar'];
+
 export interface LocalizationSettings {
-  locale: 'en-US' | 'es-US';
+  locale: SupportedLocale;
   currency: string;
   timezone: string;
   dateFormat: string;
@@ -103,9 +129,12 @@ function buildDefaults(): Omit<SettingsState, keyof Pick<SettingsState,
       brandHeader: env.brandHeader,
     },
     payment: {
-      stripePublishableKey: '',
-      terminalLocationId:   '',
-      readerSerialNumber:   '',
+      stripePublishableKey:   '',
+      terminalLocationId:     '',
+      readerSerialNumber:     '',
+      connectionMethod:       'bluetooth' as const,
+      autoReconnect:          true,
+      sessionTimeoutMinutes:  30,
     },
     kiosk: {
       idleTimeoutSeconds:  120,
@@ -114,9 +143,11 @@ function buildDefaults(): Omit<SettingsState, keyof Pick<SettingsState,
       barcodeScannerEnabled: false,
       taxRate:             env.defaultTaxRate,
       highContrastMode:    false,
+      staffPinEnabled:     true,
+      staffPin:            '1234',
     },
     localization: {
-      locale:     env.defaultLocale as 'en-US' | 'es-US',
+      locale:     env.defaultLocale as SupportedLocale,
       currency:   env.defaultCurrency,
       timezone:   env.defaultTimezone,
       dateFormat: 'MM/DD/YYYY',
@@ -208,9 +239,11 @@ export const useSettingsStore = create<SettingsState>()(
               barcodeScannerEnabled: false,
               taxRate:              env.defaultTaxRate,
               highContrastMode:     false,
+              staffPinEnabled:      false,
+              staffPin:             '1234',
             },
             localization: {
-              locale:     env.defaultLocale as 'en-US' | 'es-US',
+              locale:     env.defaultLocale as SupportedLocale,
               currency:   env.defaultCurrency,
               timezone:   env.defaultTimezone,
               dateFormat: 'MM/DD/YYYY',

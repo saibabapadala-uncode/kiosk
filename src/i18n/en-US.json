@@ -1,7 +1,22 @@
 {
   "attract": {
+    "welcomeTo": "WELCOME TO",
     "tagline": "Order fresh. Order fast.",
-    "tapToOrder": "Tap Anywhere to Order"
+    "orderHero1": "Order",
+    "orderHero2": "Here.",
+    "tapToOrder": "Touch anywhere on screen to begin",
+    "startOrder": "Start Your Order",
+    "browseMenu": "BROWSE MENU",
+    "items_one": "{{count}} Item",
+    "items_other": "{{count}} Items",
+    "badge1": "Fresh Ingredients",
+    "badge2": "Fast Service",
+    "badge3": "Great Taste",
+    "footerHelp": "Need assistance? Press the help button on the side.",
+    "footerLang": "We serve you in multiple languages.",
+    "loadingMenu": "Loading menu…",
+    "selectLanguage": "Select Language",
+    "moreLangs": "More Languages"
   },
   "catalog": {
     "searchPlaceholder": "Search menu…",

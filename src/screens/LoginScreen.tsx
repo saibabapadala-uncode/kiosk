@@ -14,7 +14,7 @@ import { IonPage, IonContent } from '@ionic/react';
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { useHistory } from 'react-router-dom';
 import { useBrand } from '@/hooks/useBrand';
-import { useSettingsStore } from '@/store/settingsStore';
+import { useSettingsStore, type KioskSettings } from '@/store/settingsStore';
 import { useKioskChannelStore, type KioskChannel } from '@/store/kioskChannelStore';
 import { checkUser, login, getStoredCredentials } from '@/services/auth.service';
 import { getStores, getKioskSalesChannels, type MerchantStore, type MerchantSalesChannel } from '@/services/store.service';
@@ -24,12 +24,14 @@ import { logger } from '@/utils/logger';
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
 
+// Login is now single-step (email + password on the same form) to minimise taps.
+// Validation still calls checkUser first for correct error messages.
 type Step =
-  | 'email'
-  | 'password'
+  | 'credentials'   // email + password together (replaces the old 2-step email→password)
   | 'loading'       // full-card spinner while fetching stores / channels
   | 'store-select'
-  | 'channel-select';
+  | 'channel-select'
+  | 'ready';        // admin sees kiosk name + PIN before going live
 
 // ─── Icons ─────────────────────────────────────────────────────────────────────
 
@@ -166,7 +168,7 @@ export default function LoginScreen() {
   useEffect(() => { if (channel) history.replace('/attract'); }, [channel, history]);
 
   // ── Core form state ──────────────────────────────────────────────────────────
-  const [step,           setStep]           = useState<Step>('email');
+  const [step,           setStep]           = useState<Step>('credentials');
   const [email,          setEmail]          = useState('');
   const [password,       setPassword]       = useState('');
   const [showPwd,        setShowPwd]        = useState(false);
@@ -181,6 +183,11 @@ export default function LoginScreen() {
   const [channels,        setChannels]        = useState<MerchantSalesChannel[]>([]);
   const [selectedChannel, setSelectedChannel] = useState<MerchantSalesChannel | null>(null);
   const [confirming,      setConfirming]      = useState(false);
+  // Holds the resolved KioskChannel until the admin taps "Launch Kiosk"
+  const [pendingChannel,  setPendingChannel]  = useState<ReturnType<typeof toKioskChannel> | null>(null);
+
+  const kioskPin     = useSettingsStore((s) => s.kiosk.staffPin);
+  const kioskPinName = useSettingsStore((s) => s.kiosk.staffPinEnabled);
 
   const emailRef    = useRef<HTMLInputElement>(null);
   const passwordRef = useRef<HTMLInputElement>(null);
@@ -268,13 +275,13 @@ export default function LoginScreen() {
     } catch (err) {
       logger.error('[login] getStores failed', err);
       setError('Failed to load stores. Please check your connection and try again.');
-      setStep('password');
+      setStep('credentials');
       return;
     }
 
     if (fetchedStores.length === 0) {
       setError('No stores found for your account. Contact your administrator.');
-      setStep('password');
+      setStep('credentials');
       return;
     }
 
@@ -288,37 +295,35 @@ export default function LoginScreen() {
     setStep('store-select');
   }, [loadChannels]);
 
-  const handleNext = useCallback(async () => {
+  // Single-step sign in: validate email first, then log in immediately.
+  // Eliminates the intermediate "password" step — one tap instead of two.
+  const handleSignIn = useCallback(async () => {
     const trimmed = email.trim();
-    if (!trimmed) { setError('Please enter your email or username.'); return; }
+    if (!trimmed)    { setError('Please enter your email or username.'); emailRef.current?.focus(); return; }
+    if (!password.trim()) { setError('Please enter your password.'); passwordRef.current?.focus(); return; }
     setError('');
     setLoading(true);
-    const result = await checkUser(trimmed);
-    setLoading(false);
-    if (result.exists) {
-      setStep('password');
-      setTimeout(() => passwordRef.current?.focus(), 100);
-    } else {
-      setError(result.error ?? 'User not found. Check your email or username.');
+    setLoadingMessage('Checking account…');
+
+    const check = await checkUser(trimmed);
+    if (!check.exists) {
+      setLoading(false);
+      setError(check.error ?? 'User not found. Check your email or username.');
+      return;
     }
-  }, [email]);
 
-  const handleLogin = useCallback(async () => {
-    if (!password.trim()) { setError('Please enter your password.'); return; }
-    setError('');
-    setLoading(true);
     setLoadingMessage('Signing in…');
-
-    const authResult = await login(email.trim(), password);
+    const authResult = await login(trimmed, password);
     setLoading(false);
-
     if (!authResult.success) {
       setError(authResult.error ?? 'Login failed. Please try again.');
       return;
     }
-
     await loadStores();
   }, [email, password, loadStores]);
+
+  // handleLogin kept for back-compat (not used in single-step form)
+  const handleLogin = handleSignIn;
 
   const handleStoreSelect = useCallback(
     async (store: MerchantStore) => {
@@ -332,19 +337,29 @@ export default function LoginScreen() {
     if (!selectedChannel || !selectedStore) return;
     setConfirming(true);
     const kc = toKioskChannel(selectedChannel, selectedStore);
-    setChannel(kc);
-    if (kc.code) {
+    // Don't commit to store yet — wait until admin taps "Launch Kiosk" on the ready step.
+    // This prevents the auto-redirect useEffect from firing before the admin sees the PIN.
+    setPendingChannel(kc);
+    await new Promise((r) => setTimeout(r, 200));
+    setConfirming(false);
+    setStep('ready');
+  }, [selectedChannel, selectedStore, toKioskChannel]);
+
+  // Final step: admin acknowledges the PIN, then the channel is committed + kiosk launches
+  const handleLaunchKiosk = useCallback(async () => {
+    if (!pendingChannel) return;
+    setChannel(pendingChannel);
+    if (pendingChannel.code) {
       useStoreConfigStore.getState().clear();
-      void loadStoreDetails(kc.code).catch((err) =>
+      void loadStoreDetails(pendingChannel.code).catch((err) =>
         logger.warn('[login] prefetch store details failed', err),
       );
     }
-    await new Promise((r) => setTimeout(r, 300));
     history.replace('/attract');
-  }, [selectedChannel, selectedStore, setChannel, toKioskChannel, history]);
+  }, [pendingChannel, setChannel, history]);
 
+  // Focus email field when user wants to re-enter credentials
   const handleBackToEmail = useCallback(() => {
-    setStep('email');
     setPassword('');
     setError('');
     setTimeout(() => emailRef.current?.focus(), 100);
@@ -352,16 +367,16 @@ export default function LoginScreen() {
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key !== 'Enter') return;
-    if (step === 'email')    void handleNext();
-    if (step === 'password') void handleLogin();
+    if (step === 'credentials') void handleSignIn();
   };
 
   const subHeading =
-    step === 'email'          ? 'Sign in to manage this kiosk'   :
-    step === 'password'       ? `Welcome back, ${email}`          :
+    step === 'credentials'    ? 'Sign in to manage this kiosk'   :
     step === 'loading'        ? loadingMessage                    :
     step === 'store-select'   ? 'Select your store'               :
-    /* channel-select */        'Select your kiosk channel';
+    step === 'channel-select' ? 'Select your kiosk channel'       :
+    step === 'ready'          ? 'Review before going live'        :
+    /* fallback */              '';
 
   // ─── Render ──────────────────────────────────────────────────────────────────
 
@@ -441,102 +456,81 @@ export default function LoginScreen() {
                 </div>
               )}
 
-              {/* ── STEP: email ──────────────────────────────────────────── */}
-              {step === 'email' && (
-                <div className="flex flex-col gap-1.5">
-                  <label htmlFor="login-email"
-                    className="text-xs font-semibold font-brand uppercase tracking-wider"
-                    style={{ color: '#374151' }}>
-                    Email or Username
-                  </label>
-                  <div className="relative">
-                    <div className="absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none"
-                      style={{ color: '#9CA3AF' }}>
-                      <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round">
-                        <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/>
-                      </svg>
+              {/* ── STEP: credentials (email + password — single form) ────── */}
+              {step === 'credentials' && (
+                <div className="flex flex-col gap-3">
+                  {/* Email field */}
+                  <div className="flex flex-col gap-1.5">
+                    <label htmlFor="login-email"
+                      className="text-xs font-semibold font-brand uppercase tracking-wider"
+                      style={{ color: '#374151' }}>
+                      Email or Username
+                    </label>
+                    <div className="relative">
+                      <div className="absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none"
+                        style={{ color: '#9CA3AF' }}>
+                        <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round">
+                          <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/>
+                        </svg>
+                      </div>
+                      <input
+                        id="login-email" ref={emailRef} type="email" value={email}
+                        onChange={(e) => { setEmail(e.target.value.replace(/\s/g, '')); setError(''); }}
+                        onKeyDown={handleKeyDown}
+                        placeholder="Enter email or username"
+                        autoComplete="email" autoCorrect="off" autoCapitalize="off" spellCheck={false}
+                        className="w-full pl-10 pr-4 py-3.5 rounded-xl font-brand text-base focus:outline-none transition-colors"
+                        style={{ background: '#F9FAFB', border: '1.5px solid #E5E7EB', color: '#111827' }}
+                      />
                     </div>
-                    <input
-                      id="login-email" ref={emailRef} type="email" value={email}
-                      onChange={(e) => { setEmail(e.target.value.replace(/\s/g, '')); setError(''); }}
-                      onKeyDown={handleKeyDown}
-                      placeholder="Enter email or username"
-                      autoComplete="email" autoCorrect="off" autoCapitalize="off" spellCheck={false}
-                      className="w-full pl-10 pr-4 py-3.5 rounded-xl font-brand text-base focus:outline-none transition-colors"
-                      style={{
-                        background: '#F9FAFB',
-                        border:     '1.5px solid #E5E7EB',
-                        color:      '#111827',
-                      }}
-                    />
+                    {hasSaved && email && (
+                      <p className="text-xs font-brand flex items-center gap-1" style={{ color: '#6B7280' }}>
+                        <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="#22C55E" strokeWidth={2.5}>
+                          <polyline points="20 6 9 17 4 12"/>
+                        </svg>
+                        Stored credentials loaded
+                      </p>
+                    )}
                   </div>
-                  {hasSaved && email && (
-                    <p className="text-xs font-brand flex items-center gap-1" style={{ color: '#6B7280' }}>
-                      <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="#22C55E" strokeWidth={2.5}>
-                        <polyline points="20 6 9 17 4 12"/>
-                      </svg>
-                      Stored credentials loaded
-                    </p>
-                  )}
-                </div>
-              )}
 
-              {/* ── STEP: password ───────────────────────────────────────── */}
-              {step === 'password' && (
-                <div className="flex flex-col gap-1.5">
-                  <div className="flex items-center justify-between">
+                  {/* Password field */}
+                  <div className="flex flex-col gap-1.5">
                     <label htmlFor="login-password"
                       className="text-xs font-semibold font-brand uppercase tracking-wider"
                       style={{ color: '#374151' }}>
                       Password
                     </label>
-                    <TextBtn
-                      onClick={handleBackToEmail}
-                      className="text-xs hover:opacity-80 transition-opacity"
-                      style={{ color: '#F59E0B', fontSize: '0.75rem', fontWeight: 600 } as React.CSSProperties}
-                    >
-                      ← Change user
-                    </TextBtn>
-                  </div>
-
-                  <div className="relative">
-                    <div className="absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none"
-                      style={{ color: '#9CA3AF' }}>
-                      <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round">
-                        <rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/>
-                      </svg>
+                    <div className="relative">
+                      <div className="absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none"
+                        style={{ color: '#9CA3AF' }}>
+                        <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round">
+                          <rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/>
+                        </svg>
+                      </div>
+                      <input
+                        id="login-password" ref={passwordRef}
+                        type={showPwd ? 'text' : 'password'} value={password}
+                        onChange={(e) => { setPassword(e.target.value); setError(''); }}
+                        onKeyDown={handleKeyDown}
+                        placeholder="Enter password" autoComplete="current-password"
+                        className="w-full pl-10 pr-12 py-3.5 rounded-xl font-brand text-base focus:outline-none"
+                        style={{ background: '#F9FAFB', border: '1.5px solid #E5E7EB', color: '#111827' }}
+                      />
+                      <button type="button" onClick={() => setShowPwd((v) => !v)}
+                        aria-label={showPwd ? 'Hide password' : 'Show password'}
+                        style={{
+                          position: 'absolute', right: '0.875rem', top: '50%',
+                          transform: 'translateY(-50%)', background: 'transparent',
+                          border: 'none', padding: '0.25rem', margin: 0, boxShadow: 'none',
+                          outline: 'none', cursor: 'pointer', color: '#9CA3AF', lineHeight: 0,
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          '--background': 'transparent', '--background-hover': 'transparent',
+                          '--background-activated': 'transparent', '--border-color': 'transparent',
+                          '--box-shadow': 'none',
+                        } as React.CSSProperties}>
+                        <EyeIcon open={showPwd} />
+                      </button>
                     </div>
-                    <input
-                      id="login-password" ref={passwordRef}
-                      type={showPwd ? 'text' : 'password'} value={password}
-                      onChange={(e) => { setPassword(e.target.value); setError(''); }}
-                      onKeyDown={handleKeyDown}
-                      placeholder="Enter password" autoComplete="current-password"
-                      className="w-full pl-10 pr-12 py-3.5 rounded-xl font-brand text-base focus:outline-none"
-                      style={{
-                        background: '#F9FAFB',
-                        border:     '1.5px solid #E5E7EB',
-                        color:      '#111827',
-                      }}
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPwd((v) => !v)}
-                      aria-label={showPwd ? 'Hide password' : 'Show password'}
-                      style={{
-                        position: 'absolute', right: '0.875rem', top: '50%',
-                        transform: 'translateY(-50%)', background: 'transparent',
-                        border: 'none', padding: '0.25rem', margin: 0,
-                        boxShadow: 'none', outline: 'none', cursor: 'pointer',
-                        color: '#9CA3AF', lineHeight: 0,
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        '--background': 'transparent', '--background-hover': 'transparent',
-                        '--background-activated': 'transparent', '--border-color': 'transparent',
-                        '--box-shadow': 'none',
-                      } as React.CSSProperties}
-                    >
-                      <EyeIcon open={showPwd} />
-                    </button>
                   </div>
                 </div>
               )}
@@ -636,19 +630,97 @@ export default function LoginScreen() {
                 </div>
               )}
 
-              {/* ── Primary CTA (email + password steps) ─────────────────── */}
-              {(step === 'email' || step === 'password') && (
+              {/* ── STEP: ready — admin sees kiosk info + PIN before launch ── */}
+              {step === 'ready' && pendingChannel && (
+                <div className="flex flex-col gap-4 animate-fade-in">
+                  {/* Kiosk identity */}
+                  <div className="flex items-center gap-3 px-4 py-3 rounded-2xl"
+                    style={{ background: '#F9FAFB', border: '1.5px solid #E5E7EB' }}>
+                    <div className="w-10 h-10 rounded-xl flex-shrink-0 flex items-center justify-center"
+                      style={{ background: 'linear-gradient(135deg,#F59E0B,#F97316)' }}>
+                      <svg className="w-5 h-5 text-white" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" strokeWidth={2} strokeLinecap="round">
+                        <rect x="2" y="3" width="20" height="14" rx="2"/>
+                        <line x1="8" y1="21" x2="16" y2="21"/>
+                        <line x1="12" y1="17" x2="12" y2="21"/>
+                      </svg>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-bold font-brand text-sm leading-tight truncate" style={{ color: '#111827' }}>
+                        {pendingChannel.name}
+                      </p>
+                      <p className="text-xs font-brand mt-0.5 truncate" style={{ color: '#6B7280' }}>
+                        {pendingChannel.store_name}
+                      </p>
+                    </div>
+                    <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: '#22C55E' }} />
+                  </div>
+
+                  {/* Settings PIN notice — the admin must see this before the kiosk goes live */}
+                  <div className="flex items-start gap-3 px-4 py-3.5 rounded-2xl"
+                    style={{ background: '#FFFBEB', border: '1.5px solid #FDE68A' }}>
+                    <span className="text-xl flex-shrink-0 mt-0.5">🔐</span>
+                    <div className="flex-1">
+                      <p className="font-bold font-brand text-sm leading-tight" style={{ color: '#92400E' }}>
+                        Settings PIN
+                      </p>
+                      {kioskPin === '1234' ? (
+                        <>
+                          <p className="text-xs font-brand mt-1.5 leading-relaxed" style={{ color: '#B45309' }}>
+                            Your device is using the <strong>default PIN: 1234</strong>.
+                            Anyone with this PIN can access Settings.
+                          </p>
+                          <p className="text-xs font-brand mt-1 leading-relaxed" style={{ color: '#B45309' }}>
+                            After launch, open Settings → Kiosk Behavior to set a custom PIN.
+                          </p>
+                        </>
+                      ) : (
+                        <p className="text-xs font-brand mt-1 leading-relaxed" style={{ color: '#B45309' }}>
+                          A custom PIN is set. Staff can access Settings from the kiosk gear icon.
+                        </p>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Launch */}
+                  <button
+                    type="button"
+                    onClick={() => void handleLaunchKiosk()}
+                    className="ui-btn-primary w-full py-4 text-base"
+                    style={{ borderRadius: '0.875rem' }}
+                  >
+                    <span className="flex items-center justify-center gap-2">
+                      Launch Kiosk
+                      <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                        strokeWidth={2.5} strokeLinecap="round">
+                        <line x1="5" y1="12" x2="19" y2="12"/>
+                        <polyline points="12 5 19 12 12 19"/>
+                      </svg>
+                    </span>
+                  </button>
+
+                  {/* Back link */}
+                  <button type="button" onClick={() => setStep('channel-select')}
+                    className="text-xs font-brand text-center"
+                    style={{ background: 'transparent', border: 'none', color: '#9CA3AF', cursor: 'pointer' }}>
+                    ← Choose a different kiosk
+                  </button>
+                </div>
+              )}
+
+              {/* ── Primary CTA ───────────────────────────────────────────── */}
+              {step === 'credentials' && (
                 <button
-                  onClick={step === 'email' ? handleNext : handleLogin}
+                  onClick={() => void handleSignIn()}
                   disabled={loading}
                   className="ui-btn-primary w-full py-4 text-base"
                   style={{ borderRadius: '0.875rem', opacity: loading ? 0.75 : 1 }}
                 >
                   {loading ? (
                     <span className="flex items-center justify-center gap-2">
-                      <Spinner /> {loadingMessage || (step === 'email' ? 'Checking…' : 'Signing in…')}
+                      <Spinner /> {loadingMessage || 'Signing in…'}
                     </span>
-                  ) : step === 'email' ? 'Continue' : 'Sign In'}
+                  ) : 'Sign In'}
                 </button>
               )}
             </div>
