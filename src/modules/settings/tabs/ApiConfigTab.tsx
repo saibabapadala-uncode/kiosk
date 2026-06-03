@@ -60,7 +60,7 @@ export default function ApiConfigTab() {
             type="text"
             value={api.brandHeader}
             onChange={(e) => setApi({ brandHeader: (e.target as HTMLInputElement).value.trim() })}
-            placeholder="straunt"
+            placeholder="your-brand-id"
           />
         </SettingsField>
       </SettingsSection>

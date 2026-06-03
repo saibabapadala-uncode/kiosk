@@ -1,24 +1,116 @@
 /* src/brands/straunt/theme.css
-   Straunt — White base + warm amber accent (light mode only)
+   Straunt — Food kiosk brand
+   Primary:    #F97316  orange-500  (CTA, active states, prices)
+   Secondary:  #EA580C  orange-600  (gradient endpoint)
+   Background: #FFF8F0  warm cream  (page / grid)
 */
 
 :root[data-brand='straunt'] {
-  --color-brand-primary:     #F59E0B;   /* amber-400  — warm amber CTA                     */
-  --color-brand-secondary:   #F97316;   /* orange-500 — gradient endpoint                  */
-  --color-brand-accent:      #F59E0B;   /* amber-400                                       */
-  --color-brand-bg:          #FFFFFF;   /* pure white                                      */
-  --color-brand-surface:     #F8F9FA;   /* gray-50    — near-white surface                 */
-  --color-brand-text:        #111827;   /* gray-900   — rich dark text                     */
-  --color-brand-muted:       #6B7280;   /* gray-500   — neutral muted text                 */
-  --color-brand-border:      #E5E7EB;   /* gray-200   — subtle border                      */
-  --color-brand-error:       #EF4444;
-  --color-brand-success:     #22C55E;
 
-  --color-brand-primary-rgb: 245,158,11;
+  /* ── Core palette ──────────────────────────────────────────────── */
+  --color-brand-primary:         #F97316;   /* orange-500 */
+  --color-brand-secondary:       #EA580C;   /* orange-600 */
+  --color-brand-accent:          #F97316;
+  --color-brand-bg:              #FFF8F0;   /* warm cream */
+  --color-brand-surface:         #FFF3E8;   /* warmer pill / skeleton surface */
+  --color-brand-surface-alt:     #FFE8D0;   /* deepest warm tint for blobs */
+  --color-brand-text:            #1C1917;   /* stone-900 */
+  --color-brand-muted:           #78716C;   /* stone-500 */
+  --color-brand-border:          #E7E0D9;   /* warm border */
+  --color-brand-error:           #EF4444;
+  --color-brand-success:         #22C55E;
+  --color-brand-warning:         #F59E0B;   /* amber-400 */
 
-  --color-ui-card:           #FFFFFF;
-  --color-ui-surface-alt:    #F8F9FA;
+  /* ── Interactive states ────────────────────────────────────────── */
+  --color-brand-primary-hover:   #EA580C;   /* orange-600 */
+  --color-brand-primary-active:  #C2410C;   /* orange-700 */
+  --color-brand-gradient-start:  #F97316;
+  --color-brand-gradient-end:    #EA580C;
+  --color-brand-text-inverse:    #FFFFFF;
+  --color-brand-badge-bg:        rgba(249,115,22,0.10);
 
-  --font-brand:   'Inter', system-ui, sans-serif;
-  --radius-brand: 0.75rem;
+  /* ── RGB triplets ───────────────────────────────────────────────── */
+  --color-brand-primary-rgb:     249,115,22;
+  --color-brand-secondary-rgb:   234,88,12;
+  --color-brand-accent-rgb:      249,115,22;
+
+  /* ── UI surfaces ───────────────────────────────────────────────── */
+  --color-ui-card:               #FFFFFF;
+  --color-ui-sidebar:            #FFFFFF;
+  --color-ui-header:             #FFFFFF;
+  --color-ui-surface-alt:        #FFF8F0;
+  --ui-glass-border:             rgba(0,0,0,0.06);
+
+  /* ── Gradients ─────────────────────────────────────────────────── */
+  --gradient-cta:         linear-gradient(135deg, #F97316 0%, #EA580C 100%);
+  --gradient-hero:        linear-gradient(160deg, #F97316 0%, #EA580C 60%, #F59E0B 100%);
+  --gradient-placeholder: linear-gradient(150deg, #FFF3E8 0%, #FFF8F0 100%);
+
+  /* ── Badge colors ──────────────────────────────────────────────── */
+  --color-badge-popular-from:    #F97316;
+  --color-badge-popular-to:      #EA580C;
+
+  /* ── Card ──────────────────────────────────────────────────────── */
+  --card-shadow:          0 2px 10px rgba(0,0,0,0.07), 0 1px 3px rgba(0,0,0,0.04);
+  --card-shadow-hover:    0 14px 34px rgba(0,0,0,0.12), 0 4px 10px rgba(0,0,0,0.06);
+  --card-image-ratio:     72%;
+
+  /* ── Sidebar ────────────────────────────────────────────────────── */
+  --sidebar-width:            268px;
+  --sidebar-item-radius:      14px;
+  --sidebar-active-shadow:    0 4px 18px rgba(249,115,22,0.32);
+
+  /* ── Typography ─────────────────────────────────────────────────── */
+  --font-brand:         'Inter', system-ui, sans-serif;
+  --font-size-price:    1.05rem;
+  --font-weight-price:  800;
+
+  /* ── Shape ──────────────────────────────────────────────────────── */
+  --radius-brand:        0.75rem;
+  --radius-xl:           0.75rem;
+  --radius-2xl:          1.125rem;
+  --radius-brand-card:   1.125rem;
+  --radius-brand-button: 0.875rem;
+  --radius-icon-wrap:    50%;
+
+  /* ── Glass ──────────────────────────────────────────────────────── */
+  --ui-glass-bg:    rgba(255,255,255,0.92);
+  --ui-glass-blur:  blur(12px);
+  --ui-card-shadow: var(--card-shadow);
+}
+
+/* ── Dark mode ─────────────────────────────────────────────────────── */
+:root[data-brand='straunt'][data-theme='dark'] {
+  --color-brand-bg:          #1A1209;
+  --color-brand-surface:     #251A0E;
+  --color-brand-surface-alt: #2E2014;
+  --color-brand-text:        #FDF4E7;
+  --color-brand-muted:       #A8957E;
+  --color-brand-border:      rgba(249,115,22,0.15);
+  --color-ui-card:           #251A0E;
+  --color-ui-sidebar:        #1A1209;
+  --color-ui-header:         #1A1209;
+  --ui-glass-bg:             rgba(26,18,9,0.92);
+  --ui-glass-border:         rgba(249,115,22,0.12);
+  --gradient-placeholder:    linear-gradient(150deg, #251A0E 0%, #2E2014 100%);
+  --card-shadow:             0 2px 10px rgba(0,0,0,0.40);
+  --card-shadow-hover:       0 14px 34px rgba(0,0,0,0.60);
+}
+
+/* ── High contrast ──────────────────────────────────────────────────── */
+:root[data-brand='straunt'].high-contrast {
+  --color-brand-primary:        #000000;
+  --color-brand-secondary:      #000000;
+  --color-brand-gradient-start: #000000;
+  --color-brand-gradient-end:   #000000;
+  --color-brand-bg:             #FFFFFF;
+  --color-brand-surface:        #F5F5F5;
+  --color-brand-surface-alt:    #EEEEEE;
+  --color-brand-text:           #000000;
+  --color-brand-muted:          #000000;
+  --color-brand-border:         #000000;
+  --color-ui-card:              #FFFFFF;
+  --card-shadow:                none;
+  --card-shadow-hover:          none;
+  --gradient-cta:               #000000;
 }

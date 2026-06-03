@@ -19,6 +19,7 @@ import { IonPage, IonContent } from '@ionic/react';
 import { useEffect, useCallback, useState } from 'react';
 import { useHistory } from 'react-router-dom';
 import { useBrand } from '@/hooks/useBrand';
+import { useKioskName } from '@/hooks/useKioskName';
 import { useAuthStore } from '@/store/authStore';
 import { useKioskChannelStore, type KioskChannel } from '@/store/kioskChannelStore';
 import { useStoreConfigStore } from '@/store/storeConfigStore';
@@ -65,12 +66,12 @@ function StoreCard({
       aria-pressed={selected}
       className="flex items-center gap-4 w-full text-left rounded-2xl p-4 transition-all duration-150 active:scale-[0.97]"
       style={selected ? {
-        background: 'linear-gradient(135deg,#F59E0B,#F97316)',
-        border: '2px solid #F59E0B',
-        boxShadow: '0 8px 28px rgba(245,158,11,0.32)',
+        background: 'var(--gradient-cta)',
+        border: '2px solid var(--color-brand-primary)',
+        boxShadow: '0 8px 28px rgba(var(--color-brand-primary-rgb),0.32)',
       } : {
-        background: '#FFFFFF',
-        border: '1.5px solid #E5E7EB',
+        background: 'var(--color-ui-card)',
+        border: '1.5px solid var(--color-brand-border)',
         boxShadow: '0 1px 4px rgba(0,0,0,0.06)',
       }}
     >
@@ -137,12 +138,12 @@ function ChannelCard({
       aria-pressed={selected}
       className="flex items-start gap-4 w-full text-left rounded-2xl p-4 transition-all duration-150 active:scale-[0.97]"
       style={selected ? {
-        background: 'linear-gradient(135deg,#F59E0B,#F97316)',
-        border: '2px solid #F59E0B',
-        boxShadow: '0 8px 28px rgba(245,158,11,0.32)',
+        background: 'var(--gradient-cta)',
+        border: '2px solid var(--color-brand-primary)',
+        boxShadow: '0 8px 28px rgba(var(--color-brand-primary-rgb),0.32)',
       } : {
-        background: '#FFFFFF',
-        border: '1.5px solid #E5E7EB',
+        background: 'var(--color-ui-card)',
+        border: '1.5px solid var(--color-brand-border)',
         boxShadow: '0 1px 4px rgba(0,0,0,0.06)',
       }}
     >
@@ -217,7 +218,7 @@ function ChannelCard({
 function Spinner({ size = 48 }: { size?: number }) {
   return (
     <div className="animate-spin rounded-full flex-shrink-0"
-      style={{ width: size, height: size, border: '3px solid #FDE68A', borderTopColor: '#F59E0B' }} />
+      style={{ width: size, height: size, border: '3px solid var(--color-brand-surface)', borderTopColor: 'var(--color-brand-primary)' }} />
   );
 }
 
@@ -226,6 +227,7 @@ function Spinner({ size = 48 }: { size?: number }) {
 export default function ChannelSelectScreen() {
   const history          = useHistory();
   const { environment }  = useBrand();
+  const kioskName        = useKioskName();
   const user             = useAuthStore((s) => s.user);
   const { setChannel, setAvailableChannels } = useKioskChannelStore();
 
@@ -346,7 +348,7 @@ export default function ChannelSelectScreen() {
       <IonContent fullscreen scrollY={false}>
         <div
           className="relative flex flex-col h-full overflow-hidden"
-          style={{ background: 'linear-gradient(150deg, #FFFFFF 0%, #FFFBF0 60%, #FEF3C7 100%)' }}
+          style={{ background: 'linear-gradient(150deg, var(--color-brand-bg) 0%, var(--color-brand-surface) 60%, var(--color-brand-surface-alt) 100%)' }}
         >
           {/* Decorative blobs */}
           <div aria-hidden="true" className="absolute inset-0 overflow-hidden pointer-events-none">
@@ -363,9 +365,9 @@ export default function ChannelSelectScreen() {
           >
             <div>
               <div className="flex items-center gap-2 mb-1">
-                <div className="w-1 h-4 rounded-full" style={{ background: 'linear-gradient(180deg,#F59E0B,#F97316)' }} />
+                <div className="w-1 h-4 rounded-full" style={{ background: 'var(--gradient-cta)' }} />
                 <p className="text-xs font-brand font-semibold uppercase tracking-widest" style={{ color: '#9CA3AF' }}>
-                  {environment.displayName} · Kiosk Setup
+                  {kioskName} · Kiosk Setup
                 </p>
               </div>
               <h1 className="text-2xl font-bold font-brand" style={{ color: '#111827' }}>
@@ -382,7 +384,7 @@ export default function ChannelSelectScreen() {
               type="button"
               onClick={handleLogout}
               className="px-3.5 py-2 rounded-xl text-sm font-semibold font-brand transition-colors"
-              style={{ background: '#FFFFFF', border: '1.5px solid #E5E7EB', color: '#374151', boxShadow: '0 1px 3px rgba(0,0,0,0.06)' }}
+              style={{ background: 'var(--color-ui-card)', border: '1.5px solid var(--color-brand-border)', color: 'var(--color-brand-text)', boxShadow: '0 1px 3px rgba(0,0,0,0.06)' }}
             >
               Sign Out
             </button>
@@ -405,7 +407,7 @@ export default function ChannelSelectScreen() {
             {phase === 'error' && (
               <div className="flex flex-col items-center justify-center flex-1 gap-4 animate-fade-in">
                 <div className="w-16 h-16 rounded-2xl flex items-center justify-center"
-                  style={{ background: '#FEF2F2', border: '1px solid #FECACA' }}>
+                  style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.20)' }}>
                   <svg className="w-8 h-8" viewBox="0 0 24 24" fill="none" stroke="#DC2626" strokeWidth={1.5}>
                     <circle cx="12" cy="12" r="10"/>
                     <line x1="12" y1="8" x2="12" y2="12"/>
@@ -421,7 +423,7 @@ export default function ChannelSelectScreen() {
                   {stores.length > 1 && (
                     <button type="button" onClick={() => setPhase('store-select')}
                       className="px-6 py-3 text-sm font-semibold font-brand rounded-xl"
-                      style={{ background: '#FFFFFF', border: '1.5px solid #E5E7EB', color: '#374151' }}>
+                      style={{ background: 'var(--color-ui-card)', border: '1.5px solid var(--color-brand-border)', color: 'var(--color-brand-text)' }}>
                       Choose Different Store
                     </button>
                   )}
@@ -474,7 +476,7 @@ export default function ChannelSelectScreen() {
                   <div className="flex items-center gap-2 mb-4 flex-shrink-0">
                     <button type="button" onClick={() => setPhase('store-select')}
                       className="flex items-center gap-1.5 text-xs font-semibold font-brand"
-                      style={{ background: 'transparent', border: 'none', color: '#F59E0B', cursor: 'pointer', padding: 0 }}>
+                      style={{ background: 'transparent', border: 'none', color: 'var(--color-brand-primary)', cursor: 'pointer', padding: 0 }}>
                       <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round">
                         <polyline points="15 18 9 12 15 6"/>
                       </svg>

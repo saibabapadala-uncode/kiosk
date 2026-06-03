@@ -1,7 +1,5 @@
 /* src/index.css
    Global design tokens for AJR Kiosk.
-   Inspired by leading food-platform kiosk aesthetics:
-   Swiggy, Zomato, DoorDash, McDonald's, Shake Shack, Toast POS.
 
    ── CSS layer priority (highest specificity wins) ─────────────────────────────
      :root[data-brand='x'][data-theme='dark']  → 0,3,0  (brand + mode)
@@ -25,44 +23,96 @@
    Design rationale:
    • Zinc (#09090B / #FAFAFA) is the premium neutral used by Vercel,
      Linear, Raycast — it reads as high-quality tech on screens.
-   • Amber (#F59E0B) adds food-platform warmth without locking to one
-     brand's orange/red/green — it works as a universal accent.
-   • Slate-500 muted text passes WCAG AA in both light and dark.
+   • Amber (#F59E0B) adds warmth without locking to one brand.
    • These are clearly different from all three brand palettes so the
      app never looks like an accidental Straunt/Holiq/Restro before
      the brand CSS kicks in.
 ═══════════════════════════════════════════════════════════════════ */
 @theme {
-  /* ── Brand palette ────────────────────────────────────────────── */
-  --color-brand-primary:       #F59E0B;   /* amber-400  — warm amber accent                   */
-  --color-brand-secondary:     #F97316;   /* orange-500 — gradient endpoint, warm glow        */
-  --color-brand-accent:        #F59E0B;   /* amber-400  — same as primary                     */
-  --color-brand-bg:            #FFFFFF;   /* pure white — clean, light-mode base              */
-  --color-brand-surface:       #F8F9FA;   /* gray-50    — near-white surface                  */
-  --color-brand-text:          #111827;   /* gray-900   — rich dark text, high contrast       */
-  --color-brand-muted:         #6B7280;   /* gray-500   — neutral muted text                  */
-  --color-brand-border:        #E5E7EB;   /* gray-200   — subtle light border                 */
-  --color-brand-error:         #EF4444;   /* red-500                                          */
-  --color-brand-success:       #22C55E;   /* green-500                                        */
+  /* ── Brand palette — core ────────────────────────────────────────── */
+  --color-brand-primary:         #F59E0B;   /* amber-400  — warm amber accent                  */
+  --color-brand-secondary:       #F97316;   /* orange-500 — gradient endpoint                  */
+  --color-brand-accent:          #F59E0B;   /* amber-400  — tertiary highlight                 */
+  --color-brand-bg:              #FFFFFF;   /* pure white — page/body background               */
+  --color-brand-surface:         #F8F9FA;   /* gray-50    — card/pill surface                  */
+  --color-brand-surface-alt:     #F1F5F9;   /* slate-100  — nested cards, search bar at rest   */
+  --color-brand-text:            #111827;   /* gray-900   — primary text                       */
+  --color-brand-muted:           #6B7280;   /* gray-500   — helper/secondary text              */
+  --color-brand-border:          #E5E7EB;   /* gray-200   — dividers and outlines              */
+  --color-brand-error:           #EF4444;   /* red-500                                         */
+  --color-brand-success:         #22C55E;   /* green-500                                       */
+  --color-brand-warning:         #F59E0B;   /* amber-400  — non-destructive alerts             */
 
-  /* RGB triplet for rgba() glow calculations — keep in sync with primary */
-  --color-brand-primary-rgb:   245,158,11;
+  /* ── Brand palette — interactive states ─────────────────────────── */
+  --color-brand-primary-hover:   #E88D04;   /* slightly darker — hover on CTA buttons          */
+  --color-brand-primary-active:  #D47C02;   /* pressed/active state                            */
+  --color-brand-gradient-start:  #F59E0B;   /* gradient start for CTAs / active items          */
+  --color-brand-gradient-end:    #F97316;   /* gradient end                                    */
+  --color-brand-text-inverse:    #FFFFFF;   /* text on filled/primary backgrounds              */
+  --color-brand-badge-bg:        rgba(0,0,0,0.06); /* count pills, status chips               */
+
+  /* RGB triplets for rgba() glow calculations — keep in sync with colours above */
+  --color-brand-primary-rgb:     245,158,11;
+  --color-brand-secondary-rgb:   249,115,22;
+  --color-brand-accent-rgb:      245,158,11;
 
   /* ── UI surface tokens ─────────────────────────────────────────── */
-  --color-ui-card:             #FFFFFF;
-  --color-ui-surface-alt:      #F8F9FA;   /* gray-50    — alternative surface for nesting     */
-  --color-ui-overlay:          rgba(0,0,0,0.48);
+  --color-ui-card:               #FFFFFF;
+  --color-ui-sidebar:            #FFFFFF;
+  --color-ui-header:             #FFFFFF;
+  --color-ui-surface-alt:        #F8F9FA;   /* kept for backwards compatibility                */
+  --color-ui-overlay:            rgba(0,0,0,0.48);
 
-  /* ── Typography ─────────────────────────────────────────────────── */
-  --font-brand:   'Inter', system-ui, sans-serif;
+  /* ── Semantic badge colors ────────────────────────────────────────── */
+  --color-badge-popular-from:    #F97316;
+  --color-badge-popular-to:      #EA580C;
+  --color-badge-veg:             #16A34A;   /* green-700 */
+  --color-badge-vegan:           #15803D;   /* green-800 */
+  --color-badge-gf:              #7C3AED;   /* violet-700 */
+  --color-icon-tint:             var(--color-brand-primary);
+
+  /* ── Gradient definitions ────────────────────────────────────────── */
+  --gradient-cta:         linear-gradient(135deg, var(--color-brand-gradient-start) 0%, var(--color-brand-gradient-end) 100%);
+  --gradient-hero:        linear-gradient(160deg, var(--color-brand-primary) 0%, var(--color-brand-secondary) 100%);
+  --gradient-placeholder: linear-gradient(150deg, var(--color-brand-surface) 0%, var(--color-brand-surface-alt) 100%);
+
+  /* ── Typography ──────────────────────────────────────────────────── */
+  --font-brand:         'Inter', system-ui, sans-serif;
+  --font-size-xs:       0.625rem;   /* 10px — badge labels                    */
+  --font-size-sm:       0.75rem;    /* 12px — item counts, muted text         */
+  --font-size-base:     0.875rem;   /* 14px — body copy, sidebar labels       */
+  --font-size-lg:       1rem;       /* 16px — search input, modal names       */
+  --font-size-price:    1.05rem;    /* price display — prominent on cards     */
+  --font-size-heading:  clamp(1.05rem, 2vw, 1.3rem);
+  --font-weight-price:  800;
 
   /* ── Shape ───────────────────────────────────────────────────────── */
-  --radius-brand: 0.75rem;
-  --radius-xl:    1.25rem;
-  --radius-2xl:   1.5rem;
+  --radius-brand:       0.75rem;
+  --radius-xl:          1.25rem;
+  --radius-2xl:         1.5rem;
+  --radius-brand-card:  1.125rem;   /* product/content cards                  */
+  --radius-brand-button:0.875rem;   /* CTA buttons                            */
+  --radius-pill:        9999px;     /* badges, tab chips                      */
+  --radius-icon-wrap:   50%;        /* sidebar icon circles                   */
+
+  /* ── Card ─────────────────────────────────────────────────────────── */
+  --card-image-ratio:   72%;        /* padding-top % for image area           */
+  --card-shadow:        0 2px 10px rgba(0,0,0,0.08), 0 1px 3px rgba(0,0,0,0.04);
+  --card-shadow-hover:  0 14px 34px rgba(0,0,0,0.13), 0 4px 10px rgba(0,0,0,0.06);
+
+  /* ── Layout ───────────────────────────────────────────────────────── */
+  --sidebar-width:          268px;
+  --sidebar-item-radius:    14px;
 
   /* ── Touch targets (kiosk: 56 px minimum) ────────────────────────── */
   --spacing-touch: 56px;
+
+  /* ── Glass rendering ─────────────────────────────────────────────── */
+  --ui-glass-blur:  blur(12px);
+
+  /* ── Transitions ──────────────────────────────────────────────────── */
+  --transition-base:   150ms ease;
+  --transition-layout: 280ms cubic-bezier(0.32, 0.72, 0, 1);
 
   /* ── Breakpoints ─────────────────────────────────────────────────── */
   --breakpoint-kiosk: 1280px;
@@ -70,24 +120,51 @@
 
 /* ═══════════════════════════════════════════════════════════════════
    LIGHT MODE GLASS + SHADOW TOKENS
-   (palette lives in @theme; only rendering tokens here)
 ═══════════════════════════════════════════════════════════════════ */
 :root {
-  --ui-glass-bg:     rgba(255,255,255,0.92);
-  --ui-glass-border: rgba(0,0,0,0.07);
-  --ui-shadow:       0 8px 40px rgba(0,0,0,0.10);
-  --ui-card-shadow:  0 1px 4px rgba(0,0,0,0.08), 0 4px 16px rgba(0,0,0,0.06);
+  --ui-glass-bg:           rgba(255,255,255,0.92);
+  --ui-glass-border:       rgba(0,0,0,0.07);
+  --ui-shadow:             0 8px 40px rgba(0,0,0,0.10);
+  --ui-card-shadow:        0 1px 4px rgba(0,0,0,0.08), 0 4px 16px rgba(0,0,0,0.06);
+  --sidebar-active-shadow: 0 4px 18px rgba(var(--color-brand-primary-rgb), 0.32);
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   DARK MODE BASE
+═══════════════════════════════════════════════════════════════════ */
+[data-theme='dark'] {
+  --color-brand-bg:          #0F1117;
+  --color-brand-surface:     #1A1D27;
+  --color-brand-surface-alt: #222533;
+  --color-brand-text:        #F3F4F6;
+  --color-brand-muted:       #9CA3AF;
+  --color-brand-border:      rgba(255,255,255,0.10);
+  --color-ui-card:           #1A1D27;
+  --color-ui-sidebar:        #13151E;
+  --color-ui-header:         #13151E;
+  --ui-glass-bg:             rgba(26,29,39,0.92);
+  --ui-glass-border:         rgba(255,255,255,0.08);
+  --card-shadow:             0 2px 10px rgba(0,0,0,0.30), 0 1px 3px rgba(0,0,0,0.20);
+  --card-shadow-hover:       0 14px 34px rgba(0,0,0,0.50), 0 4px 10px rgba(0,0,0,0.30);
+  --gradient-placeholder:    linear-gradient(150deg, #1E2030 0%, #252840 100%);
 }
 
 /* ═══════════════════════════════════════════════════════════════════
    ADA HIGH-CONTRAST
 ═══════════════════════════════════════════════════════════════════ */
 .high-contrast {
-  --color-brand-primary: #000000;
-  --color-brand-text:    #000000;
-  --color-brand-bg:      #ffffff;
-  --color-brand-border:  #000000;
-  --color-brand-surface: #f5f5f5;
+  --color-brand-primary:      #000000;
+  --color-brand-secondary:    #000000;
+  --color-brand-gradient-start: #000000;
+  --color-brand-gradient-end:   #000000;
+  --color-brand-text:         #000000;
+  --color-brand-bg:           #ffffff;
+  --color-brand-border:       #000000;
+  --color-brand-surface:      #f5f5f5;
+  --color-brand-surface-alt:  #eeeeee;
+  --color-ui-card:            #ffffff;
+  --card-shadow:              none;
+  --card-shadow-hover:        none;
 }
 
 /* ═══════════════════════════════════════════════════════════════════
@@ -137,29 +214,28 @@ body {
 /* ── Glassmorphism ───────────────────────────────────────────────── */
 .ui-glass {
   background:              var(--ui-glass-bg);
-  backdrop-filter:         blur(20px) saturate(180%);
-  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  backdrop-filter:         var(--ui-glass-blur) saturate(180%);
+  -webkit-backdrop-filter: var(--ui-glass-blur) saturate(180%);
   border:                  1px solid var(--ui-glass-border);
 }
 
 /* ── Primary gradient button ─────────────────────────────────────── */
-/* Box-shadow glow uses --color-brand-primary-rgb so it shifts
-   automatically when a brand overrides the primary colour.          */
 .ui-btn-primary {
-  background:    linear-gradient(135deg, var(--color-brand-primary) 0%, var(--color-brand-secondary) 100%);
-  color:         #ffffff;
+  background:    var(--gradient-cta);
+  color:         var(--color-brand-text-inverse);
   font-weight:   700;
   font-family:   var(--font-brand);
   min-height:    var(--spacing-touch);
-  border-radius: var(--radius-xl);
+  border-radius: var(--radius-brand-button);
   border:        none;
   cursor:        pointer;
   position:      relative;
   overflow:      hidden;
-  transition:    transform 150ms ease, box-shadow 150ms ease, opacity 150ms ease;
+  transition:    transform var(--transition-base), box-shadow var(--transition-base), opacity var(--transition-base);
   box-shadow:    0 8px 24px rgba(var(--color-brand-primary-rgb), 0.35);
 }
-.ui-btn-primary:active   { transform: scale(0.97); }
+.ui-btn-primary:hover    { background: linear-gradient(135deg, var(--color-brand-primary-hover) 0%, var(--color-brand-gradient-end) 100%); }
+.ui-btn-primary:active   { transform: scale(0.97); background: linear-gradient(135deg, var(--color-brand-primary-active) 0%, var(--color-brand-gradient-end) 100%); }
 .ui-btn-primary:disabled { opacity: 0.45; cursor: not-allowed; transform: none; }
 
 /* Shine sweep on hover */
@@ -180,11 +256,11 @@ body {
   font-weight:   600;
   font-family:   var(--font-brand);
   min-height:    var(--spacing-touch);
-  border-radius: var(--radius-xl);
+  border-radius: var(--radius-brand-button);
   cursor:        pointer;
-  transition:    background 150ms ease, transform 150ms ease;
+  transition:    background var(--transition-base), transform var(--transition-base);
 }
-.ui-btn-ghost:active   { transform: scale(0.97); background: var(--color-brand-primary); color: #ffffff; }
+.ui-btn-ghost:active   { transform: scale(0.97); background: var(--color-brand-primary); color: var(--color-brand-text-inverse); }
 .ui-btn-ghost:disabled { opacity: 0.4; cursor: not-allowed; }
 
 /* ── Scrollbar hiding ─────────────────────────────────────────────── */
@@ -199,6 +275,9 @@ body {
   align-items:     center;
   justify-content: center;
 }
+
+/* ── Brand font class ─────────────────────────────────────────────── */
+.font-brand { font-family: var(--font-brand); }
 
 /* ═══════════════════════════════════════════════════════════════════
    ANIMATION KEYFRAMES
@@ -237,13 +316,27 @@ body {
   from { opacity: 0; transform: translateY(16px); }
   to   { opacity: 1; transform: translateY(0);    }
 }
+
+/* glow-pulse uses CSS var so it shifts with brand primary */
 @keyframes glow-pulse {
-  0%, 100% { box-shadow: 0 0 0 0   rgba(245,158,11,0.40); }
-  50%       { box-shadow: 0 0 0 20px rgba(245,158,11,0);   }
+  0%, 100% { box-shadow: 0 0 0 0   rgba(var(--color-brand-primary-rgb), 0.40); }
+  50%       { box-shadow: 0 0 0 20px rgba(var(--color-brand-primary-rgb), 0);   }
 }
 @keyframes shimmer {
   from { transform: translateX(-100%) skewX(-12deg); }
   to   { transform: translateX(200%)  skewX(-12deg); }
+}
+
+/* Smooth card entrance — used by ProductCard via animDelay prop */
+@keyframes card-enter {
+  from { opacity: 0; transform: translateY(20px) scale(0.97); }
+  to   { opacity: 1; transform: translateY(0)    scale(1);    }
+}
+
+/* Skeleton shimmer — opacity pulse, works with any inline background color */
+@keyframes skeleton-shimmer {
+  0%, 100% { opacity: 1;    }
+  50%       { opacity: 0.50; }
 }
 @keyframes bounce-sm {
   0%, 100% { transform: translateY(0); }
@@ -293,11 +386,12 @@ body {
 .animate-bounce-sm            { animation: bounce-sm 1.4s ease-in-out infinite; }
 
 /* ─── Product highlight — fires when navigating from Menu Highlights strip ──── */
+/* Uses CSS vars so glow color shifts with brand */
 @keyframes product-spotlight {
-  0%   { box-shadow: 0 0 0 0   rgba(245,158,11,0),    0 2px 16px rgba(0,0,0,0.06); }
-  25%  { box-shadow: 0 0 0 4px rgba(245,158,11,0.55), 0 8px 32px rgba(245,158,11,0.22); transform: scale(1.03); }
-  60%  { box-shadow: 0 0 0 4px rgba(245,158,11,0.30), 0 6px 20px rgba(245,158,11,0.14); transform: scale(1.01); }
-  100% { box-shadow: 0 0 0 0   rgba(245,158,11,0),    0 2px 16px rgba(0,0,0,0.06); transform: scale(1); }
+  0%   { box-shadow: 0 0 0 0   rgba(var(--color-brand-primary-rgb), 0),    0 2px 16px rgba(0,0,0,0.06); }
+  25%  { box-shadow: 0 0 0 4px rgba(var(--color-brand-primary-rgb), 0.55), 0 8px 32px rgba(var(--color-brand-primary-rgb), 0.22); transform: scale(1.03); }
+  60%  { box-shadow: 0 0 0 4px rgba(var(--color-brand-primary-rgb), 0.30), 0 6px 20px rgba(var(--color-brand-primary-rgb), 0.14); transform: scale(1.01); }
+  100% { box-shadow: 0 0 0 0   rgba(var(--color-brand-primary-rgb), 0),    0 2px 16px rgba(0,0,0,0.06); transform: scale(1); }
 }
 .product-highlight {
   animation: product-spotlight 1.8s ease-out both;

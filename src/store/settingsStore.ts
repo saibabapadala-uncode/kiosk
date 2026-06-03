@@ -4,6 +4,7 @@ import { persist, subscribeWithSelector, createJSONStorage } from 'zustand/middl
 import { Preferences } from '@capacitor/preferences';
 import { getBrandEnvironment } from '@/brands';
 import type { BrandEnvironment } from '@/brands/types';
+import type { BrandId } from '@/brands/types';
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
 
@@ -80,6 +81,10 @@ export interface LocalizationSettings {
 
 export interface SettingsState {
   brandId: string;
+  /** true once the user has explicitly selected a brand on /brand-select */
+  brandSelected: boolean;
+  /** true after a successful login — brand cannot be changed until logout clears this */
+  brandLocked: boolean;
   locationId: string;
   theme: ThemeSettings;
   api: ApiSettings;
@@ -95,19 +100,34 @@ export interface SettingsState {
   setBrandId: (id: string) => void;
   setLocationId: (id: string) => void;
   resetToDefaults: (env: BrandEnvironment) => void;
+  /**
+   * Atomically apply all brand-environment defaults in a single set() call.
+   * Called by useBrandDetection after resolving the active brand at runtime.
+   * Replaces the scattered resetToDefaults() + setBrandId() pattern.
+   */
+  applyBrandEnvironment: (env: BrandEnvironment) => void;
+  /** Called from BrandSelectScreen — applies env, marks brand as selected */
+  selectBrand: (id: BrandId) => void;
+  /** Called after successful login — locks the brand until logout */
+  lockBrand: () => void;
+  /** Called on logout — clears all brand state so /brand-select is shown again */
+  clearBrand: () => void;
 }
 
 // ─── Default values (derived from brand environment at boot) ──────────────────
 
 function buildDefaults(): Omit<SettingsState, keyof Pick<SettingsState,
   'setTheme' | 'setApi' | 'setPayment' | 'setKiosk' | 'setLocalization' |
-  'setBrandId' | 'setLocationId' | 'resetToDefaults'
+  'setBrandId' | 'setLocationId' | 'resetToDefaults' |
+  'applyBrandEnvironment' | 'selectBrand' | 'lockBrand' | 'clearBrand'
 >> {
   const rawBrand = import.meta.env.VITE_BRAND || 'straunt';
   const env = getBrandEnvironment(rawBrand);
 
   return {
-    brandId: env.brandId,
+    brandId: '',
+    brandSelected: false,
+    brandLocked: false,
     locationId: '',
     theme: {
       primary:    env.defaultTheme.primary,
@@ -208,6 +228,98 @@ export const useSettingsStore = create<SettingsState>()(
 
         setBrandId: (id) => set({ brandId: id }),
 
+        selectBrand: (id) => {
+          const env = getBrandEnvironment(id);
+          set({
+            brandId:       id,
+            brandSelected: true,
+            brandLocked:   false,
+            theme: {
+              primary:    env.defaultTheme.primary,
+              secondary:  env.defaultTheme.secondary,
+              accent:     env.defaultTheme.accent,
+              background: env.defaultTheme.background,
+              surface:    env.defaultTheme.surface,
+              text:       env.defaultTheme.text,
+              textMuted:  env.defaultTheme.textMuted,
+              border:     env.defaultTheme.border,
+              fontFamily: env.defaultTheme.fontFamily,
+              logoUrl:    env.defaultTheme.logoUrl,
+              radius:     env.defaultTheme.radius,
+              themeMode:  'light',
+            },
+            api: {
+              apiBaseUrl:  env.apiBaseUrl,
+              apiKey:      env.apiKey,
+              brandHeader: env.brandHeader,
+            },
+            kiosk: {
+              idleTimeoutSeconds:    env.businessRules?.kioskDefaults?.idleTimeoutSeconds ?? 120,
+              attractLoopEnabled:    env.businessRules?.kioskDefaults?.attractLoopEnabled ?? true,
+              receiptPrinterIp:      '',
+              barcodeScannerEnabled: false,
+              taxRate:               env.defaultTaxRate,
+              highContrastMode:      false,
+              staffPinEnabled:       env.businessRules?.kioskDefaults?.staffPinEnabled ?? true,
+              staffPin:              '1234',
+            },
+            localization: {
+              locale:     env.defaultLocale as SupportedLocale,
+              currency:   env.defaultCurrency,
+              timezone:   env.defaultTimezone,
+              dateFormat: 'MM/DD/YYYY',
+            },
+          });
+        },
+
+        lockBrand: () => set({ brandLocked: true }),
+
+        clearBrand: () => {
+          const rawBrand = import.meta.env.VITE_BRAND as string | undefined;
+          set({ brandId: rawBrand ?? '', brandSelected: Boolean(rawBrand), brandLocked: false });
+        },
+
+        applyBrandEnvironment: (env) => {
+          set({
+            brandId: env.brandId,
+            theme: {
+              primary:    env.defaultTheme.primary,
+              secondary:  env.defaultTheme.secondary,
+              accent:     env.defaultTheme.accent,
+              background: env.defaultTheme.background,
+              surface:    env.defaultTheme.surface,
+              text:       env.defaultTheme.text,
+              textMuted:  env.defaultTheme.textMuted,
+              border:     env.defaultTheme.border,
+              fontFamily: env.defaultTheme.fontFamily,
+              logoUrl:    env.defaultTheme.logoUrl,
+              radius:     env.defaultTheme.radius,
+              themeMode:  'light',
+            },
+            api: {
+              apiBaseUrl:  env.apiBaseUrl,
+              apiKey:      env.apiKey,
+              brandHeader: env.brandHeader,
+            },
+            kiosk: {
+              idleTimeoutSeconds:    env.businessRules?.kioskDefaults?.idleTimeoutSeconds ?? 120,
+              attractLoopEnabled:    env.businessRules?.kioskDefaults?.attractLoopEnabled ?? true,
+              receiptPrinterIp:      '',
+              barcodeScannerEnabled: false,
+              taxRate:               env.defaultTaxRate,
+              highContrastMode:      false,
+              staffPinEnabled:       env.businessRules?.kioskDefaults?.staffPinEnabled ?? true,
+              staffPin:              '1234',
+            },
+            localization: {
+              locale:     env.defaultLocale as SupportedLocale,
+              currency:   env.defaultCurrency,
+              timezone:   env.defaultTimezone,
+              dateFormat: 'MM/DD/YYYY',
+            },
+          });
+        },
+
         setLocationId: (id) => set({ locationId: id }),
 
         resetToDefaults: (env) => {
@@ -254,14 +366,17 @@ export const useSettingsStore = create<SettingsState>()(
       {
         name: 'ajr-kiosk-settings',
         storage: createJSONStorage(() => capacitorStorage),
-        // Only persist user-configurable fields — not brandId (comes from VITE_BRAND)
+        // Persist brandId so runtime-detected brand survives device reboots.
         partialize: (s) => ({
-          locationId:   s.locationId,
-          theme:        s.theme,
-          api:          s.api,
-          payment:      s.payment,
-          kiosk:        s.kiosk,
-          localization: s.localization,
+          brandId:       s.brandId,
+          brandSelected: s.brandSelected,
+          brandLocked:   s.brandLocked,
+          locationId:    s.locationId,
+          theme:         s.theme,
+          api:           s.api,
+          payment:       s.payment,
+          kiosk:         s.kiosk,
+          localization:  s.localization,
         }),
       },
     ),

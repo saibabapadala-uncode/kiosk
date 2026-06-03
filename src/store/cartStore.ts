@@ -95,7 +95,7 @@ export interface CartState {
 
 export const useCartStore = create<CartState>()((set, get) => ({
   items: [],
-  taxRate: 0.0825, // Texas default — synced from settingsStore at runtime
+  taxRate: 0, // initialised to 0; BrandProvider syncs the correct rate from settingsStore immediately after mount
   tipAmount: 0,
   subtotal: 0,
   taxAmount: 0,

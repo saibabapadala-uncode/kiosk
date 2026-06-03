@@ -1,9 +1,9 @@
 // src/modules/settings/SettingsScreen.tsx
 import { useState } from 'react';
 import { useHistory } from 'react-router-dom';
-import { useBrand } from '@/hooks/useBrand';
 import { useAuthStore } from '@/store/authStore';
 import { useKioskChannelStore } from '@/store/kioskChannelStore';
+import { useKioskName } from '@/hooks/useKioskName';
 import { logout } from '@/services/auth.service';
 import BrandThemeTab from './tabs/BrandThemeTab';
 import ApiConfigTab from './tabs/ApiConfigTab';
@@ -34,9 +34,9 @@ const TABS: Tab[] = [
 
 export default function SettingsScreenContent() {
   const history  = useHistory();
-  const { environment } = useBrand();
-  const user     = useAuthStore((s) => s.user);
-  const channel  = useKioskChannelStore((s) => s.channel);
+  const kioskName = useKioskName();
+  const user      = useAuthStore((s) => s.user);
+  const channel   = useKioskChannelStore((s) => s.channel);
   const clearChannel = useKioskChannelStore((s) => s.clear);
   const [activeTab, setActiveTab] = useState<TabId>('brand');
 
@@ -70,7 +70,7 @@ export default function SettingsScreenContent() {
 
         <div className="flex-1 min-w-0">
           <h1 className="text-base font-bold font-brand text-brand-text leading-tight">Settings</h1>
-          <p className="text-xs text-brand-muted font-brand">{environment.displayName} Kiosk</p>
+          <p className="text-xs text-brand-muted font-brand">{kioskName} Kiosk</p>
         </div>
 
         {/* Session info + sign-out */}

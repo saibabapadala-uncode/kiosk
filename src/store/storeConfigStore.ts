@@ -50,6 +50,12 @@ export interface StoreConfig {
   userDetails:  StoreUserDetails | null;
   /** true when is_sales_channel flag is present in response */
   isSalesChannel: boolean;
+  /**
+   * Brand identifier extracted from the store/details brand sub-object.
+   * Used by useBrandDetection as Signal 2 to resolve the active brand at runtime.
+   * Empty string when the API response does not include a recognizable brand code.
+   */
+  brandCode:    string;
   isLoaded:     boolean;
   isLoading:    boolean;
   error:        string | null;
@@ -67,7 +73,7 @@ interface StoreConfigState extends StoreConfig {
   bootstrap:    () => Promise<void>;
 }
 
-function parseConfig(raw: Record<string, unknown>): Pick<StoreConfig, 'store' | 'userDetails' | 'isSalesChannel'> {
+function parseConfig(raw: Record<string, unknown>): Pick<StoreConfig, 'store' | 'userDetails' | 'isSalesChannel' | 'brandCode'> {
   // Defensive: if loadStoreDetails somehow passed the envelope instead of the
   // unwrapped payload, unwrap here too so parseConfig is always safe.
   const payload: Record<string, unknown> =
@@ -151,7 +157,12 @@ function parseConfig(raw: Record<string, unknown>): Pick<StoreConfig, 'store' | 
     userDetails_username:  userDetails.username,
   });
 
-  return { store, userDetails, isSalesChannel };
+  // Extract brand code from the brand sub-object for runtime brand detection (Signal 2).
+  const brandCode = String(
+    rawBrand?.id ?? rawBrand?.code ?? rawBrand?.brand_id ?? rawBrand?.brand_code ?? '',
+  );
+
+  return { store, userDetails, isSalesChannel, brandCode };
 }
 
 export const useStoreConfigStore = create<StoreConfigState>()((set) => ({
@@ -159,6 +170,7 @@ export const useStoreConfigStore = create<StoreConfigState>()((set) => ({
   store:          null,
   userDetails:    null,
   isSalesChannel: false,
+  brandCode:      '',
   isLoaded:       false,
   isLoading:      false,
   error:          null,
@@ -175,7 +187,7 @@ export const useStoreConfigStore = create<StoreConfigState>()((set) => ({
 
   clear() {
     void Preferences.remove({ key: PREF_KEY });
-    set({ raw: null, store: null, userDetails: null, isSalesChannel: false, isLoaded: false, error: null });
+    set({ raw: null, store: null, userDetails: null, isSalesChannel: false, brandCode: '', isLoaded: false, error: null });
   },
 
   async bootstrap() {

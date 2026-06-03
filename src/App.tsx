@@ -10,6 +10,7 @@ import { ErrorBoundary } from '@/utils/errorBoundary';
 import { useAuthStore } from '@/store/authStore';
 import { useKioskChannelStore } from '@/store/kioskChannelStore';
 import { useStoreConfigStore } from '@/store/storeConfigStore';
+import { useSettingsStore } from '@/store/settingsStore';
 
 import AttractScreen       from '@/screens/AttractScreen';
 import CatalogScreen       from '@/screens/CatalogScreen';
@@ -20,6 +21,7 @@ import OrderConfirmation   from '@/screens/OrderConfirmation';
 import SettingsScreen      from '@/screens/SettingsScreen';
 import LoginScreen         from '@/screens/LoginScreen';
 import ChannelSelectScreen from '@/screens/ChannelSelectScreen';
+import BrandSelectScreen   from '@/screens/BrandSelectScreen';
 
 setupIonicReact({ mode: 'md', animated: true, rippleEffect: true });
 
@@ -47,8 +49,10 @@ function RootRedirect() {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const isBootstrapping = useAuthStore((s) => s.isBootstrapping);
   const channel         = useKioskChannelStore((s) => s.channel);
+  const brandSelected   = useSettingsStore((s) => s.brandSelected);
 
   if (isBootstrapping) return null;             // wait for hydration
+  if (!brandSelected)   return <Redirect to="/brand-select" />;
   if (!isAuthenticated) return <Redirect to="/login" />;
   if (!channel)         return <Redirect to="/channel-select" />;
   return <Redirect to="/attract" />;
@@ -67,6 +71,7 @@ export default function App() {
             <KioskShell>
               <IonRouterOutlet>
                 {/* Auth screens — no idle timer, no cart overlays */}
+                <Route exact path="/brand-select"   component={BrandSelectScreen} />
                 <Route exact path="/login"          component={LoginScreen} />
                 <Route exact path="/channel-select" component={ChannelSelectScreen} />
 

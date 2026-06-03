@@ -9,6 +9,7 @@ import { useSettingsStore } from '@/store/settingsStore';
 import { useAuthStore } from '@/store/authStore';
 import { useKioskChannelStore } from '@/store/kioskChannelStore';
 import { AUTH_CONFIG } from '@/config/auth.config';
+import { getActiveBrandAuthConfig } from '@/config/brand-auth';
 import { renewAccessKey } from '@/services/auth.service';
 import { USE_STATIC_PAYMENT_FLOW, delay, getFlowDelay } from './stripe/static.mock';
 
@@ -55,17 +56,22 @@ api.interceptors.request.use(async (config: RetryConfig) => {
       void renewAccessKey();
     }
 
-    config.headers['access_key']          = user.access_key;
-    config.headers['application_id']      = user.tac_application_id;
-    config.headers['controller_id']       = AUTH_CONFIG.CONTROLLER_ID;
-    config.headers['environment_id']      = AUTH_CONFIG.GA_ENVIRONMENT_ID;
+    // prd_id must be the active brand's value — using the build-time default
+    // causes API calls to be routed to the wrong tenant's data.
+    const { prdId } = getActiveBrandAuthConfig();
+
+    // All custom headers lowercase — matches the working curl and Holiq interceptor.
+    config.headers['access_key']            = user.access_key;
+    config.headers['application_id']        = user.tac_application_id;
+    config.headers['controller_id']         = AUTH_CONFIG.CONTROLLER_ID;
+    config.headers['environment_id']        = AUTH_CONFIG.SHARED_ENVIRONMENT_ID;
     config.headers['shared_application_id'] = AUTH_CONFIG.SHARED_APPLICATION_ID;
-    config.headers['Shared_environment_id'] = AUTH_CONFIG.SHARED_ENVIRONMENT_ID;
-    config.headers['account_id']          = AUTH_CONFIG.ACCOUNT_ID;
-    config.headers['prd_id']              = AUTH_CONFIG.PRD_ID;
-    config.headers['Ext_app_id']          = AUTH_CONFIG.EXT_APP_ID;
-    config.headers['Ext_user_id']         = user.su_id;
-    config.headers['Username']            = user.name;
+    config.headers['shared_environment_id'] = AUTH_CONFIG.SHARED_ENVIRONMENT_ID;
+    config.headers['account_id']            = AUTH_CONFIG.ACCOUNT_ID;
+    config.headers['prd_id']                = prdId;
+    config.headers['ext_app_id']            = AUTH_CONFIG.EXT_APP_ID;
+    config.headers['ext_user_id']           = user.su_id;
+    config.headers['username']              = user.name;
 
     // controller_data_id = selected kiosk channel's store_id
     // falls back to 'default_application_id' when no channel is set

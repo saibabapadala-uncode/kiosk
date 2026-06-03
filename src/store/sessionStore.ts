@@ -29,6 +29,12 @@ export interface SessionState {
   brandId: string;
   locationId: string;
   partySize: number;
+  /**
+   * Whether the customer has confirmed their age in the current session.
+   * Used by Holiq age-gate: once true, the gate is not shown again until
+   * resetSession() clears it. Never persisted.
+   */
+  ageVerified: boolean;
 
   startOrder: () => void;
   proceedToPayment: () => void;
@@ -37,6 +43,7 @@ export interface SessionState {
   setPartySize: (size: number) => void;
   setBrandId: (id: string) => void;
   setLocationId: (id: string) => void;
+  setAgeVerified: (verified: boolean) => void;
 }
 
 export const useSessionStore = create<SessionState>()((set) => ({
@@ -46,6 +53,7 @@ export const useSessionStore = create<SessionState>()((set) => ({
   brandId: import.meta.env.VITE_BRAND || 'straunt',
   locationId: '',
   partySize: 1,
+  ageVerified: false,
 
   startOrder() {
     set({ orderState: 'ordering', orderId: generateOrderId() });
@@ -66,7 +74,11 @@ export const useSessionStore = create<SessionState>()((set) => ({
   },
 
   resetSession() {
-    set({ orderId: null, orderState: 'idle', partySize: 1 });
+    set({ orderId: null, orderState: 'idle', partySize: 1, ageVerified: false });
+  },
+
+  setAgeVerified(verified) {
+    set({ ageVerified: verified });
   },
 
   setPartySize(size) {

@@ -9,8 +9,10 @@
 
 import axios from 'axios';
 import { AUTH_CONFIG } from '@/config/auth.config';
+import { getActiveBrandAuthConfig } from '@/config/brand-auth';
 import { useAuthStore, type AuthUser } from '@/store/authStore';
 import { encryptCredentials, decryptCredentials, appendSuffix, removeSuffix } from '@/utils/crypto';
+import { resolveBrandFromAppId } from '@/brands';
 import { logger } from '@/utils/logger';
 
 // ─── Dedicated axios instance (no interceptors — auth calls are self-contained) ─
@@ -24,11 +26,14 @@ function unauthGatewayBody(
   payload: Record<string, unknown>,
   extraHeaders: Record<string, string> = {},
 ) {
+  // app_group_id MUST come from the currently selected brand — not from the
+  // build-time AUTH_CONFIG which is baked at compile time for the default brand.
+  const { appGroupId } = getActiveBrandAuthConfig();
   return {
     url,
     method: 'post',
     headers: {
-      app_group_id:    AUTH_CONFIG.APP_GROUP_ID,
+      app_group_id:    appGroupId,
       application_id:  AUTH_CONFIG.GA_APPLICATION_ID,
       ...extraHeaders,
     },
@@ -112,24 +117,30 @@ export async function login(email: string, password: string): Promise<LoginResul
     access_key: string; account_id: string; su_id: string; name: string;
   };
 
-  // 2b. Subscription check — flexible fallback (mirrors subscribedApps in ext-store
-  //     but does NOT hard-block when the specific prd_id is not found).
+  // 2b. Subscription check — STRICT brand match (mirrors subscribedApps in ext-store).
   //
-  //   Priority:
-  //     1. Subscription matching AUTH_CONFIG.PRD_ID → use its tac_application_id
-  //     2. Any other subscription → use the first one's tac_application_id
-  //     3. No subscriptions / network error → use '0' (gateway still accepts it for
-  //        store-listing and channel-listing calls)
+  //  The selected brand's prd_id MUST appear in the Subscribed array.
+  //  If it doesn't, the account does not have access to this brand's kiosk and
+  //  login is rejected — identical to how the Holiq ext-store blocks with a
+  //  "noSubscribedApp" screen when prd_id is not found.
   //
-  //   The old behaviour blocked login entirely when prd_id didn't match. For the
-  //   kiosk the merchant's account may be subscribed to a different product; we
-  //   still want them to reach the store / channel selection flow.
+  //  There is NO fallback to a different subscription. Using the wrong
+  //  tac_application_id would route all subsequent API calls (store listing,
+  //  catalog, orders) to the wrong tenant's data.
   let tacApplicationId = '0';
+  let detectedBrandId: string | null = null;
+
+  const brandAuth = getActiveBrandAuthConfig();
+  logger.info(`[auth] subscription check — brand: ${brandAuth.uniqueCode}, appGroupId: ${brandAuth.appGroupId}, prdId: ${brandAuth.prdId}`);
+
   try {
-    const payload = { user_id: su_id, app_group_id: AUTH_CONFIG.APP_GROUP_ID };
+    const payload = { user_id: su_id, app_group_id: brandAuth.appGroupId };
     const body = {
       url:            AUTH_CONFIG.SUBSCRIBED_API,
       method:         'post',
+      // Note: app_group_id is intentionally NOT in the headers object here —
+      // it goes in the payload only. This matches the Holiq ext-store reference
+      // where the app_group_id header is commented out in checkSubscribedAppId.
       headers:        { application_id: AUTH_CONFIG.GA_APPLICATION_ID },
       payload,
       is_auth:        false,
@@ -147,27 +158,43 @@ export async function login(email: string, password: string): Promise<LoginResul
     });
 
     const subscribed = (data?.Subscribed ?? []) as Array<{ app_id: string; tac_application_id: string }>;
+    logger.info(`[auth] ${subscribed.length} subscription(s) found, matching prdId: ${brandAuth.prdId}`);
+    logger.info(`[auth] available app_ids: ${subscribed.map(s => s.app_id).join(', ')}`);
 
-    // 1. Exact product match
-    const exactMatch = subscribed.find((s) => s.app_id === AUTH_CONFIG.PRD_ID);
+    // STRICT match — the account MUST be subscribed to THIS brand's product.
+    // Using == (not ===) to match the reference app which uses loose equality.
+    const exactMatch = subscribed.find((s) => s.app_id == brandAuth.prdId);
+
     if (exactMatch) {
       tacApplicationId = exactMatch.tac_application_id;
-      logger.info('[auth] subscription matched prd_id');
-    } else if (subscribed.length > 0) {
-      // 2. Fallback: first available subscription
-      tacApplicationId = subscribed[0].tac_application_id;
-      logger.info('[auth] prd_id not in subscriptions — using first available tac_application_id');
+      logger.info(`[auth] ✓ subscription matched — brand: ${brandAuth.uniqueCode}, tac_application_id: ${tacApplicationId}`);
+
+      // Attempt brand detection from the matched app_id (for the brand registry)
+      detectedBrandId = resolveBrandFromAppId(exactMatch.app_id);
+      if (detectedBrandId) {
+        logger.info(`[auth] brand confirmed from subscription: ${detectedBrandId}`);
+      }
     } else {
-      // 3. No subscriptions — proceed with '0'
-      logger.warn('[auth] no subscriptions found — using tac_application_id=0');
+      // HARD BLOCK: no subscription for this brand's prd_id.
+      // Same behavior as Holiq ext-store's noSubscribedApp redirect.
+      const brandName = brandAuth.uniqueCode.charAt(0).toUpperCase() + brandAuth.uniqueCode.slice(1);
+      const available = subscribed.length
+        ? `Available subscriptions: ${subscribed.map(s => s.app_id).join(', ')}`
+        : 'No subscriptions found on this account.';
+      logger.warn(`[auth] ✗ no subscription for ${brandName} (prdId: ${brandAuth.prdId}). ${available}`);
+      return {
+        success: false,
+        error: `This account is not subscribed to ${brandName} Kiosk. Please use a ${brandName} account or select a different brand.`,
+      };
     }
   } catch (err: unknown) {
-    // Network / API error — proceed anyway; store listing will reveal real access issues
-    logger.warn('[auth] subscription check failed, proceeding with tac_application_id=0', parseError(err));
+    const msg = parseError(err);
+    logger.warn('[auth] subscription check network error', msg);
+    return { success: false, error: `Subscription check failed: ${msg}` };
   }
 
   // 2c. Build user, commit to store + storage
-  const user: AuthUser = { access_key, account_id, su_id, name, email, tac_application_id: tacApplicationId };
+  const user: AuthUser = { access_key, account_id, su_id, name, email, tac_application_id: tacApplicationId, detectedBrandId };
   useAuthStore.getState().setUser(user);
 
   // 2d. Encrypt and persist credentials (same AES-GCM as ext-store)

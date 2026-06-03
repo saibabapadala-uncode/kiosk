@@ -35,6 +35,7 @@
 
 import axios from 'axios';
 import { AUTH_CONFIG } from '@/config/auth.config';
+import { getActiveBrandAuthConfig } from '@/config/brand-auth';
 import { useAuthStore } from '@/store/authStore';
 import { useKioskChannelStore } from '@/store/kioskChannelStore';
 import { useStoreConfigStore } from '@/store/storeConfigStore';
@@ -211,9 +212,13 @@ async function gatewayPost<T>(blsId: string, body: Record<string, unknown>): Pro
 
   if (!user) throw new Error('[storefront] Not authenticated');
 
+  // All header names lowercase — matches the working curl and Holiq interceptor.
+  // prd_id falls back to the active brand's value (not the build-time constant).
+  const { prdId } = getActiveBrandAuthConfig();
+
   const { data } = await axios.post<T>(`${AUTH_CONFIG.DEV_URL}${blsId}`, body, {
     headers: {
-      'Content-Type':           'application/json',
+      'content-type':           'application/json',
       account_id:               userDetails?.account_id             || user.account_id,
       application_id:           userDetails?.application_id         || user.tac_application_id,
       environment_id:           userDetails?.environment_id         || AUTH_CONFIG.SHARED_ENVIRONMENT_ID,
@@ -221,8 +226,10 @@ async function gatewayPost<T>(blsId: string, body: Record<string, unknown>): Pro
       controller_id:            store?.controller_id                || AUTH_CONFIG.CONTROLLER_ID,
       controller_data_id:       channel?.store_id                   || 'default_application_id',
       ext_app_id:               '2',
+      ext_user_id:              user.su_id,
+      username:                 user.name,
       is_from_shared_component: 'true',
-      prd_id:                   userDetails?.app_id                 || AUTH_CONFIG.PRD_ID,
+      prd_id:                   userDetails?.app_id                 || prdId,
       shared_application_id:    userDetails?.shared_application_id  || AUTH_CONFIG.SHARED_APPLICATION_ID,
       shared_environment_id:    userDetails?.shared_environment_id  || AUTH_CONFIG.SHARED_ENVIRONMENT_ID,
     },

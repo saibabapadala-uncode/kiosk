@@ -1,28 +1,39 @@
 // src/modules/catalog/ProductGrid.tsx
-// Grid layout uses CSS auto-fill + minmax so column count is determined by the
-// *container* width, not the viewport width.  This is critical for the landscape
-// split-panel layout where the grid occupies only 70 % of the screen — Tailwind
-// responsive classes (sm:, lg:) would keep using the full viewport width and
-// render too many columns inside the narrower container.
 //
-// auto-fill column formula:  repeat(auto-fill, minmax(min(200px, 45%), 1fr))
-//   min(200px, 45%) ensures at least 2 columns even on very narrow containers
-//   while setting a 200 px floor for the card width on wider containers.
-//   Result at common widths (container, not viewport):
-//     280 px  → 2 cols  (portrait phone, no sidebar)
-//     560 px  → 2 cols  (narrow tablet)
-//     720 px  → 3 cols  (70 % grid with panel open on 1024 px screen)
-//     840 px  → 4 cols  (full grid on 1024 px screen minus sidebar)
-//    1040 px  → 5 cols  (full grid on 1280 px screen minus sidebar)
+// EQUAL-HEIGHT GUARANTEE
+// ──────────────────────
+// CSS Grid by default uses align-items:stretch, so each grid cell expands to
+// the height of the tallest card in its row. To propagate that height INTO the
+// card component:
+//
+//   grid cell div  { display:flex; flex-direction:column }   ← flex container
+//   article (card) { flex:1 }                                 ← fills the cell
+//
+// ProductCard internally uses flex:1 on the info area, so the name section
+// expands and the price/CTA row is always pinned to the bottom — regardless
+// of how many lines the product name takes.
+//
+// COLUMN FORMULA
+// ──────────────
+// repeat(auto-fill, minmax(min(196px, 44%), 1fr))
+//   • min(196px, 44%) → on containers < 445 px: 44% (keeps 2 cols)
+//                     → on containers ≥ 445 px: 196 px floor
+//   • At 1062 px grid (1366 px screen − 268 px sidebar − 36 px padding):
+//       5 cols × 196 px + 4 gaps × 14 px = 980 + 56 = 1036 px  ✓ fits
+//       6 cols × 196 px + 5 gaps × 14 px = 1176 + 70 = 1246 px ✗ too wide
 
 import { useEffect, useRef, useState, useMemo } from 'react';
 import { useVirtualizer }                        from '@tanstack/react-virtual';
 import type { Product }                          from '@/types/catalog';
 import ProductCard                               from './ProductCard';
 
-// ─── Grid column config ────────────────────────────────────────────────────────
+// ─── Shared grid constants ────────────────────────────────────────────────────
 
-// For the virtualizer (which needs an integer col count), map container px → cols.
+const GRID_COLS_CSS = 'repeat(auto-fill, minmax(min(196px, 44%), 1fr))';
+const GRID_GAP      = 14;     // px
+const GRID_PADDING  = '16px 18px';
+
+// Virtualizer column map — integer needed for row bucketing
 function colsFromWidth(w: number): number {
   if (w < 480) return 2;
   if (w < 700) return 3;
@@ -30,34 +41,64 @@ function colsFromWidth(w: number): number {
   return 5;
 }
 
-// The CSS minmax value used in the non-virtual grid.
-// min(200px, 45%) guarantees at least 2 cols even on very narrow containers.
-const GRID_COLS_CSS = 'repeat(auto-fill, minmax(min(200px, 45%), 1fr))';
-
-// ─── Skeleton ─────────────────────────────────────────────────────────────────
+// ─── Skeleton card — mirrors real card proportions exactly ────────────────────
 
 function SkeletonCard() {
   return (
-    <div aria-hidden="true"
-      className="flex flex-col rounded-brand overflow-hidden bg-brand-surface border border-brand-border animate-pulse">
-      <div className="aspect-[4/3] bg-brand-border" />
-      <div className="p-3 flex flex-col gap-2">
-        <div className="h-4 bg-brand-border rounded w-3/4" />
-        <div className="h-3 bg-brand-border rounded w-1/2" />
-        <div className="h-8 bg-brand-border rounded mt-2" />
+    <div style={{
+      display:       'flex',
+      flexDirection: 'column',
+      borderRadius:  18,
+      overflow:      'hidden',
+      background:    '#FFFFFF',
+      boxShadow:     '0 2px 10px rgba(0,0,0,0.06)',
+    }}>
+      {/* Image placeholder — same 72 % ratio as ProductCard */}
+      <div style={{ paddingTop: '72%', position: 'relative', flexShrink: 0 }}>
+        <div style={{
+          position:  'absolute',
+          inset:     0,
+          background:'linear-gradient(135deg,#F5EFE9,#EDE8E2)',
+          animation: 'skeleton-shimmer 1.6s ease-in-out infinite',
+        }} />
+      </div>
+      {/* Info area — same padding, same 2-row name + price row layout */}
+      <div style={{ padding: '10px 12px 12px', display: 'flex', flexDirection: 'column', gap: 0 }}>
+        {/* Name line 1 */}
+        <div style={{ height: 13, borderRadius: 5, background: '#EDE8E2', width: '78%',
+          animation: 'skeleton-shimmer 1.6s ease-in-out infinite 80ms' }} />
+        {/* Name line 2 */}
+        <div style={{ height: 13, borderRadius: 5, background: '#EDE8E2', width: '52%',
+          marginTop: 6, animation: 'skeleton-shimmer 1.6s ease-in-out infinite 120ms' }} />
+        {/* Price + button row */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 14 }}>
+          <div style={{ height: 16, borderRadius: 5, background: '#EDE8E2', width: 48,
+            animation: 'skeleton-shimmer 1.6s ease-in-out infinite 160ms' }} />
+          <div style={{ flex: 1 }} />
+          <div style={{ height: 32, borderRadius: 999, background: '#EDE8E2', width: 90,
+            animation: 'skeleton-shimmer 1.6s ease-in-out infinite 200ms' }} />
+        </div>
       </div>
     </div>
   );
 }
 
-function SkeletonGrid({ count = 8 }: { count?: number }) {
+function SkeletonGrid({ count = 10 }: { count?: number }) {
   return (
     <div
       aria-busy="true"
       aria-label="Loading menu items"
-      style={{ display: 'grid', gridTemplateColumns: GRID_COLS_CSS, gap: '1rem', padding: '1rem' }}
+      style={{
+        display:             'grid',
+        gridTemplateColumns: GRID_COLS_CSS,
+        gap:                 GRID_GAP,
+        padding:             GRID_PADDING,
+        alignItems:          'start',
+      }}
     >
-      {Array.from({ length: count }).map((_, i) => <SkeletonCard key={i} />)}
+      {Array.from({ length: count }).map((_, i) => (
+        <SkeletonCard key={i} />
+      ))}
     </div>
   );
 }
@@ -72,14 +113,25 @@ interface StandardGridProps {
 function StandardGrid({ products, onOpenModal }: StandardGridProps) {
   if (products.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center py-20 text-brand-muted font-brand">
-        <svg aria-hidden="true" className="w-16 h-16 mb-4 opacity-40" viewBox="0 0 24 24"
-          fill="none" stroke="currentColor" strokeWidth={1.5}>
+      <div style={{
+        display:        'flex',
+        flexDirection:  'column',
+        alignItems:     'center',
+        justifyContent: 'center',
+        padding:        '80px 32px',
+        textAlign:      'center',
+      }}>
+        <svg aria-hidden="true" style={{ width: 64, height: 64, color: '#D1D5DB', marginBottom: 16 }}
+          viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.4}>
           <circle cx="11" cy="11" r="8"/>
           <line x1="21" y1="21" x2="16.65" y2="16.65"/>
         </svg>
-        <p className="text-lg">No items found</p>
-        <p className="text-sm mt-1">Try a different category or search term</p>
+        <p style={{ margin: '0 0 4px', fontWeight: 700, fontSize: '1rem', color: '#1C1917', fontFamily: 'var(--font-brand)' }}>
+          No items found
+        </p>
+        <p style={{ margin: 0, fontSize: '0.875rem', color: '#78716C', fontFamily: 'var(--font-brand)' }}>
+          Try a different category or search term
+        </p>
       </div>
     );
   }
@@ -88,18 +140,35 @@ function StandardGrid({ products, onOpenModal }: StandardGridProps) {
     <div
       role="list"
       aria-label="Menu items"
-      style={{ display: 'grid', gridTemplateColumns: GRID_COLS_CSS, gap: '1rem', padding: '1rem' }}
+      style={{
+        display:             'grid',
+        gridTemplateColumns: GRID_COLS_CSS,
+        // Grid default is align-items:stretch — each cell expands to the
+        // tallest card in its row. The flex wrapper below propagates that
+        // height into the article element.
+        gap:                 GRID_GAP,
+        padding:             GRID_PADDING,
+      }}
     >
-      {products.map((product) => (
-        <div key={product.id} role="listitem">
-          <ProductCard product={product} onOpenModal={onOpenModal} />
+      {products.map((product, i) => (
+        <div
+          key={product.id}
+          role="listitem"
+          // flex wrapper → card fills the stretched grid cell
+          style={{ display: 'flex', flexDirection: 'column' }}
+        >
+          <ProductCard
+            product={product}
+            onOpenModal={onOpenModal}
+            animDelay={Math.min(i * 40, 400)}
+          />
         </div>
       ))}
     </div>
   );
 }
 
-// ─── Virtual grid (Holiq — 1 000 + items) ─────────────────────────────────────
+// ─── Virtual grid (large catalogs — Holiq etc.) ───────────────────────────────
 
 interface VirtualGridProps {
   products:             Product[];
@@ -109,11 +178,12 @@ interface VirtualGridProps {
   isFetchingNextPage?:  boolean;
 }
 
-function VirtualGrid({ products, onOpenModal, onScrolledToBottom, hasMore, isFetchingNextPage }: VirtualGridProps) {
+function VirtualGrid({
+  products, onOpenModal,
+  onScrolledToBottom, hasMore, isFetchingNextPage,
+}: VirtualGridProps) {
   const parentRef = useRef<HTMLDivElement>(null);
 
-  // Track actual container width with ResizeObserver so columns respond to the
-  // container (not the viewport) — same reason as the non-virtual grid above.
   const [containerWidth, setContainerWidth] = useState(() =>
     typeof window !== 'undefined' ? window.innerWidth : 1280,
   );
@@ -121,9 +191,7 @@ function VirtualGrid({ products, onOpenModal, onScrolledToBottom, hasMore, isFet
   useEffect(() => {
     const el = parentRef.current;
     if (!el) return;
-    const ro = new ResizeObserver(([entry]) => {
-      setContainerWidth(entry.contentRect.width);
-    });
+    const ro = new ResizeObserver(([entry]) => setContainerWidth(entry.contentRect.width));
     ro.observe(el);
     return () => ro.disconnect();
   }, []);
@@ -132,19 +200,17 @@ function VirtualGrid({ products, onOpenModal, onScrolledToBottom, hasMore, isFet
 
   const rows = useMemo(() => {
     const r: Product[][] = [];
-    for (let i = 0; i < products.length; i += colCount) {
-      r.push(products.slice(i, i + colCount));
-    }
+    for (let i = 0; i < products.length; i += colCount) r.push(products.slice(i, i + colCount));
     return r;
   }, [products, colCount]);
 
   const rowCount = rows.length + (hasMore ? 1 : 0);
 
   const virtualizer = useVirtualizer({
-    count:           rowCount,
+    count:            rowCount,
     getScrollElement: () => parentRef.current,
-    estimateSize:    () => 320,
-    overscan:        3,
+    estimateSize:     () => 300,
+    overscan:         3,
   });
 
   const virtualItems = virtualizer.getVirtualItems();
@@ -152,32 +218,44 @@ function VirtualGrid({ products, onOpenModal, onScrolledToBottom, hasMore, isFet
   useEffect(() => {
     const last = virtualItems[virtualItems.length - 1];
     if (!last) return;
-    if (last.index >= rows.length - 1 && hasMore && onScrolledToBottom) {
-      onScrolledToBottom();
-    }
+    if (last.index >= rows.length - 1 && hasMore && onScrolledToBottom) onScrolledToBottom();
   }, [virtualItems, rows.length, hasMore, onScrolledToBottom]);
 
   return (
     <div ref={parentRef} style={{ height: '100%', overflowY: 'auto' }} aria-label="Menu items">
       <div style={{ height: virtualizer.getTotalSize(), position: 'relative' }}>
-        {virtualItems.map((vRow) => {
+        {virtualItems.map(vRow => {
           const rowProducts = rows[vRow.index];
           return (
-            <div key={vRow.key} data-index={vRow.index} ref={virtualizer.measureElement}
+            <div
+              key={vRow.key}
+              data-index={vRow.index}
+              ref={virtualizer.measureElement}
               style={{ position: 'absolute', top: 0, left: 0, width: '100%', transform: `translateY(${vRow.start}px)` }}
             >
               {rowProducts ? (
-                <div style={{ display: 'grid', gridTemplateColumns: GRID_COLS_CSS, gap: '1rem', padding: '1rem' }}>
-                  {rowProducts.map((product) => (
-                    <ProductCard key={product.id} product={product} onOpenModal={onOpenModal} />
+                <div style={{
+                  display:             'grid',
+                  gridTemplateColumns: GRID_COLS_CSS,
+                  gap:                 GRID_GAP,
+                  padding:             GRID_PADDING,
+                }}>
+                  {rowProducts.map(product => (
+                    <div key={product.id} style={{ display: 'flex', flexDirection: 'column' }}>
+                      <ProductCard product={product} onOpenModal={onOpenModal} />
+                    </div>
                   ))}
                 </div>
               ) : (
-                <div className="flex justify-center py-8">
+                <div style={{ display: 'flex', justifyContent: 'center', padding: '32px 0' }}>
                   {isFetchingNextPage && (
-                    <div className="flex items-center gap-2 text-brand-muted font-brand text-sm">
-                      <div className="w-4 h-4 rounded-full border-2 border-brand-primary border-t-transparent animate-spin" />
-                      Loading more...
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#78716C', fontFamily: 'var(--font-brand)', fontSize: '0.875rem' }}>
+                      <div style={{
+                        width: 16, height: 16, borderRadius: '50%',
+                        border: '2px solid #F97316', borderTopColor: 'transparent',
+                        animation: 'spin-ring 0.8s linear infinite',
+                      }} />
+                      Loading more…
                     </div>
                   )}
                 </div>
@@ -211,9 +289,11 @@ export default function ProductGrid({
 
   if (virtualScroll) {
     return (
-      <VirtualGrid products={products} onOpenModal={onOpenModal}
-        onScrolledToBottom={onScrolledToBottom} hasMore={hasMore}
-        isFetchingNextPage={isFetchingNextPage} />
+      <VirtualGrid
+        products={products} onOpenModal={onOpenModal}
+        onScrolledToBottom={onScrolledToBottom}
+        hasMore={hasMore} isFetchingNextPage={isFetchingNextPage}
+      />
     );
   }
 

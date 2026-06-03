@@ -33,42 +33,45 @@ import type { Category }         from '@/types/catalog';
 
 import LanguageSelector          from '@/components/LanguageSelector';
 import StaffPinModal             from '@/components/StaffPinModal';
+import AgeVerificationGate       from '@/components/AgeVerificationGate';
 
-// ─── Colour tokens ────────────────────────────────────────────────────────────
+// ─── Colour tokens — CSS variable aliases ────────────────────────────────────
+// All values reference CSS custom properties so the attract screen responds
+// automatically when the active brand switches at runtime.
 
 const C = {
-  bg:        '#FFF8EF',          // warm cream background
-  amber:     '#E8720C',          // primary orange-amber
-  amberLight:'#FFA53D',          // lighter amber for gradients
-  amberTint: '#FFF3E0',          // very light amber tint
-  amberBg:   'rgba(232,114,12,0.08)', // badge background
-  stone900:  '#1C1917',
-  stone700:  '#44403C',
-  stone500:  '#78716C',
-  stone300:  '#D6D3D1',
-  white:     '#FFFFFF',
-  cardBg:    'rgba(255,255,255,0.92)',
+  bg:         'var(--color-brand-bg)',
+  amber:      'var(--color-brand-primary)',
+  amberLight: 'var(--color-brand-gradient-end)',
+  amberTint:  'var(--color-brand-surface)',
+  amberBg:    'rgba(var(--color-brand-primary-rgb,245,158,11),0.08)',
+  stone900:   'var(--color-brand-text)',
+  stone700:   'var(--color-brand-text)',
+  stone500:   'var(--color-brand-muted)',
+  stone300:   'var(--color-brand-border)',
+  white:      'var(--color-ui-card)',
+  cardBg:     'var(--ui-glass-bg)',
 };
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-function catIcon(name: string): string {
+const DEFAULT_CAT_ICON_MAP: Record<string, string> = {
+  'chicken': '🍗', 'wing': '🍗', 'burger': '🍔', 'sandwich': '🥪',
+  'pizza': '🍕', 'flat': '🍕', 'drink': '🥤', 'bev': '🥤', 'juice': '🍹',
+  'dessert': '🍰', 'sweet': '🧁', 'cake': '🎂', 'side': '🍟', 'snack': '🍿',
+  'fry': '🍟', 'bread': '🫓', 'naan': '🫓', 'roti': '🫓', 'rice': '🍚',
+  'bowl': '🥗', 'salad': '🥗', 'veg': '🥗', 'soup': '🍲', 'coffee': '☕',
+  'tea': '🫖', 'wrap': '🌯', 'taco': '🌮', 'roll': '🌯', 'seafood': '🦐',
+  'fish': '🐟', 'indian': '🍛', 'south': '🍛', 'beer': '🍺', 'wine': '🍷',
+  'spirit': '🥃', 'cocktail': '🍸', 'vodka': '🍸', 'whiskey': '🥃',
+};
+
+function catIcon(name: string, brandMap?: Record<string, string>): string {
   const s = name.toLowerCase();
-  if (s.includes('chicken') || s.includes('wing'))                      return '🍗';
-  if (s.includes('burger') || s.includes('sandwich'))                   return '🍔';
-  if (s.includes('pizza') || s.includes('flat'))                        return '🍕';
-  if (s.includes('drink') || s.includes('bev') || s.includes('juice'))  return '🥤';
-  if (s.includes('dessert') || s.includes('sweet') || s.includes('cake'))return '🍰';
-  if (s.includes('side') || s.includes('snack') || s.includes('fry'))   return '🍟';
-  if (s.includes('bread') || s.includes('naan') || s.includes('roti'))  return '🫓';
-  if (s.includes('rice') || s.includes('bowl'))                         return '🍚';
-  if (s.includes('salad') || s.includes('veg'))                         return '🥗';
-  if (s.includes('soup'))                                                return '🍲';
-  if (s.includes('coffee') || s.includes('tea'))                        return '☕';
-  if (s.includes('wrap') || s.includes('taco') || s.includes('roll'))   return '🌮';
-  if (s.includes('seafood') || s.includes('fish'))                      return '🦐';
-  if (s.includes('late') || s.includes('night') || s.includes('bite'))  return '🌙';
-  if (s.includes('indian') || s.includes('south'))                      return '🍛';
+  const map = brandMap ?? DEFAULT_CAT_ICON_MAP;
+  for (const [key, icon] of Object.entries(map)) {
+    if (s.includes(key)) return icon;
+  }
   return '🍽';
 }
 
@@ -76,45 +79,49 @@ function padCount(n: number): string {
   return n < 10 ? `0${n}` : `${n}`;
 }
 
-// ─── Floating food doodles ────────────────────────────────────────────────────
-// Outline-style SVG icons scattered in the background.
-// Using emoji in divs with border + low opacity to match the reference.
+// ─── Floating doodles ────────────────────────────────────────────────────────
+// Emoji scattered in the background — sourced from brand config when available.
 
-const DOODLES: Array<{ emoji: string; top: string; left?: string; right?: string; size: number; rot: number; opacity: number }> = [
-  { emoji: '🍔', top: '8%',  left: '5%',   size: 72, rot: -15, opacity: 0.22 },
-  { emoji: '🍕', top: '14%', right: '6%',  size: 60, rot: 12,  opacity: 0.20 },
-  { emoji: '🥤', top: '38%', left: '3%',   size: 56, rot: -8,  opacity: 0.18 },
-  { emoji: '🍟', top: '55%', right: '4%',  size: 64, rot: 10,  opacity: 0.20 },
-  { emoji: '🍗', top: '70%', left: '6%',   size: 58, rot: -12, opacity: 0.18 },
-  { emoji: '🍰', top: '22%', right: '3%',  size: 52, rot: 8,   opacity: 0.16 },
-  { emoji: '🫓', top: '80%', right: '7%',  size: 54, rot: -6,  opacity: 0.16 },
-  { emoji: '🌿', top: '12%', left: '22%',  size: 32, rot: 20,  opacity: 0.28 },
-  { emoji: '🌿', top: '35%', right: '20%', size: 28, rot: -18, opacity: 0.24 },
-  { emoji: '🌿', top: '60%', left: '28%',  size: 30, rot: 15,  opacity: 0.22 },
-  { emoji: '⭕', top: '28%', left: '15%',  size: 14, rot: 0,   opacity: 0.14 },
-  { emoji: '⭕', top: '48%', right: '18%', size: 10, rot: 0,   opacity: 0.12 },
+const DEFAULT_DOODLES = ['🍔','🍕','🥤','🍟','🍗','🍰','🫓','🌿','🌿','🌿'];
+
+const DOODLE_POSITIONS = [
+  { top: '8%',  left: '5%',   rot: -15, opacity: 0.22 },
+  { top: '14%', right: '6%',  rot: 12,  opacity: 0.20 },
+  { top: '38%', left: '3%',   rot: -8,  opacity: 0.18 },
+  { top: '55%', right: '4%',  rot: 10,  opacity: 0.20 },
+  { top: '70%', left: '6%',   rot: -12, opacity: 0.18 },
+  { top: '22%', right: '3%',  rot: 8,   opacity: 0.16 },
+  { top: '80%', right: '7%',  rot: -6,  opacity: 0.16 },
+  { top: '12%', left: '22%',  rot: 20,  opacity: 0.28 },
+  { top: '35%', right: '20%', rot: -18, opacity: 0.24 },
+  { top: '60%', left: '28%',  rot: 15,  opacity: 0.22 },
 ];
 
-function FoodDoodles() {
+function BrandDoodles({ doodles }: { doodles: string[] }) {
   return (
     <div aria-hidden="true" style={{ position: 'absolute', inset: 0, overflow: 'hidden', pointerEvents: 'none', zIndex: 1 }}>
-      {DOODLES.map((d, i) => {
-        const isCircle = (d.emoji as string) === '⭕';
+      {DOODLE_POSITIONS.map((pos, i) => {
+        const emoji = doodles[i % doodles.length];
         return (
           <div key={i} style={{
-            position: 'absolute', top: d.top, left: d.left, right: d.right,
-            ...(isCircle ? {} : {
-              fontSize: d.size, lineHeight: 1, opacity: d.opacity,
-              transform: `rotate(${d.rot}deg)`,
-            }),
+            position: 'absolute',
+            top: pos.top,
+            ...(('left' in pos) ? { left: pos.left } : { right: (pos as { right: string }).right }),
+            fontSize: 56 + (i % 3) * 8, lineHeight: 1,
+            opacity: pos.opacity,
+            transform: `rotate(${pos.rot}deg)`,
           }}>
-            {isCircle ? (
-              <div style={{ width: d.size, height: d.size, borderRadius: '50%',
-                border: `2px solid ${C.amber}`, opacity: d.opacity }} />
-            ) : (d.emoji as string)}
+            {emoji}
           </div>
         );
       })}
+      {/* Decorative circles */}
+      <div style={{ position: 'absolute', top: '28%', left: '15%',
+        width: 14, height: 14, borderRadius: '50%',
+        border: `2px solid ${C.amber}`, opacity: 0.14 }} />
+      <div style={{ position: 'absolute', top: '48%', right: '18%',
+        width: 10, height: 10, borderRadius: '50%',
+        border: `2px solid ${C.amber}`, opacity: 0.12 }} />
     </div>
   );
 }
@@ -260,7 +267,7 @@ function FeatureBadges({ labels }: { labels: string[] }) {
 
 // ─── Browse menu section ──────────────────────────────────────────────────────
 
-function BrowseMenu({ categories, onStart }: { categories: Category[]; onStart: () => void }) {
+function BrowseMenu({ categories, onStart, categoryIconMap }: { categories: Category[]; onStart: () => void; categoryIconMap?: Record<string, string> }) {
   const { t } = useTranslation();
   return (
     <div style={{
@@ -307,7 +314,7 @@ function BrowseMenu({ categories, onStart }: { categories: Category[]; onStart: 
             }}
           >
             <span style={{ fontSize: 'clamp(1.6rem,3vw,2rem)', lineHeight: 1 }}>
-              {catIcon(cat.name)}
+              {catIcon(cat.name, categoryIconMap)}
             </span>
             <span style={{ fontWeight: 700, fontSize: 'clamp(0.7rem,1.2vw,0.82rem)',
               color: C.stone900, textAlign: 'center', lineHeight: 1.2 }}>
@@ -377,6 +384,8 @@ export default function AttractScreenContent() {
   const logoUrl          = useSettingsStore((s) => s.theme.logoUrl);
   const tagline          = useSettingsStore((s) => s.theme.tagline ?? '');
   const channel          = useKioskChannelStore((s) => s.channel);
+  const ageVerified      = useSessionStore((s) => s.ageVerified);
+  const setAgeVerified   = useSessionStore((s) => s.setAgeVerified);
   const storeName        = useStoreConfigStore((s) => s.store?.name ?? '');
   const clearCart        = useCartStore((s) => s.clearCart);
   const resetSession     = useSessionStore((s) => s.resetSession);
@@ -396,11 +405,20 @@ export default function AttractScreenContent() {
   const [pinOpen, setPinOpen]           = useState(false);
   const tapTimer = useRef<ReturnType<typeof setTimeout>>();
 
+  const ageGateEnabled   = environment.businessRules?.ageVerification?.enabled ?? false;
+  const showAgeGate      = ageGateEnabled && !ageVerified;
+  const brandDoodles     = environment.attractScreen?.doodles ?? DEFAULT_DOODLES;
+  const categoryIconMap  = environment.categoryIconMap;
+
   useEffect(() => {
     clearCart(); resetSession(); resetPayment();
   }, [clearCart, resetSession, resetPayment]);
 
-  function handleStart() { startOrder(); history.push('/menu'); }
+  function handleStart() {
+    if (ageGateEnabled && !ageVerified) return; // age gate must be confirmed first
+    startOrder();
+    history.push('/menu');
+  }
 
   function handleSettingsTap(e: React.MouseEvent) {
     e.stopPropagation();
@@ -429,6 +447,17 @@ export default function AttractScreenContent() {
       }}
       onClick={handleStart}
     >
+      {/* Age verification gate — Holiq brand only, once per session */}
+      {showAgeGate && (
+        <AgeVerificationGate
+          onConfirm={() => setAgeVerified(true)}
+          onDeny={() => {
+            setAgeVerified(false);
+            // Stay on attract screen — customer chose to leave
+          }}
+        />
+      )}
+
       {/* ① Header */}
       <div onClick={(e) => e.stopPropagation()}>
         <HeaderBar
@@ -447,7 +476,7 @@ export default function AttractScreenContent() {
         padding: 'clamp(24px,4vh,48px) clamp(20px,5vw,80px) clamp(12px,2vh,24px)',
         textAlign: 'center', overflow: 'hidden' }}>
 
-        <FoodDoodles />
+        <BrandDoodles doodles={brandDoodles} />
 
         {/* "WELCOME TO" with flanking rules */}
         <div style={{ position: 'relative', zIndex: 2,
@@ -595,7 +624,7 @@ export default function AttractScreenContent() {
       {/* ③ Browse menu */}
       {showBrowse && (
         <div onClick={(e) => e.stopPropagation()}>
-          <BrowseMenu categories={categories} onStart={handleStart} />
+          <BrowseMenu categories={categories} onStart={handleStart} categoryIconMap={categoryIconMap} />
         </div>
       )}
 

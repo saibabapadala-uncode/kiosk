@@ -6,6 +6,7 @@
 import { create } from 'zustand';
 import { Preferences } from '@capacitor/preferences';
 import { logger } from '@/utils/logger';
+import { useSettingsStore } from '@/store/settingsStore';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -22,6 +23,11 @@ export interface AuthUser {
   email: string;
   /** tac_application_id returned by subscription check */
   tac_application_id: string;
+  /**
+   * BrandId resolved from the subscription app_id during login.
+   * null when no mapping is found (fall through to Signal 2 or VITE_BRAND).
+   */
+  detectedBrandId?: string | null;
 }
 
 export interface AuthState {
@@ -113,6 +119,8 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
 
   logout() {
     void clearPersistedUser();
+    useSettingsStore.getState().clearBrand();
+    // Note: callers should also clear kioskChannelStore and storeConfigStore after logout.
     set({ user: null, isAuthenticated: false, lastTokenRenewal: 0 });
     logger.info('[auth] signed out');
   },

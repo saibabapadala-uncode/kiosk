@@ -50,10 +50,10 @@ function EyeIcon({ open }: { open: boolean }) {
 
 // ─── Spinner ────────────────────────────────────────────────────────────────────
 
-function Spinner({ size = 'md', variant = 'white' }: { size?: 'sm' | 'md' | 'lg'; variant?: 'white' | 'amber' }) {
+function Spinner({ size = 'md', variant = 'white' }: { size?: 'sm' | 'md' | 'lg'; variant?: 'white' | 'brand' }) {
   const cls = size === 'sm' ? 'w-4 h-4 border-2' : size === 'lg' ? 'w-10 h-10 border-[3px]' : 'w-5 h-5 border-2';
-  const style = variant === 'amber'
-    ? { borderColor: '#FDE68A', borderTopColor: '#F59E0B' }
+  const style = variant === 'brand'
+    ? { borderColor: 'var(--color-brand-surface)', borderTopColor: 'var(--color-brand-primary)' }
     : { borderColor: 'rgba(255,255,255,0.30)', borderTopColor: 'white' };
   return <div className={`${cls} rounded-full animate-spin`} style={style} />;
 }
@@ -99,12 +99,12 @@ function SelectCard({
       onClick={onClick}
       className="w-full flex items-center gap-3 text-left rounded-2xl px-4 py-3.5 transition-all active:scale-[0.97]"
       style={selected ? {
-        background: 'linear-gradient(135deg, #F59E0B, #F97316)',
-        border:     '2px solid #F59E0B',
-        boxShadow:  '0 4px 16px rgba(245,158,11,0.30)',
+        background: 'var(--gradient-cta)',
+        border:     '2px solid var(--color-brand-primary)',
+        boxShadow:  '0 4px 16px rgba(var(--color-brand-primary-rgb),0.30)',
       } : {
-        background: '#FFFFFF',
-        border:     '1.5px solid #E5E7EB',
+        background: 'var(--color-ui-card)',
+        border:     '1.5px solid var(--color-brand-border)',
         boxShadow:  '0 1px 3px rgba(0,0,0,0.06)',
       }}
     >
@@ -161,6 +161,7 @@ function SelectCard({
 export default function LoginScreen() {
   const history  = useHistory();
   const { environment } = useBrand();
+  const kioskName = (environment.displayName || 'Kiosk').trim();
   const logoUrl  = useSettingsStore((s) => s.theme.logoUrl);
   const { channel, setChannel } = useKioskChannelStore();
 
@@ -175,6 +176,8 @@ export default function LoginScreen() {
   const [loading,        setLoading]        = useState(false);  // CTA button spinner
   const [loadingMessage, setLoadingMessage] = useState('');
   const [error,          setError]          = useState('');
+  /** When true the error is a subscription mismatch — show "Change Brand" CTA */
+  const [isSubscriptionError, setIsSubscriptionError] = useState(false);
   const [hasSaved,       setHasSaved]       = useState(false);
 
   // ── Store / channel state ────────────────────────────────────────────────────
@@ -253,6 +256,7 @@ export default function LoginScreen() {
             logger.warn('[login] prefetch store details failed', err),
           );
         }
+        useSettingsStore.getState().lockBrand();
         history.replace('/attract');
         return;
       }
@@ -316,9 +320,13 @@ export default function LoginScreen() {
     const authResult = await login(trimmed, password);
     setLoading(false);
     if (!authResult.success) {
-      setError(authResult.error ?? 'Login failed. Please try again.');
+      const errMsg = authResult.error ?? 'Login failed. Please try again.';
+      setError(errMsg);
+      // Detect subscription mismatch — show "Change Brand" CTA in the error banner
+      setIsSubscriptionError(errMsg.includes('not subscribed'));
       return;
     }
+    setIsSubscriptionError(false);
     await loadStores();
   }, [email, password, loadStores]);
 
@@ -355,6 +363,7 @@ export default function LoginScreen() {
         logger.warn('[login] prefetch store details failed', err),
       );
     }
+    useSettingsStore.getState().lockBrand();
     history.replace('/attract');
   }, [pendingChannel, setChannel, history]);
 
@@ -362,6 +371,7 @@ export default function LoginScreen() {
   const handleBackToEmail = useCallback(() => {
     setPassword('');
     setError('');
+    setIsSubscriptionError(false);
     setTimeout(() => emailRef.current?.focus(), 100);
   }, []);
 
@@ -386,7 +396,7 @@ export default function LoginScreen() {
         {/* Warm white page background */}
         <div
           className="relative flex items-center justify-center w-full h-full overflow-hidden"
-          style={{ background: 'linear-gradient(150deg, #FFFFFF 0%, #FFFBF0 60%, #FEF3C7 100%)' }}
+          style={{ background: 'linear-gradient(150deg, var(--color-brand-bg) 0%, var(--color-brand-surface) 60%, var(--color-brand-surface-alt) 100%)' }}
         >
           {/* Decorative amber blobs */}
           <div aria-hidden="true" className="absolute inset-0 overflow-hidden pointer-events-none">
@@ -411,22 +421,22 @@ export default function LoginScreen() {
             {/* Brand header */}
             <div className="flex flex-col items-center px-8 pt-8 pb-5 w-full">
               {logoUrl ? (
-                <img src={logoUrl} alt={environment.displayName}
+                <img src={logoUrl} alt={kioskName}
                   className="h-12 w-auto object-contain mb-3 drop-shadow-sm"
                   onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }} />
               ) : (
                 <div
                   className="w-14 h-14 rounded-2xl flex items-center justify-center font-bold text-white text-2xl font-brand mb-3"
                   style={{
-                    background: 'linear-gradient(135deg, #F59E0B, #F97316)',
-                    boxShadow:  '0 4px 16px rgba(245,158,11,0.30)',
+                    background: 'var(--gradient-cta)',
+                    boxShadow:  '0 4px 16px rgba(var(--color-brand-primary-rgb),0.30)',
                   }}
                 >
-                  {environment.displayName[0]}
+                  {kioskName[0]}
                 </div>
               )}
               <h1 className="text-2xl font-bold font-brand" style={{ color: '#111827' }}>
-                {environment.displayName}
+                {kioskName}
               </h1>
               <p className="text-sm font-brand mt-0.5 text-center" style={{ color: '#6B7280' }}>
                 {subHeading}
@@ -444,15 +454,34 @@ export default function LoginScreen() {
               {/* Error banner */}
               {error && (
                 <div
-                  className="flex items-start gap-2.5 px-4 py-3 rounded-xl text-sm font-brand animate-fade-in"
-                  style={{ background: '#FEF2F2', border: '1px solid #FECACA', color: '#DC2626' }}
+                  className="flex flex-col gap-2.5 px-4 py-3 rounded-xl text-sm font-brand animate-fade-in"
+                  style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.20)', color: 'var(--color-brand-error)' }}
                   role="alert"
                 >
-                  <svg className="w-4 h-4 flex-shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
-                    <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/>
-                    <line x1="12" y1="16" x2="12.01" y2="16"/>
-                  </svg>
-                  {error}
+                  <div className="flex items-start gap-2.5">
+                    <svg className="w-4 h-4 flex-shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
+                      <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/>
+                      <line x1="12" y1="16" x2="12.01" y2="16"/>
+                    </svg>
+                    <span>{error}</span>
+                  </div>
+
+                  {/* Subscription mismatch: show direct "Change Brand" CTA */}
+                  {isSubscriptionError && (
+                    <button
+                      type="button"
+                      onClick={() => history.replace('/brand-select')}
+                      className="self-start font-brand font-semibold text-xs px-3 py-1.5 rounded-lg transition-colors"
+                      style={{
+                        background: 'var(--color-brand-error)',
+                        color: '#FFFFFF',
+                        border: 'none',
+                        cursor: 'pointer',
+                      }}
+                    >
+                      ← Select a Different Brand
+                    </button>
+                  )}
                 </div>
               )}
 
@@ -538,7 +567,7 @@ export default function LoginScreen() {
               {/* ── STEP: loading ─────────────────────────────────────────── */}
               {step === 'loading' && (
                 <div className="flex flex-col items-center justify-center gap-4 py-6 animate-fade-in">
-                  <Spinner size="lg" variant="amber" />
+                  <Spinner size="lg" variant="brand" />
                   <p className="font-brand text-sm" style={{ color: '#374151' }}>{loadingMessage}</p>
                 </div>
               )}
@@ -579,7 +608,7 @@ export default function LoginScreen() {
                     </span>
                     <TextBtn
                       onClick={() => setStep('store-select')}
-                      style={{ color: '#F59E0B', fontSize: '0.7rem', fontWeight: 600 } as React.CSSProperties}
+                      style={{ color: 'var(--color-brand-primary)', fontSize: '0.7rem', fontWeight: 600 } as React.CSSProperties}
                     >
                       Change
                     </TextBtn>
@@ -637,7 +666,7 @@ export default function LoginScreen() {
                   <div className="flex items-center gap-3 px-4 py-3 rounded-2xl"
                     style={{ background: '#F9FAFB', border: '1.5px solid #E5E7EB' }}>
                     <div className="w-10 h-10 rounded-xl flex-shrink-0 flex items-center justify-center"
-                      style={{ background: 'linear-gradient(135deg,#F59E0B,#F97316)' }}>
+                      style={{ background: 'var(--gradient-cta)' }}>
                       <svg className="w-5 h-5 text-white" viewBox="0 0 24 24" fill="none"
                         stroke="currentColor" strokeWidth={2} strokeLinecap="round">
                         <rect x="2" y="3" width="20" height="14" rx="2"/>
@@ -658,7 +687,7 @@ export default function LoginScreen() {
 
                   {/* Settings PIN notice — the admin must see this before the kiosk goes live */}
                   <div className="flex items-start gap-3 px-4 py-3.5 rounded-2xl"
-                    style={{ background: '#FFFBEB', border: '1.5px solid #FDE68A' }}>
+                    style={{ background: 'var(--color-brand-surface)', border: '1.5px solid var(--color-brand-border)' }}>
                     <span className="text-xl flex-shrink-0 mt-0.5">🔐</span>
                     <div className="flex-1">
                       <p className="font-bold font-brand text-sm leading-tight" style={{ color: '#92400E' }}>
@@ -723,12 +752,24 @@ export default function LoginScreen() {
                   ) : 'Sign In'}
                 </button>
               )}
+
+              {/* ── Change Brand link (credentials step only) ─────────────── */}
+              {step === 'credentials' && (
+                <button
+                  type="button"
+                  onClick={() => history.replace('/brand-select')}
+                  className="text-xs font-brand text-center"
+                  style={{ background: 'transparent', border: 'none', color: '#9CA3AF', cursor: 'pointer' }}
+                >
+                  ← Change Brand
+                </button>
+              )}
             </div>
 
             {/* Footer */}
             <div className="w-full px-8 pb-6 text-center">
               <p className="text-xs font-brand" style={{ color: '#9CA3AF' }}>
-                Kiosk Application · {environment.displayName}
+                Kiosk Application · {kioskName}
               </p>
             </div>
           </div>

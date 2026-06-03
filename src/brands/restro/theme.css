@@ -1,24 +1,118 @@
 /* src/brands/restro/theme.css
-   Restro — White base + warm amber accent (light mode only)
+   Restro — Restaurant / fine-dining kiosk brand
+   Primary:    #16A34A  green-600    (CTA, active states, prices)
+   Secondary:  #15803D  green-700    (gradient endpoint)
+   Background: #F0FDF4  green-50     (fresh, natural)
 */
 
+@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800&display=swap');
+
 :root[data-brand='restro'] {
-  --color-brand-primary:     #F59E0B;   /* amber-400  — warm amber CTA                     */
-  --color-brand-secondary:   #F97316;   /* orange-500 — gradient endpoint                  */
-  --color-brand-accent:      #F59E0B;   /* amber-400                                       */
-  --color-brand-bg:          #FFFFFF;   /* pure white                                      */
-  --color-brand-surface:     #F8F9FA;   /* gray-50    — near-white surface                 */
-  --color-brand-text:        #111827;   /* gray-900   — rich dark text                     */
-  --color-brand-muted:       #6B7280;   /* gray-500   — neutral muted text                 */
-  --color-brand-border:      #E5E7EB;   /* gray-200   — subtle border                      */
-  --color-brand-error:       #EF4444;
-  --color-brand-success:     #22C55E;
 
-  --color-brand-primary-rgb: 245,158,11;
+  /* ── Core palette ──────────────────────────────────────────────── */
+  --color-brand-primary:         #16A34A;   /* green-600 */
+  --color-brand-secondary:       #15803D;   /* green-700 */
+  --color-brand-accent:          #4ADE80;   /* green-400 — lighter accent */
+  --color-brand-bg:              #F0FDF4;   /* green-50  — fresh tint */
+  --color-brand-surface:         #DCFCE7;   /* green-100 */
+  --color-brand-surface-alt:     #BBF7D0;   /* green-200 */
+  --color-brand-text:            #052E16;   /* green-950 */
+  --color-brand-muted:           #4B5563;   /* gray-600 */
+  --color-brand-border:          #BBF7D0;   /* green-200 */
+  --color-brand-error:           #EF4444;
+  --color-brand-success:         #16A34A;   /* brand primary doubles as success */
+  --color-brand-warning:         #F59E0B;
 
-  --color-ui-card:           #FFFFFF;
-  --color-ui-surface-alt:    #F8F9FA;
+  /* ── Interactive states ────────────────────────────────────────── */
+  --color-brand-primary-hover:   #15803D;   /* green-700 */
+  --color-brand-primary-active:  #166534;   /* green-800 */
+  --color-brand-gradient-start:  #16A34A;
+  --color-brand-gradient-end:    #15803D;
+  --color-brand-text-inverse:    #FFFFFF;
+  --color-brand-badge-bg:        rgba(22,163,74,0.10);
 
-  --font-brand:   'Nunito', system-ui, sans-serif;
-  --radius-brand: 0.625rem;
+  /* ── RGB triplets ───────────────────────────────────────────────── */
+  --color-brand-primary-rgb:     22,163,74;
+  --color-brand-secondary-rgb:   21,128,61;
+  --color-brand-accent-rgb:      74,222,128;
+
+  /* ── UI surfaces ───────────────────────────────────────────────── */
+  --color-ui-card:               #FFFFFF;
+  --color-ui-sidebar:            #FFFFFF;
+  --color-ui-header:             #FFFFFF;
+  --color-ui-surface-alt:        #F0FDF4;
+  --ui-glass-border:             rgba(22,163,74,0.12);
+
+  /* ── Gradients ─────────────────────────────────────────────────── */
+  --gradient-cta:         linear-gradient(135deg, #16A34A 0%, #15803D 100%);
+  --gradient-hero:        linear-gradient(160deg, #16A34A 0%, #166534 60%, #14532D 100%);
+  --gradient-placeholder: linear-gradient(150deg, #F0FDF4 0%, #DCFCE7 100%);
+
+  /* ── Badge colors ──────────────────────────────────────────────── */
+  --color-badge-popular-from:    #16A34A;
+  --color-badge-popular-to:      #15803D;
+
+  /* ── Card ──────────────────────────────────────────────────────── */
+  --card-shadow:       0 2px 10px rgba(22,163,74,0.07), 0 1px 3px rgba(0,0,0,0.04);
+  --card-shadow-hover: 0 14px 34px rgba(22,163,74,0.14), 0 4px 10px rgba(0,0,0,0.06);
+  --card-image-ratio:  72%;
+
+  /* ── Sidebar ────────────────────────────────────────────────────── */
+  --sidebar-width:            268px;
+  --sidebar-item-radius:      10px;
+  --sidebar-active-shadow:    0 4px 18px rgba(22,163,74,0.28);
+
+  /* ── Typography ─────────────────────────────────────────────────── */
+  --font-brand:         'Nunito', system-ui, sans-serif;
+  --font-size-price:    1.05rem;
+  --font-weight-price:  800;
+
+  /* ── Shape — slightly sharper corners for fine-dining feel ──────── */
+  --radius-brand:        0.625rem;
+  --radius-xl:           1rem;
+  --radius-2xl:          1.25rem;
+  --radius-brand-card:   0.875rem;
+  --radius-brand-button: 0.625rem;
+  --radius-icon-wrap:    var(--radius-brand);  /* square-ish icon wrap */
+
+  /* ── Glass ──────────────────────────────────────────────────────── */
+  --ui-glass-bg:    rgba(255,255,255,0.93);
+  --ui-glass-blur:  blur(10px);
+  --ui-card-shadow: var(--card-shadow);
+}
+
+/* ── Dark mode ─────────────────────────────────────────────────────── */
+:root[data-brand='restro'][data-theme='dark'] {
+  --color-brand-bg:          #021A0B;
+  --color-brand-surface:     #062312;
+  --color-brand-surface-alt: #0B3019;
+  --color-brand-text:        #DCFCE7;
+  --color-brand-muted:       #86EFAC;
+  --color-brand-border:      rgba(22,163,74,0.20);
+  --color-ui-card:           #062312;
+  --color-ui-sidebar:        #021A0B;
+  --color-ui-header:         #021A0B;
+  --ui-glass-bg:             rgba(2,26,11,0.93);
+  --ui-glass-border:         rgba(22,163,74,0.15);
+  --gradient-placeholder:    linear-gradient(150deg, #062312 0%, #0B3019 100%);
+  --card-shadow:             0 2px 10px rgba(0,0,0,0.40);
+  --card-shadow-hover:       0 14px 34px rgba(0,0,0,0.60);
+}
+
+/* ── High contrast ──────────────────────────────────────────────────── */
+:root[data-brand='restro'].high-contrast {
+  --color-brand-primary:        #000000;
+  --color-brand-secondary:      #000000;
+  --color-brand-gradient-start: #000000;
+  --color-brand-gradient-end:   #000000;
+  --color-brand-bg:             #FFFFFF;
+  --color-brand-surface:        #F5F5F5;
+  --color-brand-surface-alt:    #EEEEEE;
+  --color-brand-text:           #000000;
+  --color-brand-muted:          #000000;
+  --color-brand-border:         #000000;
+  --color-ui-card:              #FFFFFF;
+  --card-shadow:                none;
+  --card-shadow-hover:          none;
+  --gradient-cta:               #000000;
 }

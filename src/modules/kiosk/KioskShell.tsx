@@ -21,7 +21,7 @@ import BottomNav from './BottomNav';
 // ── Route classification ───────────────────────────────────────────────────────
 
 /** Auth screens — no idle timer, no cart overlays, no reader status */
-const AUTH_PATHS = ['/login', '/channel-select'];
+const AUTH_PATHS = ['/login', '/channel-select', '/brand-select'];
 
 /** Idle timer suspended (in addition to auth paths) */
 const IDLE_EXEMPT = ['/payment', '/settings'];

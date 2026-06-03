@@ -12,6 +12,7 @@
 
 import axios from 'axios';
 import { AUTH_CONFIG } from '@/config/auth.config';
+import { getActiveBrandAuthConfig } from '@/config/brand-auth';
 import { useAuthStore } from '@/store/authStore';
 import { useKioskChannelStore } from '@/store/kioskChannelStore';
 import { logger } from '@/utils/logger';
@@ -22,7 +23,10 @@ import { logger } from '@/utils/logger';
 export const KIOSK_CHANNEL_TYPE_ID = '3880391793436453';
 
 // ─── Service IDs ──────────────────────────────────────────────────────────────
-const STORES_SERVICE_ID   = '3821548006039960';
+// STORES_SERVICE_ID is now read from the active brand's authConfig at call time
+// because Holiq uses a different service ID (3828022124411623) than Straunt/Restro
+// (3821548006039960). Using the wrong ID returns an empty store list.
+// CHANNELS_SERVICE_ID is identical across all brands.
 const CHANNELS_SERVICE_ID = '3880470537073453';
 
 // ─── Types (matching the live API response shape) ─────────────────────────────
@@ -72,20 +76,29 @@ async function devPost<T>(serviceId: string, payload: Record<string, unknown>): 
   const channelStore = useKioskChannelStore.getState().channel;
   const url          = `${AUTH_CONFIG.DEV_URL}${serviceId}`;
 
+  // prdId must come from the active brand — using a mismatched prd_id causes
+  // the shared-component gateway to route to the wrong tenant's data.
+  const { prdId } = getActiveBrandAuthConfig();
+
+  // Header names are lowercase to exactly match the working curl command.
+  // Some gateway proxies are case-sensitive on custom headers.
   const { data } = await axios.post<T>(url, payload, {
     headers: {
-      'Content-Type':           'application/json',
+      'content-type':           'application/json',
       is_from_shared_component: 'true',
       controller_id:             AUTH_CONFIG.CONTROLLER_ID,
       shared_application_id:     AUTH_CONFIG.SHARED_APPLICATION_ID,
-      Shared_environment_id:     AUTH_CONFIG.SHARED_ENVIRONMENT_ID,
+      shared_environment_id:     AUTH_CONFIG.SHARED_ENVIRONMENT_ID,
       access_key:                user.access_key,
+      // SHARED_ENVIRONMENT_ID is required here — the channels endpoint (3880470537073453)
+      // only returns kiosk channels when this specific environment ID is sent.
+      // GA_ENVIRONMENT_ID works for the stores curl but breaks channels.
       environment_id:            AUTH_CONFIG.SHARED_ENVIRONMENT_ID,
-      Ext_app_id:                AUTH_CONFIG.EXT_APP_ID,
-      Ext_user_id:               user.su_id,
-      Username:                  user.name,
+      ext_app_id:                AUTH_CONFIG.EXT_APP_ID,
+      ext_user_id:               user.su_id,
+      username:                  user.name,
       application_id:            user.tac_application_id || '0',
-      prd_id:                    AUTH_CONFIG.PRD_ID,
+      prd_id:                    prdId,
       account_id:                AUTH_CONFIG.ACCOUNT_ID,
       controller_data_id:        channelStore?.store_id ?? 'default_application_id',
     },
@@ -97,11 +110,13 @@ async function devPost<T>(serviceId: string, payload: Record<string, unknown>): 
 // ─── Store listing ─────────────────────────────────────────────────────────────
 
 export async function getStores(): Promise<MerchantStore[]> {
-  logger.info('[store] fetching merchant stores');
+  const { storesServiceId, uniqueCode } = getActiveBrandAuthConfig();
+  logger.info(`[store] fetching stores — brand: ${uniqueCode}, serviceId: ${storesServiceId}`);
+  // limit: 50 — matches the working curl and the Holiq ext-store reference
   // Response shape: { data: { Status, Pagination, data: Store[] } }
   const response = await devPost<{ data?: { Status?: string; data?: MerchantStore[] } }>(
-    STORES_SERVICE_ID,
-    { limit: 100, offset: 0 },
+    storesServiceId,
+    { limit: 50, offset: 0 },
   );
   const stores: MerchantStore[] = response?.data?.data ?? [];
   logger.info(`[store] ${stores.length} store(s) fetched`);

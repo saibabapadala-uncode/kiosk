@@ -1,8 +1,11 @@
 // src/modules/settings/tabs/BrandThemeTab.tsx
 import { useEffect, useState } from 'react';
+import { useHistory } from 'react-router-dom';
 import { useSettingsStore } from '@/store/settingsStore';
 import { useBrand } from '@/hooks/useBrand';
-import { getBrandEnvironment, type BrandId } from '@/brands';
+import { useAuthStore } from '@/store/authStore';
+import { useKioskChannelStore } from '@/store/kioskChannelStore';
+import { useStoreConfigStore } from '@/store/storeConfigStore';
 import { SettingsField, SettingsSection, SettingsInput, SettingsSelect } from '../shared';
 import LivePreviewCard from '../LivePreviewCard';
 
@@ -81,30 +84,23 @@ const RADII = [
   { label: 'Pill (9999px)', value: '9999px' },
 ];
 
-const BRAND_IDS: BrandId[] = ['straunt', 'holiq', 'restro'];
-
 // ─── Tab ──────────────────────────────────────────────────────────────────────
 
 export default function BrandThemeTab() {
-  const { theme, setBrandId, brandId, setTheme } = useSettingsStore();
-  const { setThemeMode, themeMode } = useBrand();
+  const { theme, setTheme } = useSettingsStore();
+  const { setThemeMode, themeMode, brandId } = useBrand();
+  const history = useHistory();
+  const [confirmSignOut, setConfirmSignOut] = useState(false);
 
-  function loadBrandDefaults(id: BrandId) {
-    const env = getBrandEnvironment(id);
-    setBrandId(id);
-    setTheme({
-      primary:    env.defaultTheme.primary,
-      secondary:  env.defaultTheme.secondary,
-      accent:     env.defaultTheme.accent,
-      background: env.defaultTheme.background,
-      surface:    env.defaultTheme.surface,
-      text:       env.defaultTheme.text,
-      textMuted:  env.defaultTheme.textMuted,
-      border:     env.defaultTheme.border,
-      fontFamily: env.defaultTheme.fontFamily,
-      logoUrl:    env.defaultTheme.logoUrl,
-      radius:     env.defaultTheme.radius,
-    });
+  function handleSwitchBrand() {
+    if (!confirmSignOut) {
+      setConfirmSignOut(true);
+      return;
+    }
+    useAuthStore.getState().logout();
+    useKioskChannelStore.getState().clear();
+    useStoreConfigStore.getState().clear();
+    history.replace('/brand-select');
   }
 
   return (
@@ -112,30 +108,36 @@ export default function BrandThemeTab() {
       {/* ── Form ─────────────────────────────────────── */}
       <div className="flex-1 min-w-0">
 
-        {/* Brand preset */}
-        <SettingsSection title="Brand Preset">
+        {/* Active Brand */}
+        <SettingsSection title="Active Brand">
           <SettingsField
-            label="Brand"
-            description="Loads default colors and fonts for that brand. Does not change the API endpoints."
+            label="Current Brand"
+            description="Brand is locked after login. To switch brands, you must sign out."
           >
-            <div className="flex gap-3 flex-wrap" role="radiogroup" aria-label="Brand preset">
-              {BRAND_IDS.map((id) => (
-                <button
-                  key={id}
-                  role="radio"
-                  aria-checked={brandId === id}
-                  onClick={() => loadBrandDefaults(id)}
-                  className={[
-                    'px-4 py-2 rounded-brand border text-sm font-semibold font-brand transition-colors',
-                    'focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-primary',
-                    brandId === id
-                      ? 'border-brand-primary bg-brand-primary text-white'
-                      : 'border-brand-border text-brand-text hover:border-brand-primary',
-                  ].join(' ')}
-                >
-                  {id.charAt(0).toUpperCase() + id.slice(1)}
-                </button>
-              ))}
+            <div className="flex flex-col gap-3">
+              {/* Brand badge */}
+              <span
+                className="inline-flex items-center px-3 py-1 rounded-brand border border-brand-primary bg-brand-surface text-brand-primary text-sm font-semibold font-brand w-fit"
+              >
+                {brandId.charAt(0).toUpperCase() + brandId.slice(1)}
+              </span>
+
+              {/* Switch brand button */}
+              <button
+                onClick={handleSwitchBrand}
+                onBlur={() => setConfirmSignOut(false)}
+                className={[
+                  'inline-flex items-center gap-2 px-4 py-2 rounded-brand border text-sm font-semibold font-brand transition-colors w-fit',
+                  'focus-visible:outline focus-visible:outline-2',
+                  confirmSignOut
+                    ? 'border-red-600 bg-red-600 text-white focus-visible:outline-red-600'
+                    : 'border-red-500 text-red-500 hover:bg-red-50 focus-visible:outline-red-500',
+                ].join(' ')}
+              >
+                {confirmSignOut
+                  ? 'Are you sure? This will sign you out.'
+                  : 'Switch Brand (Sign Out)'}
+              </button>
             </div>
           </SettingsField>
         </SettingsSection>

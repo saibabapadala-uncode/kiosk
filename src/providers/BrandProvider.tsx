@@ -12,6 +12,8 @@ import type { BrandEnvironment, BrandId, BrandTheme } from '@/brands/types';
 import { useSettingsStore, type ThemeMode } from '@/store/settingsStore';
 import { useCartStore } from '@/store/cartStore';
 
+// Load all brand CSS files upfront — the active data-brand attribute on <html>
+// determines which set of CSS variables applies at runtime.
 import '@/brands/straunt/theme.css';
 import '@/brands/holiq/theme.css';
 import '@/brands/restro/theme.css';
@@ -22,8 +24,11 @@ export interface BrandContextValue {
   brandId: BrandId;
   environment: BrandEnvironment;
   themeMode: ThemeMode;
+  isResolved: boolean;
   setThemeMode: (mode: ThemeMode) => void;
   applyTheme: (partial: Partial<BrandTheme>) => void;
+  /** Trigger a brand switch (e.g. from staff settings screen). */
+  setBrand: (id: BrandId) => void;
 }
 
 export const BrandContext = createContext<BrandContextValue | null>(null);
@@ -31,21 +36,31 @@ export const BrandContext = createContext<BrandContextValue | null>(null);
 // ─── CSS var helpers ────────────────────────────────────────────────────────────
 
 const THEME_VAR_MAP: Array<[keyof BrandTheme, string]> = [
-  ['primary',    '--color-brand-primary'],
-  ['secondary',  '--color-brand-secondary'],
-  ['accent',     '--color-brand-accent'],
-  ['background', '--color-brand-bg'],
-  ['surface',    '--color-brand-surface'],
-  ['text',       '--color-brand-text'],
-  ['textMuted',  '--color-brand-muted'],
-  ['border',     '--color-brand-border'],
-  ['error',      '--color-brand-error'],
-  ['success',    '--color-brand-success'],
-  ['fontFamily', '--font-brand'],
-  ['radius',     '--radius-brand'],
+  // ── Core palette ────────────────────────────────────────────────────
+  ['primary',       '--color-brand-primary'],
+  ['secondary',     '--color-brand-secondary'],
+  ['accent',        '--color-brand-accent'],
+  ['background',    '--color-brand-bg'],
+  ['surface',       '--color-brand-surface'],
+  ['text',          '--color-brand-text'],
+  ['textMuted',     '--color-brand-muted'],
+  ['border',        '--color-brand-border'],
+  ['error',         '--color-brand-error'],
+  ['success',       '--color-brand-success'],
+  ['fontFamily',    '--font-brand'],
+  ['radius',        '--radius-brand'],
+  // ── Extended tokens (Phase 2) ────────────────────────────────────
+  ['warning',       '--color-brand-warning'],
+  ['primaryHover',  '--color-brand-primary-hover'],
+  ['primaryActive', '--color-brand-primary-active'],
+  ['gradientStart', '--color-brand-gradient-start'],
+  ['gradientEnd',   '--color-brand-gradient-end'],
+  ['textInverse',   '--color-brand-text-inverse'],
+  ['surfaceAlt',    '--color-brand-surface-alt'],
+  ['badgeBg',       '--color-brand-badge-bg'],
 ];
 
-function applyThemeToRoot(theme: Partial<BrandTheme>): void {
+export function applyThemeToRoot(theme: Partial<BrandTheme>): void {
   const root = document.documentElement;
   for (const [key, cssVar] of THEME_VAR_MAP) {
     const val = theme[key];
@@ -61,13 +76,17 @@ function resolveThemeMode(mode: ThemeMode): 'light' | 'dark' {
 // ─── Provider ───────────────────────────────────────────────────────────────────
 
 export function BrandProvider({ children }: { children: ReactNode }) {
-  const rawBrand = import.meta.env.VITE_BRAND || 'straunt';
-  const brandId: BrandId = isValidBrand(rawBrand) ? rawBrand : 'straunt';
+  const storedBrandId   = useSettingsStore(s => s.brandId);
+  const applyBrandEnv   = useSettingsStore(s => s.applyBrandEnvironment);
+
+  const brandId = (storedBrandId && isValidBrand(storedBrandId)) ? storedBrandId as BrandId : ((import.meta.env.VITE_BRAND && isValidBrand(import.meta.env.VITE_BRAND as string)) ? import.meta.env.VITE_BRAND as BrandId : 'straunt');
+  const isResolved = Boolean(storedBrandId && isValidBrand(storedBrandId));
+
   const environment = useMemo(() => getBrandEnvironment(brandId), [brandId]);
 
   const [themeMode, setThemeModeState] = useState<ThemeMode>('light');
 
-  // ── 1. On mount: set data-brand + apply environment defaults ──────────────────
+  // ── 1. Apply data-brand + CSS vars whenever active brand changes ──────────────
   useEffect(() => {
     const root = document.documentElement;
     root.setAttribute('data-brand', brandId);
@@ -75,7 +94,7 @@ export function BrandProvider({ children }: { children: ReactNode }) {
     applyThemeToRoot(environment.defaultTheme);
   }, [brandId, environment]);
 
-  // ── 2. Subscribe to settingsStore theme — fires immediately after hydration ───
+  // ── 2. Subscribe to settingsStore theme overrides ─────────────────────────────
   useEffect(() => {
     const unsubscribe = useSettingsStore.subscribe(
       (s) => s.theme,
@@ -90,7 +109,7 @@ export function BrandProvider({ children }: { children: ReactNode }) {
     return unsubscribe;
   }, []);
 
-  // ── 3. Subscribe to highContrastMode → toggle .high-contrast on <html> ───────
+  // ── 3. High contrast mode ─────────────────────────────────────────────────────
   useEffect(() => {
     const unsubscribe = useSettingsStore.subscribe(
       (s) => s.kiosk.highContrastMode,
@@ -102,7 +121,7 @@ export function BrandProvider({ children }: { children: ReactNode }) {
     return unsubscribe;
   }, []);
 
-  // ── 4. Subscribe to settingsStore taxRate → keep cartStore in sync ────────────
+  // ── 4. Sync taxRate → cartStore ────────────────────────────────────────────────
   useEffect(() => {
     const unsubscribe = useSettingsStore.subscribe(
       (s) => s.kiosk.taxRate,
@@ -112,7 +131,7 @@ export function BrandProvider({ children }: { children: ReactNode }) {
     return unsubscribe;
   }, []);
 
-  // ── 4. Auto theme: listen to OS preference changes ────────────────────────────
+  // ── 5. Auto theme: OS dark-mode preference ────────────────────────────────────
   useEffect(() => {
     if (themeMode !== 'auto') return;
     const mq = window.matchMedia('(prefers-color-scheme: dark)');
@@ -129,9 +148,14 @@ export function BrandProvider({ children }: { children: ReactNode }) {
     useSettingsStore.getState().setTheme({ themeMode: mode });
   }, []);
 
+  const setBrand = useCallback((id: BrandId) => {
+    const env = getBrandEnvironment(id);
+    applyBrandEnv(env);
+  }, [applyBrandEnv]);
+
   const value = useMemo<BrandContextValue>(
-    () => ({ brandId, environment, themeMode, setThemeMode, applyTheme: applyThemeToRoot }),
-    [brandId, environment, themeMode, setThemeMode],
+    () => ({ brandId, environment, themeMode, isResolved, setThemeMode, applyTheme: applyThemeToRoot, setBrand }),
+    [brandId, environment, themeMode, isResolved, setThemeMode, setBrand],
   );
 
   return <BrandContext.Provider value={value}>{children}</BrandContext.Provider>;

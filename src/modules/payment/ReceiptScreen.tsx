@@ -6,7 +6,7 @@ import { useCartStore } from '@/store/cartStore';
 import { useSessionStore } from '@/store/sessionStore';
 import { usePaymentStore } from '@/store/paymentStore';
 import { useSettingsStore } from '@/store/settingsStore';
-import { useBrand } from '@/hooks/useBrand';
+import { useKioskName } from '@/hooks/useKioskName';
 import { api } from '@/services/api.service';
 import { USE_STATIC_PAYMENT_FLOW, delay, getFlowDelay } from '@/services/stripe/static.mock';
 import { formatPrice } from '@/utils/format';
@@ -120,7 +120,7 @@ function PrintButton({ orderId }: { orderId: string }) {
 export default function ReceiptScreen() {
   const { t } = useTranslation();
   const history = useHistory();
-  const { environment } = useBrand();
+  const kioskName = useKioskName();
   const orderId    = useSessionStore((s) => s.orderId);
   const total      = useCartStore((s) => s.total);
   const clearCart  = useCartStore((s) => s.clearCart);
@@ -158,7 +158,7 @@ export default function ReceiptScreen() {
           {t('receipt.title')}
         </h1>
         <p className="font-brand text-base" style={{ color: 'var(--color-brand-muted)' }}>
-          {t('receipt.thankYou', { brand: environment.displayName })}
+          {t('receipt.thankYou', { brand: kioskName })}
         </p>
 
         {orderId && (

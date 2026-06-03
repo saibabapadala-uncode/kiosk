@@ -1,24 +1,130 @@
 /* src/brands/holiq/theme.css
-   Holiq — White base + warm amber accent (light mode only)
+   Holiq — Liquor / alcohol kiosk brand
+   ──────────────────────────────────────────────────────────────────────
+   Official brand spec:
+     Primary Button:       #FD5056
+     Hover Button:         #E94449
+     Input Focus:          #E24D52
+     Phone Background:     #FD50561F  (≈ rgba(253,80,86,0.12))
+     Notification Bg:      #FF767B
+     Skeleton Main:        #FFC5C8
+     Skeleton Sub:         #F5E0E0
+     Available Active:     #F0C7CC
+   ──────────────────────────────────────────────────────────────────────
 */
 
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap');
+
 :root[data-brand='holiq'] {
-  --color-brand-primary:     #F59E0B;   /* amber-400  — warm amber CTA                     */
-  --color-brand-secondary:   #F97316;   /* orange-500 — gradient endpoint                  */
-  --color-brand-accent:      #F59E0B;   /* amber-400                                       */
-  --color-brand-bg:          #FFFFFF;   /* pure white                                      */
-  --color-brand-surface:     #F8F9FA;   /* gray-50    — near-white surface                 */
-  --color-brand-text:        #111827;   /* gray-900   — rich dark text                     */
-  --color-brand-muted:       #6B7280;   /* gray-500   — neutral muted text                 */
-  --color-brand-border:      #E5E7EB;   /* gray-200   — subtle border                      */
-  --color-brand-error:       #EF4444;
-  --color-brand-success:     #22C55E;
 
-  --color-brand-primary-rgb: 245,158,11;
+  /* ── Core palette ──────────────────────────────────────────────── */
+  --color-brand-primary:         #FD5056;   /* primary CTA / active */
+  --color-brand-secondary:       #E94449;   /* gradient end / hover */
+  --color-brand-accent:          #FF767B;   /* notification / accent */
+  --color-brand-bg:              #FFF5F5;   /* warm white with red tint */
+  --color-brand-surface:         #FFE8E9;   /* skeleton main / input bg */
+  --color-brand-surface-alt:     #F5E0E0;   /* skeleton sub / nested cards */
+  --color-brand-text:            #1A0A0B;   /* near-black with warm tint */
+  --color-brand-muted:           #6B4B4D;   /* muted text */
+  --color-brand-border:          #F0C7CC;   /* available active / borders */
+  --color-brand-error:           #DC2626;   /* distinct red for errors */
+  --color-brand-success:         #22C55E;
+  --color-brand-warning:         #F59E0B;
 
-  --color-ui-card:           #FFFFFF;
-  --color-ui-surface-alt:    #F8F9FA;
+  /* ── Interactive states ────────────────────────────────────────── */
+  --color-brand-primary-hover:   #E94449;   /* hover button */
+  --color-brand-primary-active:  #E24D52;   /* input focus / pressed */
+  --color-brand-gradient-start:  #FD5056;
+  --color-brand-gradient-end:    #E94449;
+  --color-brand-text-inverse:    #FFFFFF;
+  --color-brand-badge-bg:        rgba(253,80,86,0.12);   /* phone background tint */
 
-  --font-brand:   'Poppins', system-ui, sans-serif;
-  --radius-brand: 1rem;
+  /* ── RGB triplets ───────────────────────────────────────────────── */
+  --color-brand-primary-rgb:     253,80,86;
+  --color-brand-secondary-rgb:   233,68,73;
+  --color-brand-accent-rgb:      255,118,123;
+
+  /* ── UI surfaces ───────────────────────────────────────────────── */
+  --color-ui-card:               #FFFFFF;
+  --color-ui-sidebar:            #FFFFFF;
+  --color-ui-header:             #FFFFFF;
+  --color-ui-surface-alt:        #FFF5F5;
+  --ui-glass-border:             rgba(253,80,86,0.12);
+
+  /* ── Gradients ─────────────────────────────────────────────────── */
+  --gradient-cta:         linear-gradient(135deg, #FD5056 0%, #E94449 100%);
+  --gradient-hero:        linear-gradient(160deg, #FD5056 0%, #C8282E 60%, #8B0000 100%);
+  --gradient-placeholder: linear-gradient(150deg, #FFE8E9 0%, #FFF5F5 100%);
+
+  /* ── Badge colors ──────────────────────────────────────────────── */
+  --color-badge-popular-from:    #FD5056;
+  --color-badge-popular-to:      #E94449;
+
+  /* ── Skeleton colors (from brand spec) ─────────────────────────── */
+  /* --skeleton-main: #FFC5C8  → used as --color-brand-surface */
+  /* --skeleton-sub:  #F5E0E0  → used as --color-brand-surface-alt */
+
+  /* ── Card ──────────────────────────────────────────────────────── */
+  --card-shadow:       0 2px 10px rgba(253,80,86,0.08), 0 1px 3px rgba(0,0,0,0.04);
+  --card-shadow-hover: 0 14px 34px rgba(253,80,86,0.18), 0 4px 10px rgba(0,0,0,0.06);
+  --card-image-ratio:  68%;
+
+  /* ── Sidebar ────────────────────────────────────────────────────── */
+  --sidebar-width:            268px;
+  --sidebar-item-radius:      12px;
+  --sidebar-active-shadow:    0 4px 18px rgba(253,80,86,0.32);
+
+  /* ── Typography ─────────────────────────────────────────────────── */
+  --font-brand:         'Poppins', system-ui, sans-serif;
+  --font-size-price:    1.1rem;
+  --font-weight-price:  700;
+
+  /* ── Shape ──────────────────────────────────────────────────────── */
+  --radius-brand:        1rem;
+  --radius-xl:           1.25rem;
+  --radius-2xl:          1.5rem;
+  --radius-brand-card:   1.25rem;
+  --radius-brand-button: 1rem;
+  --radius-icon-wrap:    50%;
+
+  /* ── Glass ──────────────────────────────────────────────────────── */
+  --ui-glass-bg:    rgba(255,255,255,0.94);
+  --ui-glass-blur:  blur(16px);
+  --ui-card-shadow: var(--card-shadow);
+}
+
+/* ── Dark mode ─────────────────────────────────────────────────────── */
+:root[data-brand='holiq'][data-theme='dark'] {
+  --color-brand-bg:          #1A0A0B;
+  --color-brand-surface:     #2D1215;
+  --color-brand-surface-alt: #3D1A1D;
+  --color-brand-text:        #FFE8E9;
+  --color-brand-muted:       #FFC5C8;
+  --color-brand-border:      rgba(253,80,86,0.20);
+  --color-ui-card:           #2D1215;
+  --color-ui-sidebar:        #1A0A0B;
+  --color-ui-header:         #1A0A0B;
+  --ui-glass-bg:             rgba(26,10,11,0.94);
+  --ui-glass-border:         rgba(253,80,86,0.15);
+  --gradient-placeholder:    linear-gradient(150deg, #2D1215 0%, #3D1A1D 100%);
+  --card-shadow:             0 2px 10px rgba(0,0,0,0.40);
+  --card-shadow-hover:       0 14px 34px rgba(0,0,0,0.60);
+}
+
+/* ── High contrast ──────────────────────────────────────────────────── */
+:root[data-brand='holiq'].high-contrast {
+  --color-brand-primary:        #000000;
+  --color-brand-secondary:      #000000;
+  --color-brand-gradient-start: #000000;
+  --color-brand-gradient-end:   #000000;
+  --color-brand-bg:             #FFFFFF;
+  --color-brand-surface:        #F5F5F5;
+  --color-brand-surface-alt:    #EEEEEE;
+  --color-brand-text:           #000000;
+  --color-brand-muted:          #000000;
+  --color-brand-border:         #000000;
+  --color-ui-card:              #FFFFFF;
+  --card-shadow:                none;
+  --card-shadow-hover:          none;
+  --gradient-cta:               #000000;
 }

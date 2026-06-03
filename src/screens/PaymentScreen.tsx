@@ -5,7 +5,7 @@ import { IonPage, IonContent } from '@ionic/react';
 import { usePayment } from '@/hooks/usePayment';
 import CardReaderScreen from '@/modules/payment/CardReaderScreen';
 import PaymentStatus from '@/modules/payment/PaymentStatus';
-import { useBrand } from '@/hooks/useBrand';
+import { useKioskName } from '@/hooks/useKioskName';
 import { useCartStore } from '@/store/cartStore';
 import { formatPrice } from '@/utils/format';
 
@@ -16,7 +16,7 @@ const COLLECTING_STATES = new Set([
 
 export default function PaymentScreen() {
   const history = useHistory();
-  const { environment } = useBrand();
+  const kioskName = useKioskName();
   const { flowState, error, startPayment, retryPayment, cancelPayment } = usePayment();
   const total = useCartStore((s) => s.total);
 
@@ -42,7 +42,7 @@ export default function PaymentScreen() {
           >
             <div>
               <p className="text-xs font-brand uppercase tracking-widest" style={{ color: 'var(--color-brand-muted)' }}>
-                {environment.displayName}
+                {kioskName}
               </p>
               <h1 className="text-lg font-bold font-brand" style={{ color: 'var(--color-brand-text)' }}>
                 Secure Payment
