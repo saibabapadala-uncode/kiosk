@@ -1,19 +1,11 @@
 // src/screens/ChannelSelectScreen.tsx
-// Kiosk sales-channel selection — displays data from the live API.
+// Kiosk sales-channel selection — single-API flow.
 //
 // Flow
-//   1. Fetch stores  (getStores)
-//      • 0 stores → error
-//      • 1 store  → skip store-select, go straight to step 2
-//      • N stores → show store picker
-//   2. Fetch kiosk channels for the chosen store  (getKioskSalesChannels)
-//      • 0 channels → error (with "pick a different store" option when N > 1)
+//   1. Call getKioskChannelsDirect() on mount
+//      • 0 channels → error
 //      • 1 channel  → auto-select → /attract
-//      • N channels → show channel picker
-//   3. Confirm → /attract
-//
-// No static / mock data is used.  The entire response chain comes from
-// store.service.ts which hits the live gateway API.
+//      • N channels → show channel picker → confirm → /attract
 
 import { IonPage, IonContent } from '@ionic/react';
 import { useEffect, useCallback, useState } from 'react';
@@ -24,8 +16,8 @@ import { useAuthStore } from '@/store/authStore';
 import { useKioskChannelStore, type KioskChannel } from '@/store/kioskChannelStore';
 import { useStoreConfigStore } from '@/store/storeConfigStore';
 import {
-  getStores, getKioskSalesChannels,
-  type MerchantStore, type MerchantSalesChannel,
+  getKioskChannelsDirect,
+  type MerchantSalesChannel,
 } from '@/services/store.service';
 import { loadStoreDetails } from '@/services/storefront.service';
 import { logout } from '@/services/auth.service';
@@ -33,95 +25,22 @@ import { logger } from '@/utils/logger';
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
 
-type Phase = 'loading' | 'store-select' | 'channel-select' | 'error';
+type Phase = 'loading' | 'channel-select' | 'error';
 
 // ─── Mapper ────────────────────────────────────────────────────────────────────
 
-function toKioskChannel(ch: MerchantSalesChannel, store: MerchantStore): KioskChannel {
+function toKioskChannel(ch: MerchantSalesChannel): KioskChannel {
   return {
     id:                    String(ch.id),
     name:                  ch.name,
     code:                  ch.code,
-    store_id:              String(store.id),
-    store_name:            store.name,
-    store_code:            store.code ?? '',
+    store_id:              String(ch.store_id),
+    store_name:            ch.store_name ?? ch.name,
+    store_code:            ch.store_code ?? ch.code ?? '',
     sales_channel_type_id: String(ch.sales_channel_type_id),
     store_address:         ch.address,
     is_active:             Boolean(ch.is_active),
   };
-}
-
-// ─── Store card ────────────────────────────────────────────────────────────────
-
-function StoreCard({
-  store, selected, onSelect,
-}: {
-  store: MerchantStore; selected: boolean; onSelect: () => void;
-}) {
-  const subtitle = [store.code, store.city, store.state].filter(Boolean).join(' · ');
-  return (
-    <button
-      type="button"
-      onClick={onSelect}
-      aria-pressed={selected}
-      className="flex items-center gap-4 w-full text-left rounded-2xl p-4 transition-all duration-150 active:scale-[0.97]"
-      style={selected ? {
-        background: 'var(--gradient-cta)',
-        border: '2px solid var(--color-brand-primary)',
-        boxShadow: '0 8px 28px rgba(var(--color-brand-primary-rgb),0.32)',
-      } : {
-        background: 'var(--color-ui-card)',
-        border: '1.5px solid var(--color-brand-border)',
-        boxShadow: '0 1px 4px rgba(0,0,0,0.06)',
-      }}
-    >
-      {/* Icon */}
-      <div className="w-11 h-11 rounded-xl flex-shrink-0 flex items-center justify-center"
-        style={selected ? { background: 'rgba(255,255,255,0.22)' } : { background: '#F8F9FA', border: '1px solid #E5E7EB' }}>
-        <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"
-          style={{ color: selected ? 'white' : '#6B7280' }}>
-          <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/>
-          <polyline points="9 22 9 12 15 12 15 22"/>
-        </svg>
-      </div>
-
-      {/* Text */}
-      <div className="flex-1 min-w-0">
-        <p className="font-bold font-brand text-base leading-tight truncate"
-          style={{ color: selected ? 'white' : '#111827' }}>
-          {store.name}
-        </p>
-        {subtitle && (
-          <p className="text-sm font-brand mt-0.5 truncate"
-            style={{ color: selected ? 'rgba(255,255,255,0.75)' : '#6B7280' }}>
-            {subtitle}
-          </p>
-        )}
-        {store.address && (
-          <p className="text-xs font-brand mt-1 flex items-center gap-1 truncate"
-            style={{ color: selected ? 'rgba(255,255,255,0.60)' : '#9CA3AF' }}>
-            <svg className="w-3 h-3 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
-              <path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0118 0z"/>
-              <circle cx="12" cy="10" r="3"/>
-            </svg>
-            {store.address}
-          </p>
-        )}
-      </div>
-
-      {/* Check */}
-      <div className="flex-shrink-0 w-6 h-6 rounded-full border-2 flex items-center justify-center"
-        style={selected
-          ? { borderColor: 'rgba(255,255,255,0.55)', background: 'rgba(255,255,255,0.22)' }
-          : { borderColor: '#D1D5DB', background: 'transparent' }}>
-        {selected && (
-          <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth={3} strokeLinecap="round">
-            <polyline points="20 6 9 17 4 12"/>
-          </svg>
-        )}
-      </div>
-    </button>
-  );
 }
 
 // ─── Channel card ──────────────────────────────────────────────────────────────
@@ -225,44 +144,40 @@ function Spinner({ size = 48 }: { size?: number }) {
 // ─── Main screen ───────────────────────────────────────────────────────────────
 
 export default function ChannelSelectScreen() {
-  const history          = useHistory();
-  const { environment }  = useBrand();
-  const kioskName        = useKioskName();
-  const user             = useAuthStore((s) => s.user);
+  const history         = useHistory();
+  const { environment } = useBrand();
+  const kioskName       = useKioskName();
+  const user            = useAuthStore((s) => s.user);
   const { setChannel, setAvailableChannels } = useKioskChannelStore();
 
-  const [phase,          setPhase]          = useState<Phase>('loading');
-  const [loadingMsg,     setLoadingMsg]     = useState('Loading your stores…');
-  const [error,          setError]          = useState('');
+  const [phase,      setPhase]      = useState<Phase>('loading');
+  const [loadingMsg, setLoadingMsg] = useState('Loading kiosk channels…');
+  const [error,      setError]      = useState('');
 
-  const [stores,         setStores]         = useState<MerchantStore[]>([]);
-  const [selectedStore,  setSelectedStore]  = useState<MerchantStore | null>(null);
+  const [channels,   setChannels]   = useState<KioskChannel[]>([]);
+  const [selectedCh, setSelectedCh] = useState<KioskChannel | null>(null);
+  const [confirming, setConfirming] = useState(false);
 
-  const [channels,       setChannels]       = useState<KioskChannel[]>([]);
-  const [selectedCh,     setSelectedCh]     = useState<KioskChannel | null>(null);
-  const [confirming,     setConfirming]     = useState(false);
-
-  // ── Step 2: fetch channels for a store ──────────────────────────────────────
-  const loadChannels = useCallback(async (store: MerchantStore) => {
+  // ── Fetch channels ───────────────────────────────────────────────────────────
+  const loadChannels = useCallback(async () => {
     setPhase('loading');
-    setLoadingMsg(`Loading kiosk channels for ${store.name}…`);
+    setLoadingMsg('Loading kiosk channels…');
     setError('');
 
     try {
-      const raw: MerchantSalesChannel[] = await getKioskSalesChannels(store.id);
+      const raw: MerchantSalesChannel[] = await getKioskChannelsDirect();
 
       if (raw.length === 0) {
-        setError(`No kiosk channels found for ${store.name}. Please choose a different store or contact your administrator.`);
+        setError('No kiosk channels found for your account. Contact your administrator.');
         setPhase('error');
         return;
       }
 
-      const mapped = raw.map((ch) => toKioskChannel(ch, store));
+      const mapped = raw.map(toKioskChannel);
       setChannels(mapped);
       setAvailableChannels(mapped);
 
       if (mapped.length === 1) {
-        // Auto-select single channel
         const only = mapped[0];
         setChannel(only);
         if (only.code) {
@@ -284,37 +199,7 @@ export default function ChannelSelectScreen() {
     }
   }, [history, setAvailableChannels, setChannel]);
 
-  // ── Step 1: fetch stores ─────────────────────────────────────────────────────
-  const loadStores = useCallback(async () => {
-    setPhase('loading');
-    setLoadingMsg('Loading your stores…');
-    setError('');
-
-    try {
-      const fetched = await getStores();
-
-      if (fetched.length === 0) {
-        setError('No stores found for your account. Contact your administrator.');
-        setPhase('error');
-        return;
-      }
-
-      if (fetched.length === 1) {
-        setSelectedStore(fetched[0]);
-        await loadChannels(fetched[0]);
-        return;
-      }
-
-      setStores(fetched);
-      setPhase('store-select');
-    } catch (err) {
-      logger.error('[channel-select] loadStores failed', err);
-      setError('Failed to load stores. Please check your connection and try again.');
-      setPhase('error');
-    }
-  }, [loadChannels]);
-
-  useEffect(() => { void loadStores(); }, [loadStores]);
+  useEffect(() => { void loadChannels(); }, [loadChannels]);
 
   // ── Confirm channel ──────────────────────────────────────────────────────────
   const handleConfirm = useCallback(async () => {
@@ -335,13 +220,10 @@ export default function ChannelSelectScreen() {
   const handleLogout = useCallback(() => { logout(); history.replace('/login'); }, [history]);
 
   // ── Derived label ─────────────────────────────────────────────────────────────
-  const stepLabel = phase === 'store-select'
-    ? 'Select Your Store'
-    : phase === 'channel-select'
-      ? 'Select Your Kiosk'
-      : phase === 'loading'
-        ? loadingMsg
-        : 'Setup Error';
+  const stepLabel =
+    phase === 'channel-select' ? 'Select Your Kiosk' :
+    phase === 'loading'        ? loadingMsg            :
+    'Setup Error';
 
   return (
     <IonPage>
@@ -415,79 +297,16 @@ export default function ChannelSelectScreen() {
                   </svg>
                 </div>
                 <p className="font-brand text-sm text-center max-w-sm" style={{ color: '#374151' }}>{error}</p>
-                <div className="flex items-center gap-3">
-                  <button type="button" onClick={() => void loadStores()}
-                    className="ui-btn-primary px-6 py-3 text-sm" style={{ borderRadius: '0.875rem' }}>
-                    Retry
-                  </button>
-                  {stores.length > 1 && (
-                    <button type="button" onClick={() => setPhase('store-select')}
-                      className="px-6 py-3 text-sm font-semibold font-brand rounded-xl"
-                      style={{ background: 'var(--color-ui-card)', border: '1.5px solid var(--color-brand-border)', color: 'var(--color-brand-text)' }}>
-                      Choose Different Store
-                    </button>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {/* ── Store picker ──────────────────────────────────────────────── */}
-            {phase === 'store-select' && (
-              <div className="flex flex-col flex-1 min-h-0 animate-fade-in-up">
-                <p className="text-sm font-brand mb-4 flex-shrink-0" style={{ color: '#6B7280' }}>
-                  {stores.length} store{stores.length !== 1 ? 's' : ''} available — select the one to configure
-                </p>
-
-                <div className="flex-1 overflow-y-auto no-scrollbar space-y-3 pr-1">
-                  {stores.map((store) => (
-                    <StoreCard
-                      key={String(store.id)}
-                      store={store}
-                      selected={String(selectedStore?.id) === String(store.id)}
-                      onSelect={() => setSelectedStore(store)}
-                    />
-                  ))}
-                </div>
-
-                <div className="mt-5 flex-shrink-0">
-                  <button
-                    type="button"
-                    onClick={() => selectedStore && void loadChannels(selectedStore)}
-                    disabled={!selectedStore}
-                    className="ui-btn-primary w-full py-4 text-base"
-                    style={{
-                      borderRadius: '1rem',
-                      opacity: !selectedStore ? 0.45 : 1,
-                      cursor:  !selectedStore ? 'not-allowed' : 'pointer',
-                    }}
-                  >
-                    {selectedStore ? `Continue with "${selectedStore.name}"` : 'Select a store to continue'}
-                  </button>
-                </div>
+                <button type="button" onClick={() => void loadChannels()}
+                  className="ui-btn-primary px-6 py-3 text-sm" style={{ borderRadius: '0.875rem' }}>
+                  Retry
+                </button>
               </div>
             )}
 
             {/* ── Channel picker ─────────────────────────────────────────────── */}
             {phase === 'channel-select' && (
               <div className="flex flex-col flex-1 min-h-0 animate-fade-in-up">
-
-                {/* Back to store picker (only if multiple stores) */}
-                {stores.length > 1 && selectedStore && (
-                  <div className="flex items-center gap-2 mb-4 flex-shrink-0">
-                    <button type="button" onClick={() => setPhase('store-select')}
-                      className="flex items-center gap-1.5 text-xs font-semibold font-brand"
-                      style={{ background: 'transparent', border: 'none', color: 'var(--color-brand-primary)', cursor: 'pointer', padding: 0 }}>
-                      <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round">
-                        <polyline points="15 18 9 12 15 6"/>
-                      </svg>
-                      Change Store
-                    </button>
-                    <span className="text-xs font-brand" style={{ color: '#9CA3AF' }}>
-                      · {selectedStore.name}
-                    </span>
-                  </div>
-                )}
-
                 <p className="text-sm font-brand mb-4 flex-shrink-0" style={{ color: '#6B7280' }}>
                   {channels.length} kiosk channel{channels.length !== 1 ? 's' : ''} available — choose one to launch
                 </p>

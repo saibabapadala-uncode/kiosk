@@ -57,6 +57,10 @@ export interface MerchantSalesChannel {
   description?:           string;
   /** API returns this as a number (e.g. 3873034825787231) */
   store_id:               number | string;
+  /** Store display name — present in direct-channel API responses */
+  store_name?:            string;
+  /** Store short code — present in direct-channel API responses */
+  store_code?:            string;
   /** Physical address of this kiosk channel */
   address?:               string;
   /** 1 | 0 from the API — treat as truthy */
@@ -69,7 +73,11 @@ export interface MerchantSalesChannel {
 
 // ─── Shared-component gateway POST ────────────────────────────────────────────
 
-async function devPost<T>(serviceId: string, payload: Record<string, unknown>): Promise<T> {
+async function devPost<T>(
+  serviceId: string,
+  payload: Record<string, unknown>,
+  opts?: { environmentId?: string },
+): Promise<T> {
   const { user } = useAuthStore.getState();
   if (!user) throw new Error('Not authenticated — cannot call gateway');
 
@@ -90,10 +98,9 @@ async function devPost<T>(serviceId: string, payload: Record<string, unknown>): 
       shared_application_id:     AUTH_CONFIG.SHARED_APPLICATION_ID,
       shared_environment_id:     AUTH_CONFIG.SHARED_ENVIRONMENT_ID,
       access_key:                user.access_key,
-      // SHARED_ENVIRONMENT_ID is required here — the channels endpoint (3880470537073453)
-      // only returns kiosk channels when this specific environment ID is sent.
-      // GA_ENVIRONMENT_ID works for the stores curl but breaks channels.
-      environment_id:            AUTH_CONFIG.SHARED_ENVIRONMENT_ID,
+      // SHARED_ENVIRONMENT_ID is the default; the direct-channel endpoint uses
+      // TAC_ENVIRONMENT_ID — pass opts.environmentId to override.
+      environment_id:            opts?.environmentId ?? AUTH_CONFIG.SHARED_ENVIRONMENT_ID,
       ext_app_id:                AUTH_CONFIG.EXT_APP_ID,
       ext_user_id:               user.su_id,
       username:                  user.name,
@@ -123,7 +130,7 @@ export async function getStores(): Promise<MerchantStore[]> {
   return stores;
 }
 
-// ─── Kiosk sales-channel listing ──────────────────────────────────────────────
+// ─── Kiosk sales-channel listing (legacy — store-scoped) ──────────────────────
 // Fetches all channels for the store, then filters to kiosk-type only.
 //
 // IMPORTANT: sales_channel_type_id comes from the API as a *number*
@@ -147,4 +154,23 @@ export async function getKioskSalesChannels(storeId: number | string): Promise<M
 
   logger.info(`[store] ${kiosk.length} kiosk channel(s) (from ${all.length} total)`);
   return kiosk;
+}
+
+// ─── Direct kiosk sales-channel listing ───────────────────────────────────────
+// Fetches available kiosk channels in a single call without a prior store lookup.
+// Uses service contract 3881174594239124 with sales_channel_type_id as a
+// body-level filter. TAC_ENVIRONMENT_ID is required by this endpoint.
+
+const KIOSK_CHANNELS_DIRECT_SERVICE_ID = '3881174594239124';
+
+export async function getKioskChannelsDirect(): Promise<MerchantSalesChannel[]> {
+  logger.info('[store] fetching kiosk channels (direct)');
+  const response = await devPost<{ data?: MerchantSalesChannel[] }>(
+    KIOSK_CHANNELS_DIRECT_SERVICE_ID,
+    { limit: 15, offset: 0, sales_channel_type_id: 3880391793436453 },
+    { environmentId: AUTH_CONFIG.TAC_ENVIRONMENT_ID },
+  );
+  const channels = response?.data ?? [];
+  logger.info(`[store] ${channels.length} kiosk channel(s) fetched directly`);
+  return channels;
 }

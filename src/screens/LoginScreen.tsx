@@ -1,37 +1,31 @@
 // src/screens/LoginScreen.tsx
-// Kiosk login — 4 steps following the ext-store activation flow:
+// Kiosk login — single-step credentials then direct channel fetch:
 //
-//  Step 1  email       → checkUser (verify account exists)
-//  Step 2  password    → login → then auto-load stores
-//  Step 3  stores      → show store list (skip if only 1, auto-select)
-//  Step 4  channels    → show kiosk channels for selected store
-//                         (filter by KIOSK_CHANNEL_TYPE_ID = 3880391793436453)
-//                         (skip if only 1, auto-select → /attract)
-//
-// Loading states are shown as a full-card spinner between transitions.
+//  Step 1  credentials → checkUser → login
+//  Step 2  loading     → getKioskChannelsDirect()
+//                         • 1 channel  → auto-select → /attract
+//                         • N channels → show channel picker → /attract
 
 import { IonPage, IonContent } from '@ionic/react';
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { useHistory } from 'react-router-dom';
 import { useBrand } from '@/hooks/useBrand';
-import { useSettingsStore, type KioskSettings } from '@/store/settingsStore';
+import { useSettingsStore } from '@/store/settingsStore';
 import { useKioskChannelStore, type KioskChannel } from '@/store/kioskChannelStore';
 import { checkUser, login, getStoredCredentials } from '@/services/auth.service';
-import { getStores, getKioskSalesChannels, type MerchantStore, type MerchantSalesChannel } from '@/services/store.service';
+import { getKioskChannelsDirect, type MerchantSalesChannel } from '@/services/store.service';
 import { loadStoreDetails } from '@/services/storefront.service';
 import { useStoreConfigStore } from '@/store/storeConfigStore';
 import { logger } from '@/utils/logger';
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
 
-// Login is now single-step (email + password on the same form) to minimise taps.
+// Login is single-step (email + password on the same form) to minimise taps.
 // Validation still calls checkUser first for correct error messages.
 type Step =
-  | 'credentials'   // email + password together (replaces the old 2-step email→password)
-  | 'loading'       // full-card spinner while fetching stores / channels
-  | 'store-select'
-  | 'channel-select'
-  | 'ready';        // admin sees kiosk name + PIN before going live
+  | 'credentials'   // email + password together
+  | 'loading'       // spinner while fetching channels
+  | 'channel-select';
 
 // ─── Icons ─────────────────────────────────────────────────────────────────────
 
@@ -56,33 +50,6 @@ function Spinner({ size = 'md', variant = 'white' }: { size?: 'sm' | 'md' | 'lg'
     ? { borderColor: 'var(--color-brand-surface)', borderTopColor: 'var(--color-brand-primary)' }
     : { borderColor: 'rgba(255,255,255,0.30)', borderTopColor: 'white' };
   return <div className={`${cls} rounded-full animate-spin`} style={style} />;
-}
-
-// ─── Reusable plain-text button (resets all Ionic CSS variable overrides) ──────
-
-function TextBtn({
-  onClick, children, className = '', style,
-}: {
-  onClick: () => void; children: React.ReactNode; className?: string; style?: React.CSSProperties;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={className}
-      style={{
-        background: 'transparent', border: 'none', padding: 0, margin: 0,
-        boxShadow: 'none', outline: 'none', cursor: 'pointer',
-        fontFamily: 'var(--font-brand)', lineHeight: 1,
-        '--background': 'transparent', '--background-hover': 'transparent',
-        '--background-activated': 'transparent', '--border-color': 'transparent',
-        '--box-shadow': 'none',
-        ...style,
-      } as React.CSSProperties}
-    >
-      {children}
-    </button>
-  );
 }
 
 // ─── Selection card — white / amber active ─────────────────────────────────────
@@ -180,17 +147,10 @@ export default function LoginScreen() {
   const [isSubscriptionError, setIsSubscriptionError] = useState(false);
   const [hasSaved,       setHasSaved]       = useState(false);
 
-  // ── Store / channel state ────────────────────────────────────────────────────
-  const [stores,          setStores]          = useState<MerchantStore[]>([]);
-  const [selectedStore,   setSelectedStore]   = useState<MerchantStore | null>(null);
+  // ── Channel state ────────────────────────────────────────────────────────────
   const [channels,        setChannels]        = useState<MerchantSalesChannel[]>([]);
   const [selectedChannel, setSelectedChannel] = useState<MerchantSalesChannel | null>(null);
   const [confirming,      setConfirming]      = useState(false);
-  // Holds the resolved KioskChannel until the admin taps "Launch Kiosk"
-  const [pendingChannel,  setPendingChannel]  = useState<ReturnType<typeof toKioskChannel> | null>(null);
-
-  const kioskPin     = useSettingsStore((s) => s.kiosk.staffPin);
-  const kioskPinName = useSettingsStore((s) => s.kiosk.staffPinEnabled);
 
   const emailRef    = useRef<HTMLInputElement>(null);
   const passwordRef = useRef<HTMLInputElement>(null);
@@ -206,18 +166,14 @@ export default function LoginScreen() {
 
   // ── Helpers ──────────────────────────────────────────────────────────────────
 
-  /**
-   * Map a MerchantSalesChannel + its store → the KioskChannel shape stored in
-   * kioskChannelStore.
-   */
   const toKioskChannel = useCallback(
-    (ch: MerchantSalesChannel, store: MerchantStore): KioskChannel => ({
+    (ch: MerchantSalesChannel): KioskChannel => ({
       id:                    String(ch.id),
       name:                  ch.name,
       code:                  ch.code,
-      store_id:              String(store.id),
-      store_name:            store.name,
-      store_code:            store.code ?? '',
+      store_id:              String(ch.store_id),
+      store_name:            ch.store_name ?? ch.name,
+      store_code:            ch.store_code ?? ch.code ?? '',
       sales_channel_type_id: String(ch.sales_channel_type_id),
       store_address:         ch.address,
       is_active:             Boolean(ch.is_active),
@@ -225,79 +181,45 @@ export default function LoginScreen() {
     [],
   );
 
-  const loadChannels = useCallback(
-    async (store: MerchantStore) => {
-      setStep('loading');
-      setLoadingMessage('Loading kiosk channels…');
-      setError('');
-
-      let chs: MerchantSalesChannel[] = [];
-      try {
-        chs = await getKioskSalesChannels(store.id);
-      } catch (err) {
-        logger.error('[login] getKioskSalesChannels failed', err);
-        setError('Failed to load kiosk channels. Please try again.');
-        setStep('store-select');
-        return;
-      }
-
-      if (chs.length === 0) {
-        setError('No kiosk channels are configured for this store. Contact your administrator.');
-        setStep('store-select');
-        return;
-      }
-
-      if (chs.length === 1) {
-        const kc = toKioskChannel(chs[0], store);
-        setChannel(kc);
-        if (kc.code) {
-          useStoreConfigStore.getState().clear();
-          void loadStoreDetails(kc.code).catch((err) =>
-            logger.warn('[login] prefetch store details failed', err),
-          );
-        }
-        useSettingsStore.getState().lockBrand();
-        history.replace('/attract');
-        return;
-      }
-
-      setChannels(chs);
-      setSelectedChannel(chs[0]);
-      setStep('channel-select');
-    },
-    [history, setChannel, toKioskChannel],
-  );
-
-  const loadStores = useCallback(async () => {
+  const loadChannelsDirect = useCallback(async () => {
     setStep('loading');
-    setLoadingMessage('Loading your stores…');
+    setLoadingMessage('Loading kiosk channels…');
     setError('');
 
-    let fetchedStores: MerchantStore[] = [];
+    let chs: MerchantSalesChannel[] = [];
     try {
-      fetchedStores = await getStores();
+      chs = await getKioskChannelsDirect();
     } catch (err) {
-      logger.error('[login] getStores failed', err);
-      setError('Failed to load stores. Please check your connection and try again.');
+      logger.error('[login] getKioskChannelsDirect failed', err);
+      setError('Failed to load kiosk channels. Please check your connection and try again.');
       setStep('credentials');
       return;
     }
 
-    if (fetchedStores.length === 0) {
-      setError('No stores found for your account. Contact your administrator.');
+    if (chs.length === 0) {
+      setError('No kiosk channels found for your account. Contact your administrator.');
       setStep('credentials');
       return;
     }
 
-    if (fetchedStores.length === 1) {
-      setSelectedStore(fetchedStores[0]);
-      await loadChannels(fetchedStores[0]);
+    if (chs.length === 1) {
+      const kc = toKioskChannel(chs[0]);
+      setChannel(kc);
+      if (kc.code) {
+        useStoreConfigStore.getState().clear();
+        void loadStoreDetails(kc.code).catch((err) =>
+          logger.warn('[login] prefetch store details failed', err),
+        );
+      }
+      useSettingsStore.getState().lockBrand();
+      history.replace('/attract');
       return;
     }
 
-    setStores(fetchedStores);
-    setStep('store-select');
-  }, [loadChannels]);
+    setChannels(chs);
+    setSelectedChannel(chs[0]);
+    setStep('channel-select');
+  }, [history, setChannel, toKioskChannel]);
 
   // Single-step sign in: validate email first, then log in immediately.
   // Eliminates the intermediate "password" step — one tap instead of two.
@@ -327,53 +249,24 @@ export default function LoginScreen() {
       return;
     }
     setIsSubscriptionError(false);
-    await loadStores();
-  }, [email, password, loadStores]);
-
-  // handleLogin kept for back-compat (not used in single-step form)
-  const handleLogin = handleSignIn;
-
-  const handleStoreSelect = useCallback(
-    async (store: MerchantStore) => {
-      setSelectedStore(store);
-      await loadChannels(store);
-    },
-    [loadChannels],
-  );
+    await loadChannelsDirect();
+  }, [email, password, loadChannelsDirect]);
 
   const handleChannelConfirm = useCallback(async () => {
-    if (!selectedChannel || !selectedStore) return;
+    if (!selectedChannel) return;
     setConfirming(true);
-    const kc = toKioskChannel(selectedChannel, selectedStore);
-    // Don't commit to store yet — wait until admin taps "Launch Kiosk" on the ready step.
-    // This prevents the auto-redirect useEffect from firing before the admin sees the PIN.
-    setPendingChannel(kc);
-    await new Promise((r) => setTimeout(r, 200));
-    setConfirming(false);
-    setStep('ready');
-  }, [selectedChannel, selectedStore, toKioskChannel]);
-
-  // Final step: admin acknowledges the PIN, then the channel is committed + kiosk launches
-  const handleLaunchKiosk = useCallback(async () => {
-    if (!pendingChannel) return;
-    setChannel(pendingChannel);
-    if (pendingChannel.code) {
+    const kc = toKioskChannel(selectedChannel);
+    setChannel(kc);
+    if (kc.code) {
       useStoreConfigStore.getState().clear();
-      void loadStoreDetails(pendingChannel.code).catch((err) =>
+      void loadStoreDetails(kc.code).catch((err) =>
         logger.warn('[login] prefetch store details failed', err),
       );
     }
     useSettingsStore.getState().lockBrand();
+    await new Promise((r) => setTimeout(r, 200));
     history.replace('/attract');
-  }, [pendingChannel, setChannel, history]);
-
-  // Focus email field when user wants to re-enter credentials
-  const handleBackToEmail = useCallback(() => {
-    setPassword('');
-    setError('');
-    setIsSubscriptionError(false);
-    setTimeout(() => emailRef.current?.focus(), 100);
-  }, []);
+  }, [selectedChannel, setChannel, toKioskChannel, history]);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key !== 'Enter') return;
@@ -381,11 +274,9 @@ export default function LoginScreen() {
   };
 
   const subHeading =
-    step === 'credentials'    ? 'Sign in to manage this kiosk'   :
-    step === 'loading'        ? loadingMessage                    :
-    step === 'store-select'   ? 'Select your store'               :
-    step === 'channel-select' ? 'Select your kiosk channel'       :
-    step === 'ready'          ? 'Review before going live'        :
+    step === 'credentials'    ? 'Sign in to manage this kiosk' :
+    step === 'loading'        ? loadingMessage                  :
+    step === 'channel-select' ? 'Select your kiosk channel'    :
     /* fallback */              '';
 
   // ─── Render ──────────────────────────────────────────────────────────────────
@@ -572,48 +463,9 @@ export default function LoginScreen() {
                 </div>
               )}
 
-              {/* ── STEP: store-select ────────────────────────────────────── */}
-              {step === 'store-select' && (
-                <div className="flex flex-col gap-3 animate-fade-in">
-                  <p className="text-xs font-brand" style={{ color: '#6B7280' }}>
-                    {stores.length} store{stores.length !== 1 ? 's' : ''} found
-                  </p>
-                  <div className="flex flex-col gap-2 max-h-56 overflow-y-auto no-scrollbar">
-                    {stores.map((store) => (
-                      <SelectCard
-                        key={store.id}
-                        title={store.name}
-                        subtitle={[store.code, store.address, store.city].filter(Boolean).join(' · ')}
-                        onClick={() => void handleStoreSelect(store)}
-                      />
-                    ))}
-                  </div>
-                </div>
-              )}
-
               {/* ── STEP: channel-select ──────────────────────────────────── */}
-              {step === 'channel-select' && selectedStore && (
+              {step === 'channel-select' && (
                 <div className="flex flex-col gap-3 animate-fade-in">
-                  {/* Store context */}
-                  <div
-                    className="flex items-center gap-2 px-3.5 py-2.5 rounded-xl"
-                    style={{ background: '#F9FAFB', border: '1px solid #E5E7EB' }}
-                  >
-                    <svg className="w-3.5 h-3.5 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"
-                      style={{ color: '#9CA3AF' }}>
-                      <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>
-                    </svg>
-                    <span className="text-xs font-brand truncate flex-1" style={{ color: '#374151' }}>
-                      {selectedStore.name}
-                    </span>
-                    <TextBtn
-                      onClick={() => setStep('store-select')}
-                      style={{ color: 'var(--color-brand-primary)', fontSize: '0.7rem', fontWeight: 600 } as React.CSSProperties}
-                    >
-                      Change
-                    </TextBtn>
-                  </div>
-
                   <p className="text-xs font-brand" style={{ color: '#6B7280' }}>
                     {channels.length} kiosk channel{channels.length !== 1 ? 's' : ''} available
                   </p>
@@ -641,7 +493,8 @@ export default function LoginScreen() {
                   </div>
 
                   <button
-                    onClick={handleChannelConfirm}
+                    type="button"
+                    onClick={() => void handleChannelConfirm()}
                     disabled={!selectedChannel || confirming}
                     className="ui-btn-primary w-full py-4 text-base mt-1"
                     style={{
@@ -655,84 +508,6 @@ export default function LoginScreen() {
                         <Spinner size="sm" /> Launching…
                       </span>
                     ) : 'Launch Kiosk'}
-                  </button>
-                </div>
-              )}
-
-              {/* ── STEP: ready — admin sees kiosk info + PIN before launch ── */}
-              {step === 'ready' && pendingChannel && (
-                <div className="flex flex-col gap-4 animate-fade-in">
-                  {/* Kiosk identity */}
-                  <div className="flex items-center gap-3 px-4 py-3 rounded-2xl"
-                    style={{ background: '#F9FAFB', border: '1.5px solid #E5E7EB' }}>
-                    <div className="w-10 h-10 rounded-xl flex-shrink-0 flex items-center justify-center"
-                      style={{ background: 'var(--gradient-cta)' }}>
-                      <svg className="w-5 h-5 text-white" viewBox="0 0 24 24" fill="none"
-                        stroke="currentColor" strokeWidth={2} strokeLinecap="round">
-                        <rect x="2" y="3" width="20" height="14" rx="2"/>
-                        <line x1="8" y1="21" x2="16" y2="21"/>
-                        <line x1="12" y1="17" x2="12" y2="21"/>
-                      </svg>
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-bold font-brand text-sm leading-tight truncate" style={{ color: '#111827' }}>
-                        {pendingChannel.name}
-                      </p>
-                      <p className="text-xs font-brand mt-0.5 truncate" style={{ color: '#6B7280' }}>
-                        {pendingChannel.store_name}
-                      </p>
-                    </div>
-                    <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: '#22C55E' }} />
-                  </div>
-
-                  {/* Settings PIN notice — the admin must see this before the kiosk goes live */}
-                  <div className="flex items-start gap-3 px-4 py-3.5 rounded-2xl"
-                    style={{ background: 'var(--color-brand-surface)', border: '1.5px solid var(--color-brand-border)' }}>
-                    <span className="text-xl flex-shrink-0 mt-0.5">🔐</span>
-                    <div className="flex-1">
-                      <p className="font-bold font-brand text-sm leading-tight" style={{ color: '#92400E' }}>
-                        Settings PIN
-                      </p>
-                      {kioskPin === '1234' ? (
-                        <>
-                          <p className="text-xs font-brand mt-1.5 leading-relaxed" style={{ color: '#B45309' }}>
-                            Your device is using the <strong>default PIN: 1234</strong>.
-                            Anyone with this PIN can access Settings.
-                          </p>
-                          <p className="text-xs font-brand mt-1 leading-relaxed" style={{ color: '#B45309' }}>
-                            After launch, open Settings → Kiosk Behavior to set a custom PIN.
-                          </p>
-                        </>
-                      ) : (
-                        <p className="text-xs font-brand mt-1 leading-relaxed" style={{ color: '#B45309' }}>
-                          A custom PIN is set. Staff can access Settings from the kiosk gear icon.
-                        </p>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Launch */}
-                  <button
-                    type="button"
-                    onClick={() => void handleLaunchKiosk()}
-                    className="ui-btn-primary w-full py-4 text-base"
-                    style={{ borderRadius: '0.875rem' }}
-                  >
-                    <span className="flex items-center justify-center gap-2">
-                      Launch Kiosk
-                      <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                        strokeWidth={2.5} strokeLinecap="round">
-                        <line x1="5" y1="12" x2="19" y2="12"/>
-                        <polyline points="12 5 19 12 12 19"/>
-                      </svg>
-                    </span>
-                  </button>
-
-                  {/* Back link */}
-                  <button type="button" onClick={() => setStep('channel-select')}
-                    className="text-xs font-brand text-center"
-                    style={{ background: 'transparent', border: 'none', color: '#9CA3AF', cursor: 'pointer' }}>
-                    ← Choose a different kiosk
                   </button>
                 </div>
               )}
