@@ -52,6 +52,7 @@
     "empty": "ನಿಮ್ಮ ಕಾರ್ಟ್ ಖಾಲಿಯಾಗಿದೆ",
     "emptyHint": "ಪ್ರಾರಂಭಿಸಲು ಐಟಂಗಳನ್ನು ಸೇರಿಸಿ",
     "browseMenu": "ಮೆನು ನೋಡಿ",
+    "backToMenu": "ಮೆನುಗೆ ಹಿಂತಿರುಗಿ",
     "subtotal": "ಉಪ ಮೊತ್ತ",
     "tax": "ತೆರಿಗೆ ({{rate}})",
     "tip": "ಟಿಪ್",
@@ -94,7 +95,11 @@
     "removeCard": "ಈಗ ಕಾರ್ಡ್ ತೆಗೆಯಬಹುದು",
     "failed": "ಪಾವತಿ ವಿಫಲವಾಗಿದೆ",
     "tryAgain": "ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ",
-    "goBack": "ಹಿಂತಿರುಗಿ"
+    "goBack": "ಹಿಂತಿರುಗಿ",
+    "noReaderConnected": "ರೀಡರ್ ಸಂಪರ್ಕಿತವಾಗಿಲ್ಲ",
+    "noReaderHint": "ಪಾವತಿ ಮುಂದುವರಿಸಲು Stripe Reader M2 ಸಂಪರ್ಕಿಸಿ.",
+    "connectReader": "ರೀಡರ್ ಸಂಪರ್ಕಿಸಿ",
+    "backToCart": "ಕಾರ್ಟ್‌ಗೆ ಹಿಂತಿರುಗಿ"
   },
   "receipt": {
     "title": "ಆರ್ಡರ್ ದೃಢಪಡಿಸಲಾಗಿದೆ!",
@@ -140,6 +145,22 @@
     "api": "API ಕಾನ್ಫಿಗ್",
     "payment": "ಪಾವತಿ / Stripe",
     "kiosk": "ಕಿಯೋಸ್ಕ್ ನಡವಳಿಕೆ",
-    "localization": "ಸ್ಥಳೀಯಕರಣ"
+    "localization": "ಸ್ಥಳೀಯಕರಣ",
+    "signOut": "ಸೈನ್ ಔಟ್",
+    "switchKiosk": "ಕಿಯೋಸ್ಕ್ ಬದಲಾಯಿಸಿ",
+    "kioskSuffix": "ಕಿಯೋಸ್ಕ್"
+  },
+  "localization": {
+    "langRegion": "ಭಾಷೆ & ಪ್ರದೇಶ",
+    "language": "ಭಾಷೆ",
+    "currency": "ಕರೆನ್ಸಿ",
+    "currencyDesc": "ISO 4217 ಕೋಡ್. ಪ್ರದರ್ಶನ ಮಾತ್ರ.",
+    "dateTime": "ದಿನಾಂಕ & ಸಮಯ",
+    "timezone": "ಸಮಯ ವಲಯ",
+    "dateFormat": "ದಿನಾಂಕ ಸ್ವರೂಪ",
+    "preview": "ಮುನ್ನೋಟ",
+    "sampleOutput": "ಮಾದರಿ",
+    "priceLabel": "ಬೆಲೆ",
+    "dateLabel": "ದಿನಾಂಕ"
   }
 }

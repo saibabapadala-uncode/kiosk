@@ -52,6 +52,7 @@
     "empty": "سلتك فارغة",
     "emptyHint": "أضف بعض العناصر للبدء",
     "browseMenu": "تصفح القائمة",
+    "backToMenu": "العودة إلى القائمة",
     "subtotal": "المجموع الفرعي",
     "tax": "الضريبة ({{rate}})",
     "tip": "إكرامية",
@@ -94,7 +95,11 @@
     "removeCard": "يمكنك الآن سحب البطاقة",
     "failed": "فشل الدفع",
     "tryAgain": "حاول مرة أخرى",
-    "goBack": "العودة"
+    "goBack": "العودة",
+    "noReaderConnected": "لا يوجد قارئ متصل",
+    "noReaderHint": "يرجى توصيل Stripe Reader M2 لإتمام الدفع.",
+    "connectReader": "توصيل القارئ",
+    "backToCart": "العودة إلى السلة"
   },
   "receipt": {
     "title": "تم تأكيد الطلب!",
@@ -140,6 +145,22 @@
     "api": "إعدادات API",
     "payment": "الدفع / Stripe",
     "kiosk": "سلوك الكشك",
-    "localization": "التوطين"
+    "localization": "التوطين",
+    "signOut": "تسجيل الخروج",
+    "switchKiosk": "تبديل الكشك",
+    "kioskSuffix": "كشك"
+  },
+  "localization": {
+    "langRegion": "اللغة والمنطقة",
+    "language": "اللغة",
+    "currency": "العملة",
+    "currencyDesc": "رمز ISO 4217. للعرض فقط.",
+    "dateTime": "التاريخ والوقت",
+    "timezone": "المنطقة الزمنية",
+    "dateFormat": "تنسيق التاريخ",
+    "preview": "معاينة",
+    "sampleOutput": "نموذج",
+    "priceLabel": "السعر",
+    "dateLabel": "التاريخ"
   }
 }

@@ -593,14 +593,19 @@ function ModifierBody(p: BodyProps) {
 
 // ─── Sticky footer ────────────────────────────────────────────────────────────
 
-function Footer({ qty, unit, valid, loading, onDec, onInc, onAdd }: {
+function Footer({ qty, unit, valid, loading, onDec, onInc, onAdd, landscapeMode = false }: {
   qty: number; unit: number; valid: boolean; loading: boolean;
   onDec: () => void; onInc: () => void; onAdd: () => void;
+  /** In landscape the parent container handles safe-area-inset-bottom so the
+   *  footer itself should use flat 14px bottom padding to avoid doubling. */
+  landscapeMode?: boolean;
 }) {
   return (
     <div style={{
       flexShrink: 0, display: 'flex', alignItems: 'center', gap: 12,
-      padding: '14px 16px calc(14px + env(safe-area-inset-bottom, 0px)) 16px',
+      padding: landscapeMode
+        ? '14px 16px'
+        : '14px 16px calc(14px + env(safe-area-inset-bottom, 0px)) 16px',
       background: C.white, borderTop: `1px solid ${C.border}`,
       boxShadow: '0 -4px 20px rgba(28,25,23,0.08)',
     }}>
@@ -722,17 +727,30 @@ function LandscapeImageHeader({ imageUrl, name, onClose }: {
   imageUrl: string; name: string; onClose: () => void;
 }) {
   return (
-    <div style={{ flexShrink: 0, width: '100%', height: 'clamp(140px,18vw,180px)', position: 'relative', background: '#F0EDE8', overflow: 'hidden' }}>
+    <div style={{
+      flexShrink: 0, width: '100%',
+      height: 'clamp(120px, 16vh, 172px)',
+      position: 'relative', background: '#F0EDE8', overflow: 'hidden',
+    }}>
       {imageUrl
         ? <img src={imageUrl} alt={name} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
         : <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '3.5rem', background: 'linear-gradient(135deg,#FEF9EC,#FEF3C7)' }}>🍽</div>
       }
-      <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top,rgba(0,0,0,0.22) 0%,transparent 50%)' }} />
+      <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top,rgba(0,0,0,0.25) 0%,transparent 55%)' }} />
+      {/* Larger close button for kiosk / touch targets (min 44×44px) */}
       <button type="button" onClick={onClose} aria-label="Close product detail"
-        style={{ position: 'absolute', top: 10, right: 10, width: 34, height: 34, borderRadius: '50%',
-          background: 'rgba(0,0,0,0.50)', backdropFilter: 'blur(4px)',
-          border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth={2.5} strokeLinecap="round">
+        style={{
+          position: 'absolute', top: 10, right: 10,
+          width: 44, height: 44, borderRadius: '50%',
+          background: 'rgba(0,0,0,0.52)', backdropFilter: 'blur(6px)',
+          border: '1.5px solid rgba(255,255,255,0.18)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          cursor: 'pointer', transition: 'background 140ms',
+        }}
+        onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = 'rgba(0,0,0,0.72)'; }}
+        onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'rgba(0,0,0,0.52)'; }}
+      >
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth={2.5} strokeLinecap="round">
           <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
         </svg>
       </button>
@@ -977,21 +995,23 @@ export default function ProductModal({ product, isOpen, onClose, landscapeContai
   };
 
   // ────────────────────────────────────────────────────────────────────────────
-  // LANDSCAPE — portal into the container div managed by CatalogScreen
+  // LANDSCAPE — portal into the container div managed by CatalogScreen.
+  // The container itself handles safe-area-inset-bottom, so Footer receives
+  // landscapeMode=true to avoid doubling the bottom gap.
   // ────────────────────────────────────────────────────────────────────────────
   if (isLandscape) {
     if (!landscapeContainer || !isOpen) return null;
     return createPortal(
       <>
         <style>{ANIM_CSS}</style>
-        {/* Full-height flex column — container already has h-full + overflow-hidden */}
+        {/* Full-height flex column — container already has overflow:hidden */}
         <div key={fadeKey} className="pm-body"
           style={{ display: 'flex', flexDirection: 'column', height: '100%', background: C.white }}>
 
-          {/* Fixed: image + close button only — no text, so height is constant */}
+          {/* Fixed: image + close button — height is constant, no text here */}
           <LandscapeImageHeader imageUrl={imgUrl} name={name} onClose={onClose} />
 
-          {/* Scrollable: all text + modifiers together — nothing can be clipped */}
+          {/* Scrollable: product info + all modifiers */}
           <div className="no-scrollbar"
             style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', background: C.bg }}>
             <ProductInfoBlock
@@ -1003,8 +1023,8 @@ export default function ProductModal({ product, isOpen, onClose, landscapeContai
             <ModifierBody {...bodyProps} />
           </div>
 
-          {/* Always-visible footer */}
-          <Footer {...footerProps} />
+          {/* Sticky footer — parent container handles safe-area-inset-bottom */}
+          <Footer {...footerProps} landscapeMode />
         </div>
       </>,
       landscapeContainer,

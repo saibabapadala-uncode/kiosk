@@ -48,34 +48,35 @@ function SkeletonCard() {
     <div style={{
       display:       'flex',
       flexDirection: 'column',
-      borderRadius:  18,
+      borderRadius:  'var(--radius-brand-card, 18px)',
       overflow:      'hidden',
-      background:    '#FFFFFF',
-      boxShadow:     '0 2px 10px rgba(0,0,0,0.06)',
+      background:    'var(--color-ui-card)',
+      boxShadow:     'var(--card-shadow)',
     }}>
-      {/* Image placeholder — same 72 % ratio as ProductCard */}
-      <div style={{ paddingTop: '72%', position: 'relative', flexShrink: 0 }}>
+      {/* Image placeholder — same 72% ratio as ProductCard */}
+      <div style={{ paddingTop: 'var(--card-image-ratio, 72%)', position: 'relative', flexShrink: 0 }}>
         <div style={{
           position:  'absolute',
           inset:     0,
-          background:'linear-gradient(135deg,#F5EFE9,#EDE8E2)',
+          background: 'var(--gradient-placeholder)',
           animation: 'skeleton-shimmer 1.6s ease-in-out infinite',
         }} />
       </div>
       {/* Info area — same padding, same 2-row name + price row layout */}
-      <div style={{ padding: '10px 12px 12px', display: 'flex', flexDirection: 'column', gap: 0 }}>
+      <div style={{ padding: '10px 12px 12px', display: 'flex', flexDirection: 'column', gap: 0,
+        background: 'var(--color-ui-card)' }}>
         {/* Name line 1 */}
-        <div style={{ height: 13, borderRadius: 5, background: '#EDE8E2', width: '78%',
+        <div style={{ height: 13, borderRadius: 5, background: 'var(--color-brand-surface-alt)', width: '78%',
           animation: 'skeleton-shimmer 1.6s ease-in-out infinite 80ms' }} />
         {/* Name line 2 */}
-        <div style={{ height: 13, borderRadius: 5, background: '#EDE8E2', width: '52%',
+        <div style={{ height: 13, borderRadius: 5, background: 'var(--color-brand-surface-alt)', width: '52%',
           marginTop: 6, animation: 'skeleton-shimmer 1.6s ease-in-out infinite 120ms' }} />
         {/* Price + button row */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 14 }}>
-          <div style={{ height: 16, borderRadius: 5, background: '#EDE8E2', width: 48,
+          <div style={{ height: 16, borderRadius: 5, background: 'var(--color-brand-surface-alt)', width: 48,
             animation: 'skeleton-shimmer 1.6s ease-in-out infinite 160ms' }} />
           <div style={{ flex: 1 }} />
-          <div style={{ height: 32, borderRadius: 999, background: '#EDE8E2', width: 90,
+          <div style={{ height: 32, borderRadius: 999, background: 'var(--color-brand-surface-alt)', width: 90,
             animation: 'skeleton-shimmer 1.6s ease-in-out infinite 200ms' }} />
         </div>
       </div>
@@ -121,15 +122,15 @@ function StandardGrid({ products, onOpenModal }: StandardGridProps) {
         padding:        '80px 32px',
         textAlign:      'center',
       }}>
-        <svg aria-hidden="true" style={{ width: 64, height: 64, color: '#D1D5DB', marginBottom: 16 }}
+        <svg aria-hidden="true" style={{ width: 64, height: 64, color: 'var(--color-brand-border)', marginBottom: 16 }}
           viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.4}>
           <circle cx="11" cy="11" r="8"/>
           <line x1="21" y1="21" x2="16.65" y2="16.65"/>
         </svg>
-        <p style={{ margin: '0 0 4px', fontWeight: 700, fontSize: '1rem', color: '#1C1917', fontFamily: 'var(--font-brand)' }}>
+        <p style={{ margin: '0 0 4px', fontWeight: 700, fontSize: '1rem', color: 'var(--color-brand-text)', fontFamily: 'var(--font-brand)' }}>
           No items found
         </p>
-        <p style={{ margin: 0, fontSize: '0.875rem', color: '#78716C', fontFamily: 'var(--font-brand)' }}>
+        <p style={{ margin: 0, fontSize: '0.875rem', color: 'var(--color-brand-muted)', fontFamily: 'var(--font-brand)' }}>
           Try a different category or search term
         </p>
       </div>
@@ -249,10 +250,10 @@ function VirtualGrid({
               ) : (
                 <div style={{ display: 'flex', justifyContent: 'center', padding: '32px 0' }}>
                   {isFetchingNextPage && (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#78716C', fontFamily: 'var(--font-brand)', fontSize: '0.875rem' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: 'var(--color-brand-muted)', fontFamily: 'var(--font-brand)', fontSize: '0.875rem' }}>
                       <div style={{
                         width: 16, height: 16, borderRadius: '50%',
-                        border: '2px solid #F97316', borderTopColor: 'transparent',
+                        border: '2px solid var(--color-brand-primary)', borderTopColor: 'transparent',
                         animation: 'spin-ring 0.8s linear infinite',
                       }} />
                       Loading more…

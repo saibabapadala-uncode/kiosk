@@ -32,6 +32,7 @@ import { loadCatalog }           from '@/services/catalog.service';
 import type { Category }         from '@/types/catalog';
 
 import LanguageSelector          from '@/components/LanguageSelector';
+import ThemeToggle               from '@/components/ThemeToggle';
 import StaffPinModal             from '@/components/StaffPinModal';
 import AgeVerificationGate       from '@/components/AgeVerificationGate';
 
@@ -212,9 +213,9 @@ function HeaderBar({
         </div>
       </div>
 
-      {/* ── Right: clock + language selector ── */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 'clamp(12px,2vw,20px)', flexShrink: 0 }}>
-        {/* Clock — double as settings tap zone */}
+      {/* ── Right: clock + theme toggle + language selector ── */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 'clamp(10px,1.8vw,18px)', flexShrink: 0 }}>
+        {/* Clock — doubles as hidden settings tap zone */}
         <button type="button" onClick={onSettingsTap} aria-label="Settings"
           style={{ position: 'relative', background: 'none', border: 'none', padding: 0,
             cursor: 'default' }}>
@@ -231,6 +232,9 @@ function HeaderBar({
             </span>
           )}
         </button>
+
+        {/* Dark / Light toggle */}
+        <ThemeToggle variant="compact" />
 
         <LanguageSelector variant="header" />
       </div>

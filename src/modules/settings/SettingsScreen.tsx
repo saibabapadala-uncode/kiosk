@@ -1,6 +1,7 @@
 // src/modules/settings/SettingsScreen.tsx
 import { useState } from 'react';
 import { useHistory } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '@/store/authStore';
 import { useKioskChannelStore } from '@/store/kioskChannelStore';
 import { useKioskName } from '@/hooks/useKioskName';
@@ -16,28 +17,22 @@ import { themeColors } from '@/utils/themeColors';
 
 type TabId = 'brand' | 'api' | 'payment' | 'kiosk' | 'localization';
 
-interface Tab {
-  id: TabId;
-  label: string;
-  shortLabel: string;
-  icon: string;
-}
-
-const TABS: Tab[] = [
-  { id: 'brand',        label: 'Brand & Theme',   shortLabel: 'Brand',  icon: '🎨' },
-  { id: 'api',          label: 'API Config',       shortLabel: 'API',    icon: '🔌' },
-  { id: 'payment',      label: 'Payment / Stripe', shortLabel: 'Payment',icon: '💳' },
-  { id: 'kiosk',        label: 'Kiosk Behavior',   shortLabel: 'Kiosk',  icon: '⚙️'  },
-  { id: 'localization', label: 'Localization',      shortLabel: 'Locale', icon: '🌐' },
+const TAB_IDS: { id: TabId; icon: string }[] = [
+  { id: 'brand',        icon: '🎨' },
+  { id: 'api',          icon: '🔌' },
+  { id: 'payment',      icon: '💳' },
+  { id: 'kiosk',        icon: '⚙️'  },
+  { id: 'localization', icon: '🌐' },
 ];
 
 // ─── Settings screen ───────────────────────────────────────────────────────────
 
 export default function SettingsScreenContent() {
-  const history  = useHistory();
-  const kioskName = useKioskName();
-  const user      = useAuthStore((s) => s.user);
-  const channel   = useKioskChannelStore((s) => s.channel);
+  const { t }       = useTranslation();
+  const history     = useHistory();
+  const kioskName   = useKioskName();
+  const user        = useAuthStore((s) => s.user);
+  const channel     = useKioskChannelStore((s) => s.channel);
   const clearChannel = useKioskChannelStore((s) => s.clear);
   const [activeTab, setActiveTab] = useState<TabId>('brand');
 
@@ -58,7 +53,7 @@ export default function SettingsScreenContent() {
       <div className="flex items-center gap-3 px-6 py-4 border-b border-brand-border bg-brand-surface flex-shrink-0 shadow-sm">
         <button
           onClick={() => history.goBack()}
-          aria-label="Back"
+          aria-label={t('common.back')}
           className="
             w-9 h-9 rounded-xl flex items-center justify-center
             text-brand-muted hover:text-brand-text hover:bg-brand-surface-alt
@@ -71,11 +66,15 @@ export default function SettingsScreenContent() {
         </button>
 
         <div className="flex-1 min-w-0">
-          <h1 className="text-lg font-extrabold font-brand text-brand-text leading-tight tracking-tight">Settings</h1>
-          <p className="text-xs text-brand-muted font-brand font-medium">{kioskName} Kiosk</p>
+          <h1 className="text-lg font-extrabold font-brand text-brand-text leading-tight tracking-tight">
+            {t('settings.title')}
+          </h1>
+          <p className="text-xs text-brand-muted font-brand font-medium">
+            {kioskName} {t('settings.kioskSuffix')}
+          </p>
         </div>
 
-        {/* Session info + sign-out */}
+        {/* Session info + actions */}
         <div className="flex items-center gap-2.5 flex-shrink-0">
           {user && (
             <div className="hidden sm:flex flex-col items-end mr-1">
@@ -88,7 +87,7 @@ export default function SettingsScreenContent() {
           {channel && (
             <button
               onClick={handleSwitchKiosk}
-              aria-label="Switch kiosk channel"
+              aria-label={t('settings.switchKiosk')}
               className="px-3.5 py-2 rounded-xl text-xs font-brand font-bold transition-all active:scale-95 border hover:opacity-90"
               style={{
                 background: 'var(--color-brand-surface-alt)',
@@ -97,12 +96,12 @@ export default function SettingsScreenContent() {
                 boxShadow: 'var(--ui-card-shadow)',
               }}
             >
-              Switch Kiosk
+              {t('settings.switchKiosk')}
             </button>
           )}
           <button
             onClick={handleSignOut}
-            aria-label="Sign out"
+            aria-label={t('settings.signOut')}
             className="px-3.5 py-2 rounded-xl text-xs font-brand font-bold transition-all active:scale-95 border hover:opacity-90"
             style={{
               background: 'rgba(239,68,68,0.08)',
@@ -111,17 +110,17 @@ export default function SettingsScreenContent() {
               boxShadow: '0 2px 8px rgba(239,68,68,0.05)',
             }}
           >
-            Sign Out
+            {t('settings.signOut')}
           </button>
         </div>
       </div>
 
       {/* Tab navigation */}
       <nav
-        aria-label="Settings tabs"
+        aria-label={t('settings.title')}
         className="flex overflow-x-auto no-scrollbar border-b border-brand-border bg-brand-surface flex-shrink-0 px-4 gap-1.5"
       >
-        {TABS.map((tab) => {
+        {TAB_IDS.map((tab) => {
           const isActive = activeTab === tab.id;
           return (
             <button
@@ -140,9 +139,7 @@ export default function SettingsScreenContent() {
               ].join(' ')}
             >
               <span aria-hidden="true" className={isActive ? 'animate-bounce-short' : ''}>{tab.icon}</span>
-              {/* Full label on kiosk, short on mobile */}
-              <span className="hidden sm:inline">{tab.label}</span>
-              <span className="sm:hidden">{tab.shortLabel}</span>
+              <span>{t(`settings.${tab.id}`)}</span>
 
               {isActive && (
                 <div
@@ -156,7 +153,12 @@ export default function SettingsScreenContent() {
       </nav>
 
       {/* Tab panels */}
-      <div className="flex-1 overflow-y-auto bg-brand-bg/40" role="tabpanel" id={`settings-panel-${activeTab}`} aria-label={TABS.find(t => t.id === activeTab)?.label}>
+      <div
+        className="flex-1 overflow-y-auto bg-brand-bg/40"
+        role="tabpanel"
+        id={`settings-panel-${activeTab}`}
+        aria-label={t(`settings.${activeTab}`)}
+      >
         {activeTab === 'brand'        && <BrandThemeTab />}
         {activeTab === 'api'          && <ApiConfigTab />}
         {activeTab === 'payment'      && <PaymentTab />}

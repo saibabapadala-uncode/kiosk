@@ -60,8 +60,11 @@ export interface KioskSettings {
 
 /** All supported UI locales. RTL languages have their own dir attribute. */
 export type SupportedLocale =
-  | 'en-US'   // English
+  | 'en-US'   // English (US)
   | 'es-US'   // Spanish
+  | 'fr'      // French     — LTR
+  | 'de'      // German     — LTR
+  | 'ja'      // Japanese   — LTR
   | 'hi'      // Hindi      — Devanagari, LTR
   | 'ta'      // Tamil      — Tamil script, LTR
   | 'te'      // Telugu     — Telugu script, LTR
@@ -141,7 +144,7 @@ function buildDefaults(): Omit<SettingsState, keyof Pick<SettingsState,
       fontFamily: env.defaultTheme.fontFamily,
       logoUrl:    env.defaultTheme.logoUrl,
       radius:     env.defaultTheme.radius,
-      themeMode:  'light',
+      themeMode:  'auto',
     },
     api: {
       apiBaseUrl:  env.apiBaseUrl,
@@ -246,7 +249,7 @@ export const useSettingsStore = create<SettingsState>()(
               fontFamily: env.defaultTheme.fontFamily,
               logoUrl:    env.defaultTheme.logoUrl,
               radius:     env.defaultTheme.radius,
-              themeMode:  'light',
+              themeMode:  'auto',
             },
             api: {
               apiBaseUrl:  env.apiBaseUrl,
@@ -294,7 +297,7 @@ export const useSettingsStore = create<SettingsState>()(
               fontFamily: env.defaultTheme.fontFamily,
               logoUrl:    env.defaultTheme.logoUrl,
               radius:     env.defaultTheme.radius,
-              themeMode:  'light',
+              themeMode:  'auto',
             },
             api: {
               apiBaseUrl:  env.apiBaseUrl,
@@ -337,7 +340,7 @@ export const useSettingsStore = create<SettingsState>()(
               fontFamily: env.defaultTheme.fontFamily,
               logoUrl:    env.defaultTheme.logoUrl,
               radius:     env.defaultTheme.radius,
-              themeMode:  'light',
+              themeMode:  'auto',
             },
             api: {
               apiBaseUrl:  env.apiBaseUrl,

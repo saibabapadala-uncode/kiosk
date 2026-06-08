@@ -25,6 +25,9 @@ export interface LangEntry {
 export const SUPPORTED_LANGUAGES: LangEntry[] = [
   { code: 'en-US', nativeName: 'English',    abbr: 'EN', flag: '🇺🇸', dir: 'ltr' },
   { code: 'es-US', nativeName: 'Español',    abbr: 'ES', flag: '🇲🇽', dir: 'ltr' },
+  { code: 'fr',    nativeName: 'Français',   abbr: 'FR', flag: '🇫🇷', dir: 'ltr' },
+  { code: 'de',    nativeName: 'Deutsch',    abbr: 'DE', flag: '🇩🇪', dir: 'ltr' },
+  { code: 'ja',    nativeName: '日本語',      abbr: 'JA', flag: '🇯🇵', dir: 'ltr' },
   { code: 'hi',    nativeName: 'हिन्दी',       abbr: 'HI', flag: '🇮🇳', dir: 'ltr' },
   { code: 'ta',    nativeName: 'தமிழ்',        abbr: 'TA', flag: '🇮🇳', dir: 'ltr' },
   { code: 'te',    nativeName: 'తెలుగు',       abbr: 'TE', flag: '🇮🇳', dir: 'ltr' },

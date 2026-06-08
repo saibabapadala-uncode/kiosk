@@ -11,7 +11,7 @@ import { getBrandEnvironment, isValidBrand } from '@/brands';
 import type { BrandEnvironment, BrandId, BrandTheme } from '@/brands/types';
 import { useSettingsStore, type ThemeMode } from '@/store/settingsStore';
 import { useCartStore } from '@/store/cartStore';
-import { applyThemeInstantly, resolveThemeMode } from '@/utils/themeUtils';
+import { applyThemeInstantly, applyThemeSmooth, resolveThemeMode } from '@/utils/themeUtils';
 
 // Load all brand CSS files upfront — the active data-brand attribute on <html>
 // determines which set of CSS variables applies at runtime.
@@ -163,7 +163,10 @@ export function BrandProvider({ children }: { children: ReactNode }) {
   const setThemeMode = useCallback((mode: ThemeMode) => {
     setThemeModeState(mode);
     const resolvedTheme = resolveThemeMode(mode);
-    applyThemeInstantly(resolvedTheme);
+    // User-triggered toggle — use smooth fade so CSS color transitions run.
+    // Initial load and settings-store hydration still go through
+    // applyThemeInstantly (called in the two useEffects above) to avoid FOUC.
+    applyThemeSmooth(resolvedTheme);
     useSettingsStore.getState().setTheme({ themeMode: mode });
   }, []);
 

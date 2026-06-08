@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { useCartStore } from '@/store/cartStore';
 import { useCartDrawerStore } from '@/store/cartDrawerStore';
 import { useSessionStore } from '@/store/sessionStore';
+import { useProductPanelStore } from '@/store/productPanelStore';
 import { formatPrice } from '@/utils/format';
 import CartItem from './CartItem';
 import CartSummary from './CartSummary';
@@ -13,11 +14,14 @@ import UpsellBanner from './UpsellBanner';
 // ─── Floating cart button ──────────────────────────────────────────────────────
 
 export function CartTriggerButton() {
-  const open      = useCartDrawerStore((s) => s.open);
-  const itemCount = useCartStore((s) => s.items.reduce((n, i) => n + i.quantity, 0));
-  const total     = useCartStore((s) => s.total);
+  const open             = useCartDrawerStore((s) => s.open);
+  const itemCount        = useCartStore((s) => s.items.reduce((n, i) => n + i.quantity, 0));
+  const total            = useCartStore((s) => s.total);
+  // Hide while the landscape product-detail panel is open — it sits at
+  // fixed bottom-right and overlaps the panel's Add-to-Cart / qty controls.
+  const isLandscapeOpen  = useProductPanelStore((s) => s.isLandscapeOpen);
 
-  if (itemCount === 0) return null;
+  if (itemCount === 0 || isLandscapeOpen) return null;
 
   return (
     <button

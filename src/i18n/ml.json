@@ -52,6 +52,7 @@
     "empty": "നിങ്ങളുടെ കാർട്ട് ശൂന്യമാണ്",
     "emptyHint": "ആരംഭിക്കാൻ ഇനങ്ങൾ ചേർക്കുക",
     "browseMenu": "മെനു കാണുക",
+    "backToMenu": "മെനുവിലേക്ക് മടങ്ങുക",
     "subtotal": "ഉപ ആകെ",
     "tax": "നികുതി ({{rate}})",
     "tip": "ടിപ്",
@@ -94,7 +95,11 @@
     "removeCard": "ഇപ്പോൾ കാർഡ് നീക്കാം",
     "failed": "പേയ്‌മെന്റ് പരാജയപ്പെട്ടു",
     "tryAgain": "വീണ്ടും ശ്രമിക്കുക",
-    "goBack": "തിരികെ പോകുക"
+    "goBack": "തിരികെ പോകുക",
+    "noReaderConnected": "റീഡർ ബന്ധിപ്പിച്ചിട്ടില്ല",
+    "noReaderHint": "പേയ്‌മെന്റ് തുടരാൻ Stripe Reader M2 ബന്ധിപ്പിക്കുക.",
+    "connectReader": "റീഡർ ബന്ധിപ്പിക്കുക",
+    "backToCart": "കാർട്ടിലേക്ക് മടങ്ങുക"
   },
   "receipt": {
     "title": "ഓർഡർ സ്ഥിരീകരിച്ചു!",
@@ -140,6 +145,22 @@
     "api": "API കോൺഫിഗ്",
     "payment": "പേയ്‌മെന്റ് / Stripe",
     "kiosk": "കിയോസ്‌ക് പെരുമാറ്റം",
-    "localization": "പ്രാദേശികവൽക്കരണം"
+    "localization": "പ്രാദേശികവൽക്കരണം",
+    "signOut": "സൈൻ ഔട്ട്",
+    "switchKiosk": "കിയോസ്ക് മാറ്റുക",
+    "kioskSuffix": "കിയോസ്ക്"
+  },
+  "localization": {
+    "langRegion": "ഭാഷ & പ്രദേശം",
+    "language": "ഭാഷ",
+    "currency": "കറൻസി",
+    "currencyDesc": "ISO 4217 കോഡ്. പ്രദർശനം മാത്രം.",
+    "dateTime": "തീയതി & സമയം",
+    "timezone": "സമയ മേഖല",
+    "dateFormat": "തീയതി ഫോർമാറ്റ്",
+    "preview": "പ്രിവ്യൂ",
+    "sampleOutput": "സാമ്പിൾ",
+    "priceLabel": "വില",
+    "dateLabel": "തീയതി"
   }
 }

@@ -52,6 +52,7 @@
     "empty": "आपका कार्ट खाली है",
     "emptyHint": "शुरू करने के लिए आइटम जोड़ें",
     "browseMenu": "मेनू देखें",
+    "backToMenu": "मेनू पर वापस",
     "subtotal": "उपकुल",
     "tax": "कर ({{rate}})",
     "tip": "टिप",
@@ -94,7 +95,11 @@
     "removeCard": "अब आप अपना कार्ड हटा सकते हैं",
     "failed": "भुगतान विफल",
     "tryAgain": "पुनः प्रयास करें",
-    "goBack": "वापस जाएं"
+    "goBack": "वापस जाएं",
+    "noReaderConnected": "कोई रीडर कनेक्ट नहीं है",
+    "noReaderHint": "भुगतान जारी रखने के लिए Stripe Reader M2 कनेक्ट करें।",
+    "connectReader": "रीडर कनेक्ट करें",
+    "backToCart": "कार्ट पर वापस जाएं"
   },
   "receipt": {
     "title": "ऑर्डर की पुष्टि हो गई!",
@@ -140,6 +145,22 @@
     "api": "API कॉन्फ़िग",
     "payment": "भुगतान / Stripe",
     "kiosk": "कियोस्क व्यवहार",
-    "localization": "स्थानीयकरण"
+    "localization": "स्थानीयकरण",
+    "signOut": "साइन आउट",
+    "switchKiosk": "किओस्क बदलें",
+    "kioskSuffix": "किओस्क"
+  },
+  "localization": {
+    "langRegion": "भाषा और क्षेत्र",
+    "language": "भाषा",
+    "currency": "मुद्रा",
+    "currencyDesc": "ISO 4217 कोड (जैसे USD)। केवल प्रदर्शन।",
+    "dateTime": "दिनांक और समय",
+    "timezone": "समय क्षेत्र",
+    "dateFormat": "दिनांक प्रारूप",
+    "preview": "पूर्वावलोकन",
+    "sampleOutput": "नमूना",
+    "priceLabel": "कीमत",
+    "dateLabel": "दिनांक"
   }
 }

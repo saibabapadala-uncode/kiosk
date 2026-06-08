@@ -52,6 +52,7 @@
     "empty": "Tu carrito está vacío",
     "emptyHint": "Agrega artículos para comenzar",
     "browseMenu": "Ver menú",
+    "backToMenu": "Ver menú",
     "subtotal": "Subtotal",
     "tax": "Impuesto ({{rate}})",
     "tip": "Propina",
@@ -94,7 +95,11 @@
     "removeCard": "Puedes retirar tu tarjeta",
     "failed": "Pago fallido",
     "tryAgain": "Intentar de nuevo",
-    "goBack": "Regresar"
+    "goBack": "Regresar",
+    "noReaderConnected": "Sin lector conectado",
+    "noReaderHint": "Conecte un Stripe Reader M2 para continuar con su pago.",
+    "connectReader": "Conectar lector",
+    "backToCart": "Volver al carrito"
   },
   "receipt": {
     "title": "¡Orden confirmada!",
@@ -131,7 +136,23 @@
     "api": "Configuración de API",
     "payment": "Pago / Stripe",
     "kiosk": "Comportamiento del quiosco",
-    "localization": "Localización"
+    "localization": "Localización",
+    "signOut": "Cerrar sesión",
+    "switchKiosk": "Cambiar quiosco",
+    "kioskSuffix": "Quiosco"
+  },
+  "localization": {
+    "langRegion": "Idioma y región",
+    "language": "Idioma",
+    "currency": "Moneda",
+    "currencyDesc": "Código ISO 4217 (ej. USD). Solo visualización.",
+    "dateTime": "Fecha y hora",
+    "timezone": "Zona horaria",
+    "dateFormat": "Formato de fecha",
+    "preview": "Vista previa",
+    "sampleOutput": "Ejemplo",
+    "priceLabel": "Precio",
+    "dateLabel": "Fecha"
   },
   "common": {
     "back": "Regresar",

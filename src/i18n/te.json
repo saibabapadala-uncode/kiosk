@@ -52,6 +52,7 @@
     "empty": "మీ కార్ట్ ఖాళీగా ఉంది",
     "emptyHint": "ప్రారంభించడానికి అంశాలను జోడించండి",
     "browseMenu": "మెను చూడండి",
+    "backToMenu": "మెనూకి తిరిగి వెళ్ళు",
     "subtotal": "సబ్‌టోటల్",
     "tax": "పన్ను ({{rate}})",
     "tip": "టిప్",
@@ -94,7 +95,11 @@
     "removeCard": "మీరు ఇప్పుడు కార్డు తీసుకోవచ్చు",
     "failed": "చెల్లింపు విఫలమైంది",
     "tryAgain": "మళ్ళీ ప్రయత్నించండి",
-    "goBack": "వెనుకకు"
+    "goBack": "వెనుకకు",
+    "noReaderConnected": "రీడర్ కనెక్ట్ కాలేదు",
+    "noReaderHint": "చెల్లింపు కొనసాగించడానికి Stripe Reader M2 కనెక్ట్ చేయండి.",
+    "connectReader": "రీడర్ కనెక్ట్ చేయి",
+    "backToCart": "కార్ట్‌కి తిరిగి వెళ్ళు"
   },
   "receipt": {
     "title": "ఆర్డర్ నిర్ధారించబడింది!",
@@ -140,6 +145,22 @@
     "api": "API కాన్ఫిగ్",
     "payment": "చెల్లింపు / Stripe",
     "kiosk": "కియోస్క్ ప్రవర్తన",
-    "localization": "స్థానికీకరణ"
+    "localization": "స్థానికీకరణ",
+    "signOut": "సైన్ అవుట్",
+    "switchKiosk": "కియోస్క్ మార్చు",
+    "kioskSuffix": "కియోస్క్"
+  },
+  "localization": {
+    "langRegion": "భాష & ప్రాంతం",
+    "language": "భాష",
+    "currency": "కరెన్సీ",
+    "currencyDesc": "ISO 4217 కోడ్. ప్రదర్శన మాత్రమే.",
+    "dateTime": "తేదీ & సమయం",
+    "timezone": "సమయ మండలం",
+    "dateFormat": "తేదీ ఫార్మాట్",
+    "preview": "ప్రివ్యూ",
+    "sampleOutput": "నమూనా",
+    "priceLabel": "ధర",
+    "dateLabel": "తేదీ"
   }
 }

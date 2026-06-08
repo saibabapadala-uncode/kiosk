@@ -3,6 +3,7 @@
 // Kiosk users primarily interact with CartDrawer; this is the routed fallback.
 import { IonPage, IonContent, IonHeader, IonToolbar, IonTitle, IonButtons, IonButton } from '@ionic/react';
 import { useHistory } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useCartStore } from '@/store/cartStore';
 import { useSessionStore } from '@/store/sessionStore';
 import { formatPrice } from '@/utils/format';
@@ -11,9 +12,10 @@ import CartSummary from '@/modules/cart/CartSummary';
 import UpsellBanner from '@/modules/cart/UpsellBanner';
 
 export default function CartScreen() {
-  const history = useHistory();
-  const items = useCartStore((s) => s.items);
-  const total = useCartStore((s) => s.total);
+  const { t }      = useTranslation();
+  const history    = useHistory();
+  const items      = useCartStore((s) => s.items);
+  const total      = useCartStore((s) => s.total);
   const startOrder = useSessionStore((s) => s.startOrder);
   const orderState = useSessionStore((s) => s.orderState);
 
@@ -27,11 +29,11 @@ export default function CartScreen() {
       <IonHeader>
         <IonToolbar>
           <IonButtons slot="start">
-            <IonButton onClick={() => history.push('/menu')} aria-label="Back to menu">
-              ← Menu
+            <IonButton onClick={() => history.push('/menu')} aria-label={t('cart.backToMenu')}>
+              ← {t('catalog.allCategories')}
             </IonButton>
           </IonButtons>
-          <IonTitle className="font-brand">Your Order</IonTitle>
+          <IonTitle className="font-brand">{t('cart.yourOrder')}</IonTitle>
         </IonToolbar>
       </IonHeader>
 
@@ -45,13 +47,13 @@ export default function CartScreen() {
                 <line x1="3" y1="6" x2="21" y2="6" />
                 <path d="M16 10a4 4 0 01-8 0" />
               </svg>
-              <h2 className="text-xl font-bold font-brand text-brand-text mb-2">Your cart is empty</h2>
-              <p className="text-brand-muted font-brand mb-6">Add items from the menu to get started.</p>
+              <h2 className="text-xl font-bold font-brand text-brand-text mb-2">{t('cart.empty')}</h2>
+              <p className="text-brand-muted font-brand mb-6">{t('cart.emptyHint')}</p>
               <button
                 onClick={() => history.push('/menu')}
                 className="px-10 py-4 rounded-brand bg-brand-primary text-white font-bold font-brand touch-target"
               >
-                Browse Menu
+                {t('cart.browseMenu')}
               </button>
             </div>
           ) : (
@@ -75,7 +77,7 @@ export default function CartScreen() {
               <div className="px-4 pb-8 pt-2">
                 <button
                   onClick={handleCheckout}
-                  aria-label={`Proceed to checkout — ${formatPrice(total)}`}
+                  aria-label={t('cart.checkout', { total: formatPrice(total) })}
                   className="
                     w-full py-4 rounded-brand
                     bg-brand-primary text-white
@@ -84,7 +86,7 @@ export default function CartScreen() {
                     focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-primary
                   "
                 >
-                  Checkout — {formatPrice(total)}
+                  {t('cart.checkout', { total: formatPrice(total) })}
                 </button>
               </div>
             </>

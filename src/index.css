@@ -545,6 +545,82 @@ body {
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════════
+   RTL (RIGHT-TO-LEFT) LAYOUT SUPPORT
+   Activated automatically when dir="rtl" is set on <html> by i18n/index.ts.
+   Currently triggered for Arabic (ar). Zero layout changes needed in components —
+   CSS logical properties + these overrides handle all mirroring.
+═══════════════════════════════════════════════════════════════════════════════ */
+
+/* Global text direction */
+[dir='rtl'] body {
+  direction: rtl;
+  unicode-bidi: embed;
+}
+
+/* Flip flex rows so content flows right-to-left */
+[dir='rtl'] .flex-row,
+[dir='rtl'] [class*='flex-row'] {
+  flex-direction: row-reverse;
+}
+
+/* Sidebar: move to the right side in RTL */
+[dir='rtl'] [style*='width: var(--sidebar-width)'],
+[dir='rtl'] [style*='width:var(--sidebar-width)'] {
+  border-left:  none;
+  border-right: 1px solid var(--color-brand-border);
+}
+
+/* Tab/nav active indicator: flip left border to right */
+[dir='rtl'] .nav-item.active,
+[dir='rtl'] nav a.active {
+  border-left-color:  transparent;
+  border-right-color: var(--color-brand-primary);
+  border-right-width: 3px;
+}
+
+/* Text alignment */
+[dir='rtl'] .text-left  { text-align: right; }
+[dir='rtl'] .text-right { text-align: left;  }
+
+/* Padding / margin logical reversals for common Tailwind utilities */
+[dir='rtl'] .pl-4  { padding-left:  0;        padding-right: 1rem; }
+[dir='rtl'] .pr-4  { padding-right: 0;        padding-left:  1rem; }
+[dir='rtl'] .pl-6  { padding-left:  0;        padding-right: 1.5rem; }
+[dir='rtl'] .pr-6  { padding-right: 0;        padding-left:  1.5rem; }
+[dir='rtl'] .ml-auto { margin-left: 0; margin-right: auto; }
+[dir='rtl'] .mr-auto { margin-right: 0; margin-left: auto; }
+
+/* Icons that indicate direction should be mirrored */
+[dir='rtl'] .rtl-mirror {
+  transform: scaleX(-1);
+}
+
+/* Chevron / back-arrow icons in buttons */
+[dir='rtl'] button svg[data-direction='back'],
+[dir='rtl'] .back-icon {
+  transform: scaleX(-1);
+}
+
+/* Input fields: align text and caret to the right in RTL */
+[dir='rtl'] input,
+[dir='rtl'] textarea {
+  text-align: right;
+  direction: rtl;
+}
+
+/* Dropdown menus: open on the left instead of right */
+[dir='rtl'] [style*='right: 0'] {
+  right: auto !important;
+  left:  0    !important;
+}
+
+/* Ionic overrides for RTL */
+[dir='rtl'] ion-item {
+  --inner-padding-start: 0;
+  --inner-padding-end:   16px;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
    ACCESSIBILITY & HIGH CONTRAST MODE
 ═══════════════════════════════════════════════════════════════════════════════ */
 

@@ -14,9 +14,11 @@ import { useSettingsStore } from '@/store/settingsStore';
 import { useBrand } from '@/hooks/useBrand';
 import { useBrandCSSVar } from '@/hooks/useBrandCSSVar';
 import LanguageSelector from '@/components/LanguageSelector';
+import ThemeToggle     from '@/components/ThemeToggle';
 import StaffPinModal from '@/components/StaffPinModal';
 import ProductGrid from '@/modules/catalog/ProductGrid';
 import ProductModal from '@/modules/catalog/ProductModal';
+import { useProductPanelStore } from '@/store/productPanelStore';
 import type { Product, Category } from '@/types/catalog';
 
 interface CatalogNavState {
@@ -513,6 +515,9 @@ function Header({
             )}
           </div>
 
+          {/* Dark / Light toggle */}
+          <ThemeToggle variant="compact" />
+
           {/* Settings */}
           <button onClick={onSettingsClick} aria-label="Staff settings"
             style={{
@@ -680,7 +685,16 @@ export default function CatalogScreen() {
   const [panelContainer, setPanelContainer] = useState<HTMLDivElement | null>(null);
   const panelContainerCb = useCallback((el: HTMLDivElement | null) => setPanelContainer(el), []);
 
-  const panelOpen  = isLandscape && modalProduct !== null;
+  const panelOpen         = isLandscape && modalProduct !== null;
+  const setLandscapeOpen  = useProductPanelStore((s) => s.setLandscapeOpen);
+
+  // Keep the signal store in sync so CartTriggerButton (in KioskShell) can
+  // hide itself when the landscape panel is covering the bottom-right corner.
+  useEffect(() => {
+    setLandscapeOpen(panelOpen);
+    return () => { setLandscapeOpen(false); };
+  }, [panelOpen, setLandscapeOpen]);
+
   const searchTerm = useDebounce(searchInput, 300);
   const scrollRef  = useRef<HTMLDivElement>(null);
 
@@ -760,12 +774,16 @@ export default function CatalogScreen() {
 
               <div style={{ display: 'flex', flex: 1, minWidth: 0, minHeight: 0, overflow: 'hidden' }}>
 
-                {/* Scroll container */}
+                {/* Scroll container — narrows when the detail panel opens */}
                 <div ref={scrollRef} style={{
-                  flex:      panelOpen ? '0 0 58%' : '1 1 auto',
-                  minWidth:  0,
-                  overflowY: 'auto', overflowX: 'hidden',
+                  flex:       panelOpen ? '0 0 55%' : '1 1 auto',
+                  minWidth:   0,
+                  overflowY:  'auto',
+                  overflowX:  'hidden',
                   transition: 'flex-basis var(--transition-layout)',
+                  // Pad the bottom so the fixed CartTriggerButton (if visible)
+                  // doesn't clip the last product card.
+                  paddingBottom: panelOpen ? 0 : 96,
                 }}>
                   {/* Section heading */}
                   {!searchTerm ? (
@@ -829,16 +847,22 @@ export default function CatalogScreen() {
                   ) : null}
                 </div>
 
-                {/* Landscape detail panel */}
+                {/* Landscape detail panel — portalled into by ProductModal */}
                 <div
                   ref={panelContainerCb}
                   style={{
-                    flex:              panelOpen ? '0 0 42%' : '0 0 0px',
-                    overflow:          'hidden', minWidth: 0,
-                    display:           'flex', flexDirection: 'column',
+                    flex:              panelOpen ? '0 0 45%' : '0 0 0px',
+                    minWidth:          0,
+                    overflow:          'hidden',
+                    display:           'flex',
+                    flexDirection:     'column',
                     borderInlineStart: panelOpen ? '1px solid var(--ui-glass-border)' : 'none',
-                    transition:        'flex-basis var(--transition-layout)',
+                    boxShadow:         panelOpen ? '-3px 0 20px rgba(0,0,0,0.07)' : 'none',
+                    transition:        'flex-basis var(--transition-layout), box-shadow var(--transition-layout)',
                     background:        'var(--color-ui-card)',
+                    // Ensure the panel's own sticky footer clears the safe-area
+                    // on notched/rounded-corner devices in landscape orientation.
+                    paddingBottom:     'env(safe-area-inset-bottom, 0px)',
                   }}
                 />
               </div>

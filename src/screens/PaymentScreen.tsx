@@ -2,6 +2,7 @@
 import { useEffect } from 'react';
 import { useHistory } from 'react-router-dom';
 import { IonPage, IonContent } from '@ionic/react';
+import { useTranslation } from 'react-i18next';
 import { usePayment } from '@/hooks/usePayment';
 import { usePaymentStore } from '@/store/paymentStore';
 import CardReaderScreen from '@/modules/payment/CardReaderScreen';
@@ -16,10 +17,11 @@ const COLLECTING_STATES = new Set([
 ]);
 
 export default function PaymentScreen() {
-  const history = useHistory();
-  const kioskName = useKioskName();
+  const { t }       = useTranslation();
+  const history     = useHistory();
+  const kioskName   = useKioskName();
   const { flowState, error, startPayment, retryPayment, cancelPayment } = usePayment();
-  const total = useCartStore((s) => s.total);
+  const total           = useCartStore((s) => s.total);
   const connectedReader = usePaymentStore((s) => s.connectedReader);
 
   useEffect(() => {
@@ -49,7 +51,7 @@ export default function PaymentScreen() {
                 {kioskName}
               </p>
               <h1 className="text-lg font-bold font-brand" style={{ color: 'var(--color-brand-text)' }}>
-                Secure Payment
+                {t('payment.title')}
               </h1>
             </div>
             {/* Order total chip */}
@@ -83,10 +85,10 @@ export default function PaymentScreen() {
                 {/* Message */}
                 <div className="text-center">
                   <h2 className="text-lg font-bold font-brand" style={{ color: 'var(--color-brand-text)' }}>
-                    No Stripe Reader Connected
+                    {t('payment.noReaderConnected')}
                   </h2>
                   <p className="text-sm font-brand mt-2" style={{ color: 'var(--color-brand-muted)' }}>
-                    Please connect a Stripe Reader M2 to continue with your payment.
+                    {t('payment.noReaderHint')}
                   </p>
                 </div>
 
@@ -104,10 +106,10 @@ export default function PaymentScreen() {
                     <path d="M5 12.55a11 11 0 0114.08 0"/><path d="M1.42 9a16 16 0 0121.16 0"/>
                     <path d="M8.53 16.11a6 6 0 016.95 0"/><circle cx="12" cy="20" r="1" fill="white"/>
                   </svg>
-                  Connect Reader
+                  {t('payment.connectReader')}
                 </button>
 
-                {/* Cancel button */}
+                {/* Back button */}
                 <button
                   type="button"
                   onClick={() => history.replace('/tip')}
@@ -118,7 +120,7 @@ export default function PaymentScreen() {
                     border: '1px solid var(--ui-glass-border)',
                   }}
                 >
-                  Back to Cart
+                  {t('payment.backToCart')}
                 </button>
               </div>
             )}
@@ -143,7 +145,7 @@ export default function PaymentScreen() {
               <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
             </svg>
             <span className="text-xs font-brand" style={{ color: 'var(--color-brand-muted)' }}>
-              Secured by Stripe Terminal — PCI DSS compliant
+              {t('payment.securedBy')}
             </span>
           </div>
         </div>

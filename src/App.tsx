@@ -12,6 +12,7 @@ import { useKioskChannelStore } from '@/store/kioskChannelStore';
 import { useStoreConfigStore } from '@/store/storeConfigStore';
 import { useSettingsStore } from '@/store/settingsStore';
 import { useStripeInitialize } from '@/hooks/useStripeInitialize';
+import { useLocaleDetection } from '@/hooks/useLocaleDetection';
 
 import AttractScreen       from '@/screens/AttractScreen';
 import CatalogScreen       from '@/screens/CatalogScreen';
@@ -34,6 +35,7 @@ function AppBootstrap() {
   const bootstrapStoreConfig = useStoreConfigStore((s) => s.bootstrap);
 
   useStripeInitialize();
+  useLocaleDetection();
 
   useEffect(() => {
     void Promise.all([

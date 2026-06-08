@@ -52,6 +52,7 @@
     "empty": "Your cart is empty",
     "emptyHint": "Add some items to get started",
     "browseMenu": "Browse Menu",
+    "backToMenu": "Back to Menu",
     "subtotal": "Subtotal",
     "tax": "Tax ({{rate}})",
     "tip": "Tip",
@@ -94,7 +95,11 @@
     "removeCard": "You may remove your card",
     "failed": "Payment Failed",
     "tryAgain": "Try Again",
-    "goBack": "Go Back"
+    "goBack": "Go Back",
+    "noReaderConnected": "No Reader Connected",
+    "noReaderHint": "Please connect a Stripe Reader M2 to continue with your payment.",
+    "connectReader": "Connect Reader",
+    "backToCart": "Back to Cart"
   },
   "receipt": {
     "title": "Order Confirmed!",
@@ -131,7 +136,23 @@
     "api": "API Config",
     "payment": "Payment / Stripe",
     "kiosk": "Kiosk Behavior",
-    "localization": "Localization"
+    "localization": "Localization",
+    "signOut": "Sign Out",
+    "switchKiosk": "Switch Kiosk",
+    "kioskSuffix": "Kiosk"
+  },
+  "localization": {
+    "langRegion": "Language & Region",
+    "language": "Language",
+    "currency": "Currency",
+    "currencyDesc": "ISO 4217 code (e.g. USD). Display only.",
+    "dateTime": "Date & Time",
+    "timezone": "Timezone",
+    "dateFormat": "Date Format",
+    "preview": "Preview",
+    "sampleOutput": "Sample output",
+    "priceLabel": "Price",
+    "dateLabel": "Date"
   },
   "common": {
     "back": "Back",

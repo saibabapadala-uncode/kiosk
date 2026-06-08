@@ -6,6 +6,50 @@
 import { logger } from './logger';
 
 /**
+ * Apply theme with smooth color transitions — used for user-triggered switches
+ * (e.g. the ThemeToggle button).  Unlike applyThemeInstantly it does NOT inject
+ * a transition-killer; instead it briefly widens the transition-duration on
+ * background-color / color / border-color so every surface fades gracefully,
+ * then cleans up the style element after the transition completes.
+ *
+ * We deliberately avoid touching `animation` or `transform` so running CSS
+ * animations and hover effects are unaffected during the 300 ms window.
+ */
+export function applyThemeSmooth(mode: 'light' | 'dark'): void {
+  const root = document.documentElement;
+
+  try {
+    // Inject a targeted transition rule that fades surface colors
+    const styleEl = document.createElement('style');
+    styleEl.id    = 'theme-smooth-transition';
+    styleEl.textContent = `
+      *, *::before, *::after {
+        transition-property: background-color, color, border-color, box-shadow !important;
+        transition-duration: 280ms !important;
+        transition-timing-function: ease !important;
+      }
+    `;
+    // Remove a previous injection if the user clicks rapidly
+    document.getElementById('theme-smooth-transition')?.remove();
+    document.head.appendChild(styleEl);
+
+    // Apply the theme — CSS transitions above will run
+    root.setAttribute('data-theme', mode);
+    void root.offsetHeight; // force reflow so transitions start from current state
+
+    // Remove the broad rule after transitions finish
+    setTimeout(() => {
+      styleEl.parentNode && document.head.removeChild(styleEl);
+      logger.debug(`[Theme] Smooth ${mode} transition complete`);
+    }, 320);
+  } catch (err) {
+    // Fallback: just set the attribute
+    root.setAttribute('data-theme', mode);
+    logger.error('[Theme] applyThemeSmooth error:', err);
+  }
+}
+
+/**
  * Apply theme instantly without flicker
  * 1. Temporarily disables all transitions
  * 2. Updates data-theme attribute

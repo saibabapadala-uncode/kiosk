@@ -52,6 +52,7 @@
     "empty": "உங்கள் கார்ட் காலியாக உள்ளது",
     "emptyHint": "தொடங்க பொருட்களை சேர்க்கவும்",
     "browseMenu": "மெனு பார்க்க",
+    "backToMenu": "மெனுவுக்கு திரும்பு",
     "subtotal": "துணை மொத்தம்",
     "tax": "வரி ({{rate}})",
     "tip": "டிப்",
@@ -94,7 +95,11 @@
     "removeCard": "இப்போது கார்டை நீக்கலாம்",
     "failed": "கட்டணம் தோல்வியடைந்தது",
     "tryAgain": "மீண்டும் முயற்சிக்கவும்",
-    "goBack": "திரும்பு"
+    "goBack": "திரும்பு",
+    "noReaderConnected": "ரீடர் இணைக்கப்படவில்லை",
+    "noReaderHint": "கட்டணம் செலுத்த Stripe Reader M2 இணைக்கவும்.",
+    "connectReader": "ரீடர் இணை",
+    "backToCart": "கார்ட்டுக்கு திரும்பு"
   },
   "receipt": {
     "title": "ஆர்டர் உறுதிப்படுத்தப்பட்டது!",
@@ -140,6 +145,22 @@
     "api": "API கட்டமைப்பு",
     "payment": "கட்டணம் / Stripe",
     "kiosk": "கியோஸ்க் நடத்தை",
-    "localization": "உள்ளூர்மயமாக்கல்"
+    "localization": "உள்ளூர்மயமாக்கல்",
+    "signOut": "வெளியேறு",
+    "switchKiosk": "கியோஸ்க் மாற்று",
+    "kioskSuffix": "கியோஸ்க்"
+  },
+  "localization": {
+    "langRegion": "மொழி & பகுதி",
+    "language": "மொழி",
+    "currency": "நாணயம்",
+    "currencyDesc": "ISO 4217 குறியீடு. காட்சி மட்டும்.",
+    "dateTime": "தேதி & நேரம்",
+    "timezone": "நேர மண்டலம்",
+    "dateFormat": "தேதி வடிவம்",
+    "preview": "முன்னோட்டம்",
+    "sampleOutput": "மாதிரி வெளியீடு",
+    "priceLabel": "விலை",
+    "dateLabel": "தேதி"
   }
 }
