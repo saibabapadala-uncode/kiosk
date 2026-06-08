@@ -145,11 +145,11 @@ export default function ReceiptScreen() {
         <div
           className="w-20 h-20 rounded-full flex items-center justify-center mb-4"
           style={{
-            background:  'linear-gradient(135deg, var(--color-brand-success), #16a34a)',
+            background:  'var(--color-brand-success)',
             boxShadow:   '0 8px 32px rgba(34,197,94,0.35)',
           }}
         >
-          <svg viewBox="0 0 48 48" className="w-12 h-12" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+          <svg viewBox="0 0 48 48" className="w-12 h-12" fill="none" stroke="white" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round">
             <polyline points="10,24 20,34 38,14" className="animate-check-draw"/>
           </svg>
         </div>

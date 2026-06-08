@@ -7,6 +7,7 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 import { useTranslation }  from 'react-i18next';
 import { useSettingsStore } from '@/store/settingsStore';
 import type { SupportedLocale } from '@/store/settingsStore';
+import { themeColors, themeRGBA } from '@/utils/themeColors';
 
 // ─── Language catalogue ───────────────────────────────────────────────────────
 
@@ -96,9 +97,9 @@ export default function LanguageSelector({ variant = 'header', className = '' }:
           gap:         8,
           padding:     '8px 14px',
           borderRadius: 999,
-          background:  open ? '#FFFFFF' : 'rgba(255,255,255,0.92)',
-          border:      `1.5px solid ${open ? '#E5E7EB' : 'rgba(0,0,0,0.08)'}`,
-          boxShadow:   '0 2px 10px rgba(0,0,0,0.08)',
+          background:  open ? 'var(--color-brand-surface-alt)' : 'var(--ui-glass-bg)',
+          border:      `1.5px solid ${open ? 'var(--color-brand-primary)' : 'var(--ui-glass-border)'}`,
+          boxShadow:   'var(--ui-card-shadow)',
           cursor:      'pointer',
           transition:  'all 160ms',
           whiteSpace:  'nowrap',
@@ -106,7 +107,7 @@ export default function LanguageSelector({ variant = 'header', className = '' }:
       >
         {/* Globe */}
         <svg width="17" height="17" viewBox="0 0 24 24" fill="none"
-          stroke="#6B7280" strokeWidth={2} strokeLinecap="round">
+          stroke="var(--color-brand-muted)" strokeWidth={2} strokeLinecap="round">
           <circle cx="12" cy="12" r="10"/>
           <line x1="2" y1="12" x2="22" y2="12"/>
           <path d="M12 2a15.3 15.3 0 010 20M12 2a15.3 15.3 0 000 20"/>
@@ -114,19 +115,19 @@ export default function LanguageSelector({ variant = 'header', className = '' }:
 
         {/* Current language name */}
         {variant === 'header' && (
-          <span style={{ fontSize: '0.9rem', fontWeight: 600, color: '#374151', fontFamily: 'var(--font-brand)' }}>
+          <span style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--color-brand-text)', fontFamily: 'var(--font-brand)' }}>
             {current.nativeName}
           </span>
         )}
         {variant === 'compact' && (
-          <span style={{ fontSize: '0.8rem', fontWeight: 700, color: '#374151', fontFamily: 'var(--font-brand)' }}>
+          <span style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--color-brand-text)', fontFamily: 'var(--font-brand)' }}>
             {current.abbr}
           </span>
         )}
 
         {/* Chevron */}
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none"
-          stroke="#9CA3AF" strokeWidth={2.5} strokeLinecap="round"
+          stroke="var(--color-brand-muted)" strokeWidth={2.5} strokeLinecap="round"
           style={{ transform: open ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 200ms' }}>
           <polyline points="6 9 12 15 18 9"/>
         </svg>
@@ -142,10 +143,10 @@ export default function LanguageSelector({ variant = 'header', className = '' }:
             top:          'calc(100% + 8px)',
             right:        0,
             minWidth:     220,
-            background:   '#FFFFFF',
+            background:   themeColors.surface,
             borderRadius: 16,
-            boxShadow:    '0 16px 48px rgba(0,0,0,0.16), 0 4px 12px rgba(0,0,0,0.08)',
-            border:       '1px solid #E5E7EB',
+            boxShadow:    'var(--ui-shadow)',
+            border:       `1.5px solid ${themeColors.border}`,
             overflow:     'hidden',
             zIndex:       9000,
             animation:    'ls-drop-in 160ms cubic-bezier(0.32,0.72,0,1)',
@@ -159,8 +160,8 @@ export default function LanguageSelector({ variant = 'header', className = '' }:
           `}</style>
 
           {/* Header */}
-          <div style={{ padding: '10px 16px 8px', borderBottom: '1px solid #F3F4F6' }}>
-            <p style={{ margin: 0, fontSize: '0.7rem', fontWeight: 700, color: '#9CA3AF',
+          <div style={{ padding: '10px 16px 8px', borderBottom: `1px solid ${themeColors.border}` }}>
+            <p style={{ margin: 0, fontSize: '0.7rem', fontWeight: 700, color: 'var(--color-brand-muted)',
               textTransform: 'uppercase', letterSpacing: '0.08em', fontFamily: 'var(--font-brand)' }}>
               {t('attract.selectLanguage')}
             </p>
@@ -170,6 +171,7 @@ export default function LanguageSelector({ variant = 'header', className = '' }:
           <div style={{ maxHeight: 320, overflowY: 'auto' }}>
             {SUPPORTED_LANGUAGES.map((lang) => {
               const isSelected = lang.code === locale;
+              const hoverBg = 'var(--color-brand-surface-alt)';
               return (
                 <button
                   key={lang.code}
@@ -184,14 +186,14 @@ export default function LanguageSelector({ variant = 'header', className = '' }:
                     width:       '100%',
                     padding:     '10px 16px',
                     gap:         12,
-                    background:  isSelected ? '#FFF8EC' : 'transparent',
+                    background:  isSelected ? themeRGBA('primary', 0.12) : 'transparent',
                     border:      'none',
                     cursor:      'pointer',
                     textAlign:   'left',
                     transition:  'background 100ms',
                     fontFamily:  'var(--font-brand)',
                   }}
-                  onMouseEnter={(e) => { if (!isSelected) (e.currentTarget as HTMLButtonElement).style.background = '#F9FAFB'; }}
+                  onMouseEnter={(e) => { if (!isSelected) (e.currentTarget as HTMLButtonElement).style.background = hoverBg; }}
                   onMouseLeave={(e) => { if (!isSelected) (e.currentTarget as HTMLButtonElement).style.background = 'transparent'; }}
                 >
                   {/* Flag */}
@@ -199,15 +201,15 @@ export default function LanguageSelector({ variant = 'header', className = '' }:
 
                   {/* Native name */}
                   <span style={{ flex: 1, fontSize: '0.9rem', fontWeight: isSelected ? 700 : 500,
-                    color: isSelected ? '#D97706' : '#374151' }}>
+                    color: isSelected ? 'var(--color-brand-primary)' : 'var(--color-brand-text)' }}>
                     {lang.nativeName}
                   </span>
 
                   {/* Abbr badge */}
                   <span style={{
                     flexShrink: 0, fontSize: '0.65rem', fontWeight: 700,
-                    color:      isSelected ? '#D97706' : '#9CA3AF',
-                    background: isSelected ? '#FEF3C7' : '#F3F4F6',
+                    color:      isSelected ? 'var(--color-brand-primary)' : 'var(--color-brand-muted)',
+                    background: isSelected ? themeRGBA('primary', 0.15) : 'var(--color-brand-badge-bg)',
                     borderRadius: 6, padding: '2px 6px',
                   }}>
                     {lang.abbr}
@@ -216,7 +218,7 @@ export default function LanguageSelector({ variant = 'header', className = '' }:
                   {/* Check */}
                   {isSelected && (
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
-                      stroke="#D97706" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round">
+                      stroke="var(--color-brand-primary)" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round">
                       <polyline points="20 6 9 17 4 12"/>
                     </svg>
                   )}
@@ -226,15 +228,15 @@ export default function LanguageSelector({ variant = 'header', className = '' }:
           </div>
 
           {/* More languages footer */}
-          <div style={{ padding: '8px 16px 10px', borderTop: '1px solid #F3F4F6',
+          <div style={{ padding: '8px 16px 10px', borderTop: `1px solid ${themeColors.border}`,
             display: 'flex', alignItems: 'center', gap: 8 }}>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
-              stroke="#9CA3AF" strokeWidth={2} strokeLinecap="round">
+              stroke="var(--color-brand-muted)" strokeWidth={2} strokeLinecap="round">
               <circle cx="12" cy="12" r="10"/>
               <line x1="2" y1="12" x2="22" y2="12"/>
               <path d="M12 2a15.3 15.3 0 010 20M12 2a15.3 15.3 0 000 20"/>
             </svg>
-            <span style={{ fontSize: '0.78rem', color: '#9CA3AF', fontFamily: 'var(--font-brand)' }}>
+            <span style={{ fontSize: '0.78rem', color: 'var(--color-brand-muted)', fontFamily: 'var(--font-brand)' }}>
               {t('attract.moreLangs')}
             </span>
           </div>

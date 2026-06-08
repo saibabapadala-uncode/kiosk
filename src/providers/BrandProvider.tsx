@@ -11,6 +11,7 @@ import { getBrandEnvironment, isValidBrand } from '@/brands';
 import type { BrandEnvironment, BrandId, BrandTheme } from '@/brands/types';
 import { useSettingsStore, type ThemeMode } from '@/store/settingsStore';
 import { useCartStore } from '@/store/cartStore';
+import { applyThemeInstantly, resolveThemeMode } from '@/utils/themeUtils';
 
 // Load all brand CSS files upfront — the active data-brand attribute on <html>
 // determines which set of CSS variables applies at runtime.
@@ -26,7 +27,7 @@ export interface BrandContextValue {
   themeMode: ThemeMode;
   isResolved: boolean;
   setThemeMode: (mode: ThemeMode) => void;
-  applyTheme: (partial: Partial<BrandTheme>) => void;
+  applyTheme: (partial: Partial<BrandTheme>, mode: 'light' | 'dark') => void;
   /** Trigger a brand switch (e.g. from staff settings screen). */
   setBrand: (id: BrandId) => void;
 }
@@ -60,18 +61,33 @@ const THEME_VAR_MAP: Array<[keyof BrandTheme, string]> = [
   ['badgeBg',       '--color-brand-badge-bg'],
 ];
 
-export function applyThemeToRoot(theme: Partial<BrandTheme>): void {
+export function applyThemeToRoot(theme: Partial<BrandTheme>, mode: 'light' | 'dark'): void {
   const root = document.documentElement;
+  const darkExclude = [
+    '--color-brand-bg',
+    '--color-brand-surface',
+    '--color-brand-surface-alt',
+    '--color-brand-text',
+    '--color-brand-muted',
+    '--color-brand-border',
+    '--color-brand-badge-bg',
+    '--color-brand-error',
+    '--color-brand-success',
+    '--color-brand-warning',
+  ];
+
   for (const [key, cssVar] of THEME_VAR_MAP) {
+    if (mode === 'dark' && darkExclude.includes(cssVar)) {
+      root.style.removeProperty(cssVar);
+      continue;
+    }
     const val = theme[key];
-    if (val !== undefined && val !== '') root.style.setProperty(cssVar, val as string);
+    if (val !== undefined && val !== '') {
+      root.style.setProperty(cssVar, val as string);
+    }
   }
 }
 
-function resolveThemeMode(mode: ThemeMode): 'light' | 'dark' {
-  if (mode !== 'auto') return mode;
-  return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-}
 
 // ─── Provider ───────────────────────────────────────────────────────────────────
 
@@ -90,8 +106,10 @@ export function BrandProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const root = document.documentElement;
     root.setAttribute('data-brand', brandId);
-    root.setAttribute('data-theme', 'light');
-    applyThemeToRoot(environment.defaultTheme);
+    const savedMode = useSettingsStore.getState().theme.themeMode;
+    const resolved = resolveThemeMode(savedMode);
+    applyThemeToRoot(environment.defaultTheme, resolved);
+    applyThemeInstantly(resolved);
   }, [brandId, environment]);
 
   // ── 2. Subscribe to settingsStore theme overrides ─────────────────────────────
@@ -99,9 +117,9 @@ export function BrandProvider({ children }: { children: ReactNode }) {
     const unsubscribe = useSettingsStore.subscribe(
       (s) => s.theme,
       (theme) => {
-        applyThemeToRoot(theme);
         const resolved = resolveThemeMode(theme.themeMode);
-        document.documentElement.setAttribute('data-theme', resolved);
+        applyThemeToRoot(theme, resolved);
+        applyThemeInstantly(resolved);
         setThemeModeState(theme.themeMode);
       },
       { fireImmediately: true },
@@ -136,7 +154,7 @@ export function BrandProvider({ children }: { children: ReactNode }) {
     if (themeMode !== 'auto') return;
     const mq = window.matchMedia('(prefers-color-scheme: dark)');
     const handler = () => {
-      document.documentElement.setAttribute('data-theme', mq.matches ? 'dark' : 'light');
+      applyThemeInstantly(mq.matches ? 'dark' : 'light');
     };
     mq.addEventListener('change', handler);
     return () => mq.removeEventListener('change', handler);
@@ -144,7 +162,8 @@ export function BrandProvider({ children }: { children: ReactNode }) {
 
   const setThemeMode = useCallback((mode: ThemeMode) => {
     setThemeModeState(mode);
-    document.documentElement.setAttribute('data-theme', resolveThemeMode(mode));
+    const resolvedTheme = resolveThemeMode(mode);
+    applyThemeInstantly(resolvedTheme);
     useSettingsStore.getState().setTheme({ themeMode: mode });
   }, []);
 

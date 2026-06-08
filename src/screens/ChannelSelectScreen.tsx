@@ -22,6 +22,7 @@ import {
 import { loadStoreDetails } from '@/services/storefront.service';
 import { logout } from '@/services/auth.service';
 import { logger } from '@/utils/logger';
+import { themeColors, themeRGBA } from '@/utils/themeColors';
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
 
@@ -61,16 +62,19 @@ function ChannelCard({
         border: '2px solid var(--color-brand-primary)',
         boxShadow: '0 8px 28px rgba(var(--color-brand-primary-rgb),0.32)',
       } : {
-        background: 'var(--color-ui-card)',
-        border: '1.5px solid var(--color-brand-border)',
-        boxShadow: '0 1px 4px rgba(0,0,0,0.06)',
+        background: themeColors.surface,
+        border: `1.5px solid ${themeColors.border}`,
+        boxShadow: 'var(--ui-card-shadow)',
       }}
     >
       {/* Icon */}
-      <div className="w-11 h-11 rounded-xl flex-shrink-0 flex items-center justify-center"
-        style={selected ? { background: 'rgba(255,255,255,0.22)' } : { background: '#F8F9FA', border: '1px solid #E5E7EB' }}>
-        <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"
-          style={{ color: selected ? 'white' : '#6B7280' }}>
+      <div className="w-11 h-11 rounded-xl flex-shrink-0 flex items-center justify-center border transition-colors duration-150"
+        style={selected
+          ? { background: 'rgba(255,255,255,0.22)', borderColor: 'transparent' }
+          : { background: themeColors.surfaceAlt, borderColor: themeColors.border }}
+      >
+        <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round"
+          style={{ color: selected ? 'white' : 'var(--color-brand-muted)' }}>
           <rect x="2" y="3" width="20" height="14" rx="2"/>
           <line x1="8" y1="21" x2="16" y2="21"/>
           <line x1="12" y1="17" x2="12" y2="21"/>
@@ -80,16 +84,16 @@ function ChannelCard({
       {/* Text */}
       <div className="flex-1 min-w-0">
         <p className="font-bold font-brand text-base leading-tight truncate"
-          style={{ color: selected ? 'white' : '#111827' }}>
+          style={{ color: selected ? 'white' : themeColors.text }}>
           {channel.name}
         </p>
         <p className="text-sm font-brand mt-0.5 truncate"
-          style={{ color: selected ? 'rgba(255,255,255,0.78)' : '#6B7280' }}>
+          style={{ color: selected ? 'rgba(255,255,255,0.78)' : themeColors.muted }}>
           {channel.store_name}
         </p>
         {channel.store_address && (
           <p className="text-xs font-brand mt-1 flex items-center gap-1 truncate"
-            style={{ color: selected ? 'rgba(255,255,255,0.60)' : '#9CA3AF' }}>
+            style={{ color: selected ? 'rgba(255,255,255,0.60)' : themeColors.muted }}>
             <svg className="w-3 h-3 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
               <path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0118 0z"/>
               <circle cx="12" cy="10" r="3"/>
@@ -99,18 +103,18 @@ function ChannelCard({
         )}
 
         {/* Status */}
-        <div className="flex items-center gap-1.5 mt-2">
-          <div className="w-2 h-2 rounded-full flex-shrink-0"
-            style={{ background: channel.is_active ? '#22C55E' : '#D1D5DB' }} />
-          <span className="text-xs font-brand"
+        <div className="flex items-center gap-1.5 mt-2.5">
+          <div className="w-2.5 h-2.5 rounded-full flex-shrink-0"
+            style={{ background: channel.is_active ? themeColors.success : themeColors.border }} />
+          <span className="text-xs font-bold font-brand"
             style={{ color: channel.is_active
-              ? (selected ? 'rgba(255,255,255,0.85)' : '#15803D')
-              : (selected ? 'rgba(255,255,255,0.55)' : '#9CA3AF') }}>
+              ? (selected ? 'rgba(255,255,255,0.85)' : themeColors.success)
+              : (selected ? 'rgba(255,255,255,0.55)' : themeColors.muted) }}>
             {channel.is_active ? 'Online & Ready' : 'Offline'}
           </span>
           {channel.code && channel.code !== channel.name && (
             <span className="text-xs font-brand ml-1.5"
-              style={{ color: selected ? 'rgba(255,255,255,0.45)' : '#D1D5DB' }}>
+              style={{ color: selected ? 'rgba(255,255,255,0.45)' : themeColors.muted }}>
               · {channel.code}
             </span>
           )}
@@ -118,12 +122,12 @@ function ChannelCard({
       </div>
 
       {/* Check */}
-      <div className="flex-shrink-0 w-6 h-6 rounded-full border-2 flex items-center justify-center"
+      <div className="flex-shrink-0 w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors duration-150"
         style={selected
           ? { borderColor: 'rgba(255,255,255,0.55)', background: 'rgba(255,255,255,0.22)' }
-          : { borderColor: '#D1D5DB', background: 'transparent' }}>
+          : { borderColor: themeColors.border, background: 'transparent' }}>
         {selected && (
-          <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth={3} strokeLinecap="round">
+          <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth={3.5} strokeLinecap="round">
             <polyline points="20 6 9 17 4 12"/>
           </svg>
         )}
@@ -137,7 +141,7 @@ function ChannelCard({
 function Spinner({ size = 48 }: { size?: number }) {
   return (
     <div className="animate-spin rounded-full flex-shrink-0"
-      style={{ width: size, height: size, border: '3px solid var(--color-brand-surface)', borderTopColor: 'var(--color-brand-primary)' }} />
+      style={{ width: size, height: size, border: '3.5px solid var(--color-brand-surface-alt)', borderTopColor: 'var(--color-brand-primary)' }} />
   );
 }
 
@@ -235,38 +239,47 @@ export default function ChannelSelectScreen() {
           {/* Decorative blobs */}
           <div aria-hidden="true" className="absolute inset-0 overflow-hidden pointer-events-none">
             <div className="absolute -top-20 -right-20 w-80 h-80 rounded-full animate-float"
-              style={{ background: 'rgba(254,243,199,0.55)' }} />
+              style={{ background: 'rgba(254,243,199,0.25)' }} />
             <div className="absolute -bottom-16 -left-10 w-64 h-64 rounded-full animate-float-slow"
-              style={{ background: 'rgba(253,230,138,0.35)' }} />
+              style={{ background: 'rgba(253,230,138,0.15)' }} />
           </div>
 
           {/* ── Header ──────────────────────────────────────────────────────── */}
           <div
             className="relative z-10 flex items-center justify-between px-6 pt-8 pb-5 flex-shrink-0"
-            style={{ borderBottom: '1px solid #E5E7EB', background: 'rgba(255,255,255,0.82)', backdropFilter: 'blur(12px)' }}
+            style={{
+              borderBottom: `1px solid ${themeColors.border}`,
+              background: 'var(--ui-glass-bg)',
+              backdropFilter: 'var(--ui-glass-blur)',
+            }}
           >
             <div>
               <div className="flex items-center gap-2 mb-1">
-                <div className="w-1 h-4 rounded-full" style={{ background: 'var(--gradient-cta)' }} />
-                <p className="text-xs font-brand font-semibold uppercase tracking-widest" style={{ color: '#9CA3AF' }}>
+                <div className="w-1.5 h-4 rounded-full" style={{ background: 'var(--gradient-cta)' }} />
+                <p className="text-xs font-bold font-brand font-semibold uppercase tracking-widest" style={{ color: themeColors.muted }}>
                   {kioskName} · Kiosk Setup
                 </p>
               </div>
-              <h1 className="text-2xl font-bold font-brand" style={{ color: '#111827' }}>
+              <h1 className="text-2xl font-black font-brand tracking-tight" style={{ color: themeColors.text }}>
                 {stepLabel}
               </h1>
               {user && (
-                <p className="text-sm font-brand mt-0.5" style={{ color: '#6B7280' }}>
+                <p className="text-sm font-brand mt-0.5 font-medium" style={{ color: themeColors.muted }}>
                   Signed in as&nbsp;
-                  <span className="font-semibold" style={{ color: '#374151' }}>{user.name}</span>
+                  <span className="font-bold" style={{ color: themeColors.text }}>{user.name}</span>
                 </p>
               )}
             </div>
             <button
               type="button"
               onClick={handleLogout}
-              className="px-3.5 py-2 rounded-xl text-sm font-semibold font-brand transition-colors"
-              style={{ background: 'var(--color-ui-card)', border: '1.5px solid var(--color-brand-border)', color: 'var(--color-brand-text)', boxShadow: '0 1px 3px rgba(0,0,0,0.06)' }}
+              className="px-4 py-2.5 rounded-xl text-xs font-bold font-brand transition-all active:scale-95 border hover:opacity-90"
+              style={{
+                background: themeColors.surface,
+                borderColor: themeColors.border,
+                color: themeColors.text,
+                boxShadow: 'var(--ui-card-shadow)'
+              }}
             >
               Sign Out
             </button>
@@ -279,7 +292,7 @@ export default function ChannelSelectScreen() {
             {phase === 'loading' && (
               <div className="flex flex-col items-center justify-center flex-1 gap-4 animate-fade-in">
                 <Spinner />
-                <p className="font-brand text-sm text-center max-w-xs" style={{ color: '#374151' }}>
+                <p className="font-brand text-sm font-medium text-center max-w-xs" style={{ color: themeColors.text }}>
                   {loadingMsg}
                 </p>
               </div>
@@ -289,16 +302,16 @@ export default function ChannelSelectScreen() {
             {phase === 'error' && (
               <div className="flex flex-col items-center justify-center flex-1 gap-4 animate-fade-in">
                 <div className="w-16 h-16 rounded-2xl flex items-center justify-center"
-                  style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.20)' }}>
-                  <svg className="w-8 h-8" viewBox="0 0 24 24" fill="none" stroke="#DC2626" strokeWidth={1.5}>
+                  style={{ background: themeRGBA('error', 0.12), border: `1px solid ${themeRGBA('error', 0.25)}` }}>
+                  <svg className="w-8 h-8" viewBox="0 0 24 24" fill="none" stroke="var(--color-brand-error)" strokeWidth={2.2}>
                     <circle cx="12" cy="12" r="10"/>
                     <line x1="12" y1="8" x2="12" y2="12"/>
                     <line x1="12" y1="16" x2="12.01" y2="16"/>
                   </svg>
                 </div>
-                <p className="font-brand text-sm text-center max-w-sm" style={{ color: '#374151' }}>{error}</p>
+                <p className="font-brand text-sm font-medium text-center max-w-sm" style={{ color: themeColors.text }}>{error}</p>
                 <button type="button" onClick={() => void loadChannels()}
-                  className="ui-btn-primary px-6 py-3 text-sm" style={{ borderRadius: '0.875rem' }}>
+                  className="ui-btn-primary px-6 py-3.5 text-sm font-bold" style={{ borderRadius: '0.875rem' }}>
                   Retry
                 </button>
               </div>
@@ -307,7 +320,7 @@ export default function ChannelSelectScreen() {
             {/* ── Channel picker ─────────────────────────────────────────────── */}
             {phase === 'channel-select' && (
               <div className="flex flex-col flex-1 min-h-0 animate-fade-in-up">
-                <p className="text-sm font-brand mb-4 flex-shrink-0" style={{ color: '#6B7280' }}>
+                <p className="text-sm font-bold font-brand mb-4 flex-shrink-0" style={{ color: themeColors.muted }}>
                   {channels.length} kiosk channel{channels.length !== 1 ? 's' : ''} available — choose one to launch
                 </p>
 
@@ -327,7 +340,7 @@ export default function ChannelSelectScreen() {
                     type="button"
                     onClick={() => void handleConfirm()}
                     disabled={!selectedCh || confirming}
-                    className="ui-btn-primary w-full py-4 text-base"
+                    className="ui-btn-primary w-full py-4 text-base font-bold"
                     style={{
                       borderRadius: '1rem',
                       opacity: (!selectedCh || confirming) ? 0.45 : 1,

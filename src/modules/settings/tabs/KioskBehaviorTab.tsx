@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { useSettingsStore } from '@/store/settingsStore';
 import { testPrinter } from '@/services/printer.service';
 import { SettingsField, SettingsSection, SettingsInput, ToggleSwitch } from '../shared';
+import { themeColors, themeRGBA } from '@/utils/themeColors';
 
 // ─── Staff PIN section ────────────────────────────────────────────────────────
 // Renders the full PIN-protection configuration block:
@@ -16,6 +17,8 @@ function StaffAccessSection() {
   const [confirm, setConfirm] = useState('');
   const [saved,   setSaved]   = useState(false);
   const [pinErr,  setPinErr]  = useState('');
+
+  const borderCol = themeColors.border;
 
   function handleToggle(enabled: boolean) {
     setKiosk({ staffPinEnabled: enabled });
@@ -52,13 +55,19 @@ function StaffAccessSection() {
           />
 
           {/* Status badge */}
-          <div className={[
-            'flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold font-brand',
-            kiosk.staffPinEnabled
-              ? 'bg-green-50 text-green-700 border border-green-200'
-              : 'bg-amber-50 text-amber-700 border border-amber-200',
-          ].join(' ')}>
-            <span>{kiosk.staffPinEnabled ? '🔒' : '🔓'}</span>
+          <div
+            className="flex items-center gap-2 px-3.5 py-2.5 rounded-xl text-xs font-bold font-brand border w-fit"
+            style={kiosk.staffPinEnabled ? {
+              background: themeRGBA('success', 0.12),
+              borderColor: themeRGBA('success', 0.25),
+              color: themeColors.success,
+            } : {
+              background: themeRGBA('warning', 0.12),
+              borderColor: themeRGBA('warning', 0.25),
+              color: 'var(--color-brand-primary)',
+            }}
+          >
+            <span className="text-sm">{kiosk.staffPinEnabled ? '🔒' : '🔓'}</span>
             {kiosk.staffPinEnabled
               ? 'Settings are locked — PIN required to access'
               : 'Settings are unlocked — anyone can open them from the kiosk'}
@@ -69,14 +78,19 @@ function StaffAccessSection() {
       {/* ── PIN change (only visible when PIN protection is on) ── */}
       {kiosk.staffPinEnabled && kiosk.staffPin === '1234' && (
         <SettingsField label="" description="">
-          <div className="flex items-start gap-3 px-4 py-3 rounded-xl w-full"
-            style={{ background: '#FEF3C7', border: '1.5px solid #FDE68A' }}>
+          <div
+            className="flex items-start gap-3 px-4 py-3.5 rounded-2xl w-full border"
+            style={{
+              background: themeRGBA('warning', 0.12),
+              borderColor: themeRGBA('warning', 0.25),
+            }}
+          >
             <span className="text-xl flex-shrink-0 mt-0.5">⚠️</span>
             <div>
-              <p className="font-bold font-brand text-sm" style={{ color: '#92400E' }}>
+              <p className="font-bold font-brand text-sm" style={{ color: 'var(--color-brand-primary)' }}>
                 Default PIN in use — change it before leaving the kiosk unattended
               </p>
-              <p className="font-brand text-xs mt-1" style={{ color: '#B45309' }}>
+              <p className="font-brand text-xs mt-1.5 leading-relaxed" style={{ color: themeColors.text }}>
                 Anyone who knows the default PIN (1234) can access these settings.
                 Set a custom PIN below to secure this device.
               </p>
@@ -91,12 +105,18 @@ function StaffAccessSection() {
           htmlFor="staff-pin-new"
           description="Change the 4-digit PIN staff use to unlock Settings from the kiosk screen."
         >
-          <div className="flex flex-col gap-3 w-full max-w-xs">
+          <div className="flex flex-col gap-3.5 w-full max-w-xs">
 
             {/* Current PIN indicator */}
-            <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-brand-surface border border-brand-border">
-              <span className="text-xs font-brand text-brand-muted">Current PIN:</span>
-              <span className="text-sm font-bold font-brand text-brand-text tracking-[0.3em]">
+            <div
+              className="flex items-center gap-2 px-3.5 py-2.5 rounded-xl border"
+              style={{
+                background: themeColors.surfaceAlt,
+                borderColor: themeColors.border,
+              }}
+            >
+              <span className="text-xs font-brand font-medium" style={{ color: themeColors.muted }}>Current PIN:</span>
+              <span className="text-sm font-extrabold font-brand tracking-[0.3em]" style={{ color: themeColors.text }}>
                 {'●'.repeat(kiosk.staffPin.length)}
               </span>
             </div>
@@ -129,10 +149,10 @@ function StaffAccessSection() {
             />
 
             {pinErr && (
-              <p className="text-xs font-brand" style={{ color: '#DC2626' }}>{pinErr}</p>
+              <p className="text-xs font-bold font-brand animate-fade-in" style={{ color: themeColors.error }}>{pinErr}</p>
             )}
             {saved && (
-              <p className="text-xs font-bold font-brand" style={{ color: '#16a34a' }}>
+              <p className="text-xs font-bold font-brand animate-fade-in" style={{ color: themeColors.success }}>
                 ✓ PIN updated successfully
               </p>
             )}
@@ -141,7 +161,8 @@ function StaffAccessSection() {
               type="button"
               onClick={handleSavePin}
               disabled={draft.length !== 4 || confirm.length !== 4}
-              className="px-4 py-2 rounded-brand text-xs font-bold font-brand bg-brand-primary text-white hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed transition-opacity"
+              className="ui-btn-primary py-2.5 text-xs font-bold font-brand transition-all active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed disabled:active:scale-100"
+              style={{ borderRadius: 'var(--radius-xl)' }}
             >
               Update PIN
             </button>
@@ -179,7 +200,7 @@ export default function KioskBehaviorTab() {
   }
 
   return (
-    <div className="p-5">
+    <div className="p-5 max-w-7xl mx-auto">
 
       {/* Idle & attract */}
       <SettingsSection title="Idle Behaviour">
@@ -188,7 +209,7 @@ export default function KioskBehaviorTab() {
           htmlFor="idle-timeout"
           description={`Kiosk returns to attract screen after ${secondsLabel(kiosk.idleTimeoutSeconds)} of inactivity.`}
         >
-          <div className="flex flex-col gap-2 w-full">
+          <div className="flex flex-col gap-2.5 w-full">
             <div className="flex items-center gap-3">
               <span className="text-xs font-brand text-brand-muted w-6">30s</span>
               <input
@@ -237,7 +258,7 @@ export default function KioskBehaviorTab() {
               }}
               className="w-28"
             />
-            <span className="text-sm font-brand text-brand-muted">%</span>
+            <span className="text-sm font-bold font-brand text-brand-muted">%</span>
           </div>
         </SettingsField>
       </SettingsSection>
@@ -249,7 +270,7 @@ export default function KioskBehaviorTab() {
           htmlFor="printer-ip"
           description="IP address of the ESC/POS receipt printer on the local network."
         >
-          <div className="flex flex-col gap-2 w-full">
+          <div className="flex flex-col gap-3 w-full">
             <SettingsInput
               id="printer-ip"
               type="text"
@@ -258,12 +279,12 @@ export default function KioskBehaviorTab() {
               placeholder="192.168.1.100"
             />
             {kiosk.receiptPrinterIp.trim() && (
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-3 animate-fade-in">
                 <button
                   onClick={handleTestPrint}
                   disabled={printTest === 'testing'}
                   className={[
-                    'px-4 py-2 rounded-brand text-xs font-bold font-brand transition-colors touch-target',
+                    'px-4 py-2.5 rounded-xl text-xs font-bold font-brand transition-all active:scale-95 touch-target',
                     printTest === 'testing'
                       ? 'bg-brand-border text-brand-muted cursor-wait'
                       : 'bg-brand-primary text-white hover:opacity-90',
@@ -272,12 +293,12 @@ export default function KioskBehaviorTab() {
                   {printTest === 'testing' ? 'Testing…' : '🖨 Test Print'}
                 </button>
                 {printTest === 'ok' && printResult && (
-                  <span className="text-xs text-brand-success font-brand">
+                  <span className="text-xs text-brand-success font-bold font-brand">
                     ✓ OK ({printResult.latencyMs}ms · {printResult.mode})
                   </span>
                 )}
                 {printTest === 'error' && (
-                  <span className="text-xs text-brand-error font-brand">✕ Unreachable</span>
+                  <span className="text-xs text-brand-error font-bold font-brand">✕ Unreachable</span>
                 )}
               </div>
             )}

@@ -8,6 +8,7 @@ import { useKioskChannelStore } from '@/store/kioskChannelStore';
 import { useStoreConfigStore } from '@/store/storeConfigStore';
 import { SettingsField, SettingsSection, SettingsInput, SettingsSelect } from '../shared';
 import LivePreviewCard from '../LivePreviewCard';
+import { themeColors, themeRGBA } from '@/utils/themeColors';
 
 // ─── Color field (swatch + hex input) ─────────────────────────────────────────
 
@@ -26,6 +27,7 @@ function ColorField({
 }) {
   const [local, setLocal] = useState(value);
   const [err, setErr] = useState(false);
+  const [focused, setFocused] = useState(false);
 
   useEffect(() => { setLocal(value); setErr(false); }, [value]);
 
@@ -36,30 +38,43 @@ function ColorField({
   }
 
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex items-center gap-3 w-full max-w-md">
       {/* Native color picker swatch */}
-      <input
-        type="color"
-        value={value}
-        onChange={(e) => { setLocal(e.target.value); onChange(e.target.value); }}
-        aria-label={`${label} color picker`}
-        className="w-10 h-10 rounded cursor-pointer border border-brand-border bg-transparent p-0"
-        style={{ padding: 0 }}
-      />
+      <div className="relative flex-shrink-0 w-10 h-10 rounded-xl overflow-hidden shadow-sm border border-brand-border">
+        <input
+          type="color"
+          value={value}
+          onChange={(e) => { setLocal(e.target.value); onChange(e.target.value); }}
+          aria-label={`${label} color picker`}
+          className="absolute inset-0 w-full h-full cursor-pointer p-0 border-0 bg-transparent"
+          style={{ transform: 'scale(1.4)', outline: 'none' }}
+        />
+      </div>
       {/* Hex text input */}
       <input
         type="text"
         value={local}
         onChange={(e) => handleText(e.target.value)}
+        onFocus={() => setFocused(true)}
+        onBlur={() => setFocused(false)}
         maxLength={7}
         aria-label={`${label} hex value`}
         className={[
-          'w-24 px-2 py-1.5 rounded border font-mono text-sm font-brand text-brand-text bg-brand-bg',
-          'focus:outline-none',
-          err ? 'border-brand-error' : 'border-brand-border focus:border-brand-primary',
+          'w-24 px-3 py-2 rounded-xl border font-mono text-sm font-brand focus:outline-none transition-all duration-200',
+          err ? 'border-brand-error' : '',
         ].join(' ')}
+        style={{
+          background: themeColors.input,
+          borderColor: err ? themeColors.error : focused ? 'var(--color-brand-primary)' : themeColors.border,
+          color: themeColors.inputText,
+          boxShadow: err
+            ? '0 0 0 3px rgba(239, 68, 68, 0.15)'
+            : focused
+              ? '0 0 0 3px rgba(var(--color-brand-primary-rgb), 0.18)'
+              : 'none',
+        }}
       />
-      <span className="text-sm font-brand text-brand-muted">{label}</span>
+      <span className="text-sm font-bold font-brand text-brand-muted">{label}</span>
     </div>
   );
 }
@@ -104,7 +119,7 @@ export default function BrandThemeTab() {
   }
 
   return (
-    <div className="flex flex-col lg:flex-row gap-6 p-5">
+    <div className="flex flex-col lg:flex-row gap-6 p-5 max-w-7xl mx-auto">
       {/* ── Form ─────────────────────────────────────── */}
       <div className="flex-1 min-w-0">
 
@@ -117,22 +132,43 @@ export default function BrandThemeTab() {
             <div className="flex flex-col gap-3">
               {/* Brand badge */}
               <span
-                className="inline-flex items-center px-3 py-1 rounded-brand border border-brand-primary bg-brand-surface text-brand-primary text-sm font-semibold font-brand w-fit"
+                className="inline-flex items-center px-4 py-1.5 rounded-xl border font-bold font-brand text-xs w-fit tracking-wide uppercase"
+                style={{
+                  borderColor: 'var(--color-brand-primary)',
+                  background: themeRGBA('primary', 0.12),
+                  color: 'var(--color-brand-primary)',
+                }}
               >
-                {brandId.charAt(0).toUpperCase() + brandId.slice(1)}
+                {brandId}
               </span>
 
               {/* Switch brand button */}
               <button
                 onClick={handleSwitchBrand}
                 onBlur={() => setConfirmSignOut(false)}
-                className={[
-                  'inline-flex items-center gap-2 px-4 py-2 rounded-brand border text-sm font-semibold font-brand transition-colors w-fit',
-                  'focus-visible:outline focus-visible:outline-2',
-                  confirmSignOut
-                    ? 'border-red-600 bg-red-600 text-white focus-visible:outline-red-600'
-                    : 'border-red-500 text-red-500 hover:bg-red-50 focus-visible:outline-red-500',
-                ].join(' ')}
+                className="
+                  inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border text-xs font-bold font-brand transition-all active:scale-95 w-fit
+                "
+                style={confirmSignOut ? {
+                  background: themeColors.error,
+                  borderColor: themeColors.error,
+                  color: '#FFFFFF',
+                  boxShadow: '0 2px 10px rgba(239, 68, 68, 0.35)',
+                } : {
+                  background: 'transparent',
+                  borderColor: themeColors.error,
+                  color: themeColors.error,
+                }}
+                onMouseEnter={(e) => {
+                  if (!confirmSignOut) {
+                    (e.currentTarget as HTMLButtonElement).style.background = themeRGBA('error', 0.08);
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (!confirmSignOut) {
+                    (e.currentTarget as HTMLButtonElement).style.background = 'transparent';
+                  }
+                }}
               >
                 {confirmSignOut
                   ? 'Are you sure? This will sign you out.'
@@ -200,7 +236,7 @@ export default function BrandThemeTab() {
             htmlFor="logo-url"
             description="Direct link to a PNG/SVG. Leave blank to show brand initial."
           >
-            <div className="flex flex-col gap-2 w-full">
+            <div className="flex flex-col gap-3 w-full max-w-md">
               <SettingsInput
                 id="logo-url"
                 type="url"
@@ -209,12 +245,14 @@ export default function BrandThemeTab() {
                 placeholder="https://cdn.example.com/logo.png"
               />
               {theme.logoUrl && (
-                <img
-                  src={theme.logoUrl}
-                  alt="Logo preview"
-                  className="h-12 w-auto object-contain rounded border border-brand-border bg-brand-surface p-1"
-                  onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }}
-                />
+                <div className="relative w-fit rounded-xl border border-brand-border bg-brand-surface p-2 shadow-inner">
+                  <img
+                    src={theme.logoUrl}
+                    alt="Logo preview"
+                    className="h-10 w-auto object-contain"
+                    onError={(e) => { (e.currentTarget as HTMLImageElement).parentElement!.style.display = 'none'; }}
+                  />
+                </div>
               )}
             </div>
           </SettingsField>
@@ -224,39 +262,58 @@ export default function BrandThemeTab() {
         <SettingsSection title="Theme Mode">
           <SettingsField label="Appearance">
             <div
-              className="flex gap-2"
+              className="flex gap-2.5"
               role="radiogroup"
               aria-label="Theme appearance mode"
             >
-              {(['light', 'dark', 'auto'] as const).map((mode) => (
-                <button
-                  key={mode}
-                  role="radio"
-                  aria-checked={themeMode === mode}
-                  onClick={() => setThemeMode(mode)}
-                  className={[
-                    'px-4 py-2 rounded-brand border text-sm font-semibold font-brand capitalize',
-                    'focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-primary',
-                    themeMode === mode
-                      ? 'border-brand-primary bg-brand-primary text-white'
-                      : 'border-brand-border text-brand-text hover:border-brand-primary',
-                  ].join(' ')}
-                >
-                  {mode === 'auto' ? 'Auto (OS)' : mode.charAt(0).toUpperCase() + mode.slice(1)}
-                </button>
-              ))}
+              {(['light', 'dark', 'auto'] as const).map((mode) => {
+                const isActive = themeMode === mode;
+                return (
+                  <button
+                    key={mode}
+                    role="radio"
+                    aria-checked={isActive}
+                    onClick={() => setThemeMode(mode)}
+                    className="px-4.5 py-2.5 rounded-xl border text-xs font-bold font-brand capitalize transition-all active:scale-95"
+                    style={isActive ? {
+                      background: 'var(--color-brand-primary)',
+                      borderColor: 'var(--color-brand-primary)',
+                      color: 'var(--color-brand-text-inverse)',
+                      boxShadow: '0 4px 12px rgba(var(--color-brand-primary-rgb), 0.3)',
+                    } : {
+                      background: themeColors.surfaceAlt,
+                      borderColor: themeColors.border,
+                      color: themeColors.text,
+                    }}
+                    onMouseEnter={(e) => {
+                      if (!isActive) {
+                        (e.currentTarget as HTMLButtonElement).style.borderColor = 'var(--color-brand-primary)';
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      if (!isActive) {
+                        (e.currentTarget as HTMLButtonElement).style.borderColor = themeColors.border;
+                      }
+                    }}
+                  >
+                    {mode === 'auto' ? 'Auto (OS)' : mode}
+                  </button>
+                );
+              })}
             </div>
           </SettingsField>
         </SettingsSection>
       </div>
 
       {/* ── Live preview ─────────────────────────────── */}
-      <div className="lg:w-72 lg:sticky lg:top-4 lg:self-start">
-        <p className="text-xs font-bold font-brand text-brand-muted uppercase tracking-widest mb-3">
+      <div className="lg:w-80 lg:sticky lg:top-6 lg:self-start flex-shrink-0">
+        <p className="text-[10px] font-bold font-brand text-brand-muted uppercase tracking-[0.2em] mb-3 pl-1">
           Live Preview
         </p>
-        <LivePreviewCard />
-        <p className="text-xs text-brand-muted font-brand mt-2 text-center">
+        <div className="p-3.5 rounded-2xl border bg-brand-surface shadow-md" style={{ borderColor: themeColors.border }}>
+          <LivePreviewCard />
+        </div>
+        <p className="text-xs text-brand-muted font-brand mt-3 text-center font-medium">
           Updates in real-time as you change settings
         </p>
       </div>

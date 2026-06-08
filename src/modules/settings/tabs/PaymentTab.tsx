@@ -1,11 +1,5 @@
 // src/modules/settings/tabs/PaymentTab.tsx
 // Stripe Reader M2 connection management + Stripe configuration.
-//
-// Sections:
-//   1. Stripe Configuration   — publishable key
-//   2. Reader Connection      — method selector, location ID, serial number
-//   3. Live Connection Panel  — discover, connect / disconnect, status, session timer
-//   4. Session & Reliability  — timeout slider, auto-reconnect toggle
 
 import { useState, useCallback } from 'react';
 import { useSettingsStore }          from '@/store/settingsStore';
@@ -13,6 +7,7 @@ import { useReaderConnection }       from '@/hooks/useReaderConnection';
 import type { ReaderConnectionStatus } from '@/hooks/useReaderConnection';
 import type { TerminalReader }       from '@/services/stripe/types';
 import { SettingsField, SettingsSection, SettingsInput, MaskedInput, ToggleSwitch } from '../shared';
+import { themeColors, themeRGBA } from '@/utils/themeColors';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -23,31 +18,31 @@ function formatSeconds(s: number): string {
 }
 
 function batteryColor(level: number | undefined): string {
-  if (level === undefined) return '#9CA3AF';
-  if (level > 0.5) return '#22C55E';
-  if (level > 0.2) return '#F59E0B';
-  return '#EF4444';
+  if (level === undefined) return themeColors.muted;
+  if (level > 0.5) return themeColors.success;
+  if (level > 0.2) return 'var(--color-brand-primary)';
+  return themeColors.error;
 }
 
 // ─── Status indicator ─────────────────────────────────────────────────────────
 
 const STATUS_CONFIG: Record<ReaderConnectionStatus, { label: string; color: string; pulse: boolean }> = {
-  idle:          { label: 'Not connected',  color: '#9CA3AF', pulse: false },
-  initializing:  { label: 'Initializing…', color: '#F59E0B', pulse: true  },
-  discovering:   { label: 'Scanning…',     color: '#3B82F6', pulse: true  },
-  connecting:    { label: 'Connecting…',   color: '#F59E0B', pulse: true  },
-  connected:     { label: 'Connected',     color: '#22C55E', pulse: false },
-  reconnecting:  { label: 'Reconnecting…', color: '#F59E0B', pulse: true  },
-  disconnecting: { label: 'Disconnecting…',color: '#9CA3AF', pulse: true  },
-  disconnected:  { label: 'Disconnected',  color: '#9CA3AF', pulse: false },
-  timeout:       { label: 'Session ended', color: '#F59E0B', pulse: false },
-  error:         { label: 'Error',         color: '#EF4444', pulse: false },
+  idle:          { label: 'Not connected',  color: 'var(--color-brand-muted)', pulse: false },
+  initializing:  { label: 'Initializing…', color: 'var(--color-brand-primary)', pulse: true  },
+  discovering:   { label: 'Scanning…',     color: '#3B82F6', pulse: true  }, // dev/scanning is blue
+  connecting:    { label: 'Connecting…',   color: 'var(--color-brand-primary)', pulse: true  },
+  connected:     { label: 'Connected',     color: 'var(--color-brand-success)', pulse: false },
+  reconnecting:  { label: 'Reconnecting…', color: 'var(--color-brand-primary)', pulse: true  },
+  disconnecting: { label: 'Disconnecting…',color: 'var(--color-brand-muted)', pulse: true  },
+  disconnected:  { label: 'Disconnected',  color: 'var(--color-brand-muted)', pulse: false },
+  timeout:       { label: 'Session ended', color: 'var(--color-brand-primary)', pulse: false },
+  error:         { label: 'Error',         color: 'var(--color-brand-error)', pulse: false },
 };
 
 function StatusBadge({ status }: { status: ReaderConnectionStatus }) {
   const cfg = STATUS_CONFIG[status];
   return (
-    <span className="flex items-center gap-2 text-xs font-semibold font-brand">
+    <span className="flex items-center gap-2 text-xs font-bold font-brand">
       <span
         className={cfg.pulse ? 'animate-pulse' : ''}
         style={{
@@ -96,10 +91,11 @@ function ReaderCard({
 }) {
   return (
     <div
-      className="rounded-xl p-3.5 transition-all"
+      className="rounded-2xl p-4 transition-all duration-200"
       style={{
-        background: isSelected ? 'rgba(245,158,11,0.07)' : '#FFFFFF',
-        border: `1.5px solid ${isSelected ? '#F59E0B' : '#E5E7EB'}`,
+        background: isSelected ? themeRGBA('primary', 0.08) : themeColors.surface,
+        border: `1.5px solid ${isSelected ? 'var(--color-brand-primary)' : themeColors.border}`,
+        boxShadow: 'var(--ui-card-shadow)',
       }}
     >
       <div className="flex items-start justify-between gap-3">
@@ -107,23 +103,27 @@ function ReaderCard({
         <div className="flex items-center gap-3">
           {/* M2 icon */}
           <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
-            style={{ background: isConnected ? 'rgba(34,197,94,0.1)' : '#F3F4F6', border: `1px solid ${isConnected ? '#BBF7D0' : '#E5E7EB'}` }}>
+            style={{
+              background: isConnected ? themeRGBA('success', 0.12) : themeColors.surfaceAlt,
+              border: `1px solid ${isConnected ? themeRGBA('success', 0.25) : themeColors.border}`
+            }}
+          >
             <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none"
-              stroke={isConnected ? '#16A34A' : '#6B7280'} strokeWidth={1.8} strokeLinecap="round">
+              stroke={isConnected ? themeColors.success : themeColors.muted} strokeWidth={1.8} strokeLinecap="round">
               <rect x="2" y="6" width="20" height="13" rx="2"/>
               <path d="M2 10h20"/>
-              <circle cx="6" cy="15" r="1.2" fill={isConnected ? '#16A34A' : '#9CA3AF'} stroke="none"/>
+              <circle cx="6" cy="15" r="1.2" fill={isConnected ? themeColors.success : themeColors.muted} stroke="none"/>
             </svg>
           </div>
           <div>
-            <p className="font-bold font-brand text-sm" style={{ color: '#111827' }}>{reader.label}</p>
-            <p className="text-xs font-mono font-brand mt-0.5" style={{ color: '#6B7280' }}>{reader.serialNumber}</p>
-            <div className="flex items-center gap-2 mt-1 flex-wrap">
-              <span className="text-xs font-brand capitalize" style={{ color: '#9CA3AF' }}>
+            <p className="font-bold font-brand text-sm" style={{ color: themeColors.text }}>{reader.label}</p>
+            <p className="text-xs font-mono font-brand mt-0.5" style={{ color: themeColors.muted }}>{reader.serialNumber}</p>
+            <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+              <span className="text-xs font-brand font-medium" style={{ color: themeColors.muted }}>
                 {reader.deviceType === 'stripeM2' ? 'Stripe Reader M2' : reader.deviceType}
               </span>
               {reader.status && (
-                <span className="text-xs font-brand" style={{ color: reader.status === 'online' ? '#16A34A' : '#9CA3AF' }}>
+                <span className="text-xs font-brand font-bold" style={{ color: reader.status === 'online' ? themeColors.success : themeColors.muted }}>
                   · {reader.status}
                 </span>
               )}
@@ -131,19 +131,34 @@ function ReaderCard({
           </div>
         </div>
 
-        <div className="flex flex-col items-end gap-2 flex-shrink-0">
+        <div className="flex flex-col items-end gap-2.5 flex-shrink-0">
           <BatteryBar level={reader.batteryLevel} />
           {isConnected ? (
-            <span className="px-2.5 py-1 rounded-full text-xs font-bold font-brand"
-              style={{ background: '#DCFCE7', color: '#15803D', border: '1px solid #BBF7D0' }}>
+            <span className="px-2.5 py-1 rounded-full text-xs font-bold font-brand border"
+              style={{
+                background: themeRGBA('success', 0.12),
+                color: themeColors.success,
+                borderColor: themeRGBA('success', 0.25),
+              }}
+            >
               ✓ Active
             </span>
           ) : (
             <button
               type="button"
               onClick={onSelect}
-              className="px-2.5 py-1 rounded-full text-xs font-bold font-brand transition-colors hover:opacity-80"
-              style={{ background: 'transparent', border: '1.5px solid #F59E0B', color: '#D97706' }}
+              className="px-3 py-1 rounded-full text-xs font-bold font-brand transition-all active:scale-95 border"
+              style={{
+                background: 'transparent',
+                borderColor: 'var(--color-brand-primary)',
+                color: 'var(--color-brand-primary)',
+              }}
+              onMouseEnter={(e) => {
+                (e.currentTarget as HTMLButtonElement).style.background = themeRGBA('primary', 0.12);
+              }}
+              onMouseLeave={(e) => {
+                (e.currentTarget as HTMLButtonElement).style.background = 'transparent';
+              }}
             >
               Use This
             </button>
@@ -159,18 +174,22 @@ function ReaderCard({
 function SessionCountdown({ seconds }: { seconds: number }) {
   const urgent = seconds < 120;
   return (
-    <div className="flex items-center gap-2 px-3 py-2 rounded-xl"
-      style={{ background: urgent ? '#FEF3C7' : '#F0FDF4', border: `1px solid ${urgent ? '#FDE68A' : '#BBF7D0'}` }}>
-      <svg className="w-4 h-4 flex-shrink-0" viewBox="0 0 24 24" fill="none"
-        stroke={urgent ? '#D97706' : '#15803D'} strokeWidth={2} strokeLinecap="round">
+    <div className="flex items-center gap-3 px-4 py-3 rounded-2xl border"
+      style={{
+        background: urgent ? themeRGBA('warning', 0.12) : themeRGBA('success', 0.12),
+        borderColor: urgent ? themeRGBA('warning', 0.25) : themeRGBA('success', 0.25),
+      }}
+    >
+      <svg className="w-4.5 h-4.5 flex-shrink-0" viewBox="0 0 24 24" fill="none"
+        stroke={urgent ? 'var(--color-brand-primary)' : themeColors.success} strokeWidth={2.2} strokeLinecap="round">
         <circle cx="12" cy="12" r="10"/>
         <polyline points="12 6 12 12 16 14"/>
       </svg>
       <div className="flex-1">
-        <p className="text-xs font-bold font-brand" style={{ color: urgent ? '#92400E' : '#15803D' }}>
+        <p className="text-xs font-bold font-brand" style={{ color: urgent ? 'var(--color-brand-primary)' : themeColors.success }}>
           Session {urgent ? 'ending soon' : 'active'}
         </p>
-        <p className="text-xs font-brand" style={{ color: urgent ? '#B45309' : '#16A34A' }}>
+        <p className="text-xs font-brand mt-0.5" style={{ color: urgent ? 'var(--color-brand-primary)' : themeColors.success }}>
           Auto-disconnects in <strong>{formatSeconds(seconds)}</strong>
         </p>
       </div>
@@ -210,7 +229,7 @@ export default function PaymentTab() {
   }, [setPayment]);
 
   return (
-    <div className="p-5 space-y-0">
+    <div className="p-5 space-y-0 max-w-7xl mx-auto">
 
       {/* ── 1. Stripe Configuration ─────────────────────────────────────── */}
       <SettingsSection title="Stripe Configuration">
@@ -231,26 +250,42 @@ export default function PaymentTab() {
 
         {/* Connection method */}
         <SettingsField label="Connection Method" description="Stripe Reader M2 uses Bluetooth.">
-          <div className="flex gap-2 flex-wrap">
+          <div className="flex gap-2.5 flex-wrap">
             {([ ['bluetooth','Bluetooth (M2)'], ['internet','Internet/WiFi'], ['localMobile','Tap to Pay'] ] as const).map(
-              ([val, label]) => (
-                <button key={val} type="button"
-                  onClick={() => setPayment({ connectionMethod: val })}
-                  className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold font-brand transition-all"
-                  style={payment.connectionMethod === val ? {
-                    background: 'linear-gradient(135deg,#F59E0B,#F97316)',
-                    color: 'white', border: '1.5px solid #F59E0B',
-                    boxShadow: '0 2px 8px rgba(245,158,11,0.28)',
-                  } : {
-                    background: '#F9FAFB', color: '#374151', border: '1.5px solid #E5E7EB',
-                  }}
-                >
-                  {val === 'bluetooth'    && <span>📶</span>}
-                  {val === 'internet'     && <span>🌐</span>}
-                  {val === 'localMobile' && <span>📱</span>}
-                  {label}
-                </button>
-              ),
+              ([val, label]) => {
+                const isSelected = payment.connectionMethod === val;
+                return (
+                  <button key={val} type="button"
+                    onClick={() => setPayment({ connectionMethod: val })}
+                    className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-xs font-bold font-brand transition-all active:scale-95 border"
+                    style={isSelected ? {
+                      background: 'var(--gradient-cta)',
+                      color: 'white',
+                      borderColor: 'var(--color-brand-primary)',
+                      boxShadow: '0 4px 14px rgba(var(--color-brand-primary-rgb),0.32)',
+                    } : {
+                      background: themeColors.surfaceAlt,
+                      color: themeColors.text,
+                      borderColor: themeColors.border,
+                    }}
+                    onMouseEnter={(e) => {
+                      if (!isSelected) {
+                        (e.currentTarget as HTMLButtonElement).style.borderColor = 'var(--color-brand-primary)';
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      if (!isSelected) {
+                        (e.currentTarget as HTMLButtonElement).style.borderColor = themeColors.border;
+                      }
+                    }}
+                  >
+                    {val === 'bluetooth'    && <span>📶</span>}
+                    {val === 'internet'     && <span>🌐</span>}
+                    {val === 'localMobile'  && <span>📱</span>}
+                    {label}
+                  </button>
+                );
+              },
             )}
           </div>
         </SettingsField>
@@ -291,7 +326,7 @@ export default function PaymentTab() {
         <div className="flex items-center justify-between px-1 py-2">
           <StatusBadge status={status} />
           {reconnectAttempts > 0 && !isActive && (
-            <span className="text-xs font-brand" style={{ color: '#9CA3AF' }}>
+            <span className="text-xs font-bold font-brand" style={{ color: themeColors.muted }}>
               Attempt {reconnectAttempts}/{3}
             </span>
           )}
@@ -299,28 +334,36 @@ export default function PaymentTab() {
 
         {/* Connected reader card */}
         {isActive && connectedReader && (
-          <ReaderCard
-            reader={connectedReader}
-            isSelected
-            isConnected
-            onSelect={() => {}}
-          />
+          <div className="py-2">
+            <ReaderCard
+              reader={connectedReader}
+              isSelected
+              isConnected
+              onSelect={() => {}}
+            />
+          </div>
         )}
 
         {/* Session countdown */}
         {isActive && sessionSecondsLeft !== null && (
-          <SessionCountdown seconds={sessionSecondsLeft} />
+          <div className="py-2">
+            <SessionCountdown seconds={sessionSecondsLeft} />
+          </div>
         )}
 
         {/* Session ended notice */}
         {status === 'timeout' && (
-          <div className="flex items-start gap-2 px-3 py-2.5 rounded-xl"
-            style={{ background: '#FEF3C7', border: '1px solid #FDE68A' }}>
-            <span className="mt-0.5">⏱</span>
+          <div className="flex items-start gap-3 px-4 py-3 rounded-2xl border my-2"
+            style={{
+              background: themeRGBA('warning', 0.12),
+              borderColor: themeRGBA('warning', 0.25),
+            }}
+          >
+            <span className="text-lg mt-0.5">⏱</span>
             <div>
-              <p className="text-xs font-bold font-brand" style={{ color: '#92400E' }}>Session timed out</p>
-              <p className="text-xs font-brand mt-0.5" style={{ color: '#B45309' }}>
-                Reader was disconnected after {payment.sessionTimeoutMinutes} min of inactivity.
+              <p className="text-xs font-bold font-brand" style={{ color: 'var(--color-brand-primary)' }}>Session timed out</p>
+              <p className="text-xs font-brand mt-1 leading-relaxed" style={{ color: themeColors.text }}>
+                Reader was disconnected after {payment.sessionTimeoutMinutes} min of no payment activity.
                 Reconnect when needed.
               </p>
             </div>
@@ -329,31 +372,35 @@ export default function PaymentTab() {
 
         {/* Error notice */}
         {status === 'error' && error && (
-          <div className="flex items-start gap-2 px-3 py-2.5 rounded-xl"
-            style={{ background: '#FEF2F2', border: '1px solid #FECACA' }}>
-            <svg className="w-4 h-4 mt-0.5 flex-shrink-0" viewBox="0 0 24 24" fill="none"
-              stroke="#DC2626" strokeWidth={2} strokeLinecap="round">
+          <div className="flex items-start gap-3 px-4 py-3 rounded-2xl border my-2"
+            style={{
+              background: themeRGBA('error', 0.12),
+              borderColor: themeRGBA('error', 0.25),
+            }}
+          >
+            <svg className="w-5 h-5 mt-0.5 flex-shrink-0" viewBox="0 0 24 24" fill="none"
+              stroke={themeColors.error} strokeWidth={2.2} strokeLinecap="round">
               <circle cx="12" cy="12" r="10"/>
               <line x1="12" y1="8" x2="12" y2="12"/>
               <line x1="12" y1="16" x2="12.01" y2="16"/>
             </svg>
-            <p className="text-xs font-brand" style={{ color: '#DC2626' }}>{error}</p>
+            <p className="text-xs font-brand font-medium leading-relaxed" style={{ color: themeColors.error }}>{error}</p>
           </div>
         )}
 
         {/* Action buttons */}
-        <div className="flex flex-wrap gap-2 pt-1">
+        <div className="flex flex-wrap gap-2.5 pt-3 pb-2">
           {/* Discover */}
           {!isActive && (
             <button type="button" onClick={() => void handleDiscover()}
               disabled={isBusy || !payment.terminalLocationId.trim()}
-              className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold font-brand transition-all disabled:opacity-40 disabled:cursor-not-allowed hover:opacity-90"
-              style={{ background: 'linear-gradient(135deg,#3B82F6,#2563EB)', color: 'white', boxShadow: '0 2px 8px rgba(59,130,246,0.30)' }}
+              className="flex items-center gap-2 px-4.5 py-3 rounded-xl text-xs font-bold font-brand transition-all active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed hover:opacity-90 shadow-md"
+              style={{ background: 'linear-gradient(135deg,#3B82F6,#2563EB)', color: 'white' }}
             >
               {status === 'discovering' ? (
-                <><span className="w-4 h-4 rounded-full border-2 border-white border-t-transparent animate-spin"/>&nbsp;Scanning…</>
+                <><span className="w-3.5 h-3.5 rounded-full border-2 border-white border-t-transparent animate-spin"/>&nbsp;Scanning…</>
               ) : (
-                <><svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round">
+                <><svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round">
                   <circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/>
                 </svg>Discover</>
               )}
@@ -364,13 +411,13 @@ export default function PaymentTab() {
           {!isActive && (
             <button type="button" onClick={() => void handleConnect()}
               disabled={isBusy || (!payment.readerSerialNumber && !selectedSerial)}
-              className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold font-brand transition-all disabled:opacity-40 disabled:cursor-not-allowed hover:opacity-90"
-              style={{ background: 'linear-gradient(135deg,#22C55E,#16A34A)', color: 'white', boxShadow: '0 2px 8px rgba(34,197,94,0.28)' }}
+              className="flex items-center gap-2 px-4.5 py-3 rounded-xl text-xs font-bold font-brand transition-all active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed hover:opacity-90 shadow-md"
+              style={{ background: 'linear-gradient(135deg,#22C55E,#16A34A)', color: 'white' }}
             >
               {status === 'connecting' ? (
-                <><span className="w-4 h-4 rounded-full border-2 border-white border-t-transparent animate-spin"/>&nbsp;Connecting…</>
+                <><span className="w-3.5 h-3.5 rounded-full border-2 border-white border-t-transparent animate-spin"/>&nbsp;Connecting…</>
               ) : (
-                <><svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round">
+                <><svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round">
                   <path d="M5 12.55a11 11 0 0114.08 0"/><path d="M1.42 9a16 16 0 0121.16 0"/>
                   <path d="M8.53 16.11a6 6 0 016.95 0"/><circle cx="12" cy="20" r="1" fill="white"/>
                 </svg>Connect</>
@@ -382,10 +429,20 @@ export default function PaymentTab() {
           {(status === 'error' || status === 'disconnected' || status === 'timeout') && reconnectAttempts > 0 && (
             <button type="button" onClick={() => void reconnect()}
               disabled={isBusy}
-              className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold font-brand transition-all hover:opacity-90"
-              style={{ background: '#FEF3C7', color: '#92400E', border: '1px solid #FDE68A' }}
+              className="flex items-center gap-2 px-4.5 py-3 rounded-xl text-xs font-bold font-brand transition-all active:scale-95 border"
+              style={{
+                background: themeRGBA('warning', 0.12),
+                color: 'var(--color-brand-primary)',
+                borderColor: themeRGBA('warning', 0.25),
+              }}
+              onMouseEnter={(e) => {
+                (e.currentTarget as HTMLButtonElement).style.background = themeRGBA('warning', 0.18);
+              }}
+              onMouseLeave={(e) => {
+                (e.currentTarget as HTMLButtonElement).style.background = themeRGBA('warning', 0.12);
+              }}
             >
-              <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round">
+              <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round">
                 <polyline points="1 4 1 10 7 10"/>
                 <path d="M3.51 15a9 9 0 102.13-9.36L1 10"/>
               </svg>
@@ -397,13 +454,23 @@ export default function PaymentTab() {
           {(isActive || status === 'disconnecting') && (
             <button type="button" onClick={() => void disconnect()}
               disabled={status === 'disconnecting'}
-              className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold font-brand transition-all hover:opacity-90"
-              style={{ background: '#FEF2F2', color: '#DC2626', border: '1px solid #FECACA' }}
+              className="flex items-center gap-2 px-4.5 py-3 rounded-xl text-xs font-bold font-brand transition-all active:scale-95 border"
+              style={{
+                background: themeRGBA('error', 0.12),
+                color: themeColors.error,
+                borderColor: themeRGBA('error', 0.25),
+              }}
+              onMouseEnter={(e) => {
+                (e.currentTarget as HTMLButtonElement).style.background = themeRGBA('error', 0.18);
+              }}
+              onMouseLeave={(e) => {
+                (e.currentTarget as HTMLButtonElement).style.background = themeRGBA('error', 0.12);
+              }}
             >
               {status === 'disconnecting' ? (
-                <><span className="w-4 h-4 rounded-full border-2 border-red-500 border-t-transparent animate-spin"/>&nbsp;Disconnecting…</>
+                <><span className="w-3.5 h-3.5 rounded-full border-2 border-red-500 border-t-transparent animate-spin"/>&nbsp;Disconnecting…</>
               ) : (
-                <><svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round">
+                <><svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round">
                   <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
                 </svg>Disconnect</>
               )}
@@ -413,8 +480,8 @@ export default function PaymentTab() {
 
         {/* Discovered readers (not yet connected) */}
         {discoveredReaders.length > 0 && !isActive && (
-          <div className="flex flex-col gap-2 pt-1">
-            <p className="text-xs font-semibold font-brand uppercase tracking-wider" style={{ color: '#9CA3AF' }}>
+          <div className="flex flex-col gap-3.5 pt-3">
+            <p className="text-[10px] font-bold font-brand uppercase tracking-wider pl-1" style={{ color: themeColors.muted }}>
               {discoveredReaders.length} reader{discoveredReaders.length !== 1 ? 's' : ''} found
             </p>
             {discoveredReaders.map((r) => (
@@ -477,20 +544,28 @@ export default function PaymentTab() {
 
       {/* ── M2 quick-reference ──────────────────────────────────────────── */}
       <SettingsSection title="Reader Reference">
-        <div className="rounded-xl p-4 flex items-start gap-4"
-          style={{ background: '#F8FAFC', border: '1px solid #E5E7EB' }}>
+        <div className="rounded-xl p-4.5 flex items-start gap-4"
+          style={{
+            background: themeColors.surfaceAlt,
+            border: `1.5px solid ${themeColors.border}`
+          }}
+        >
           {/* M2 silhouette */}
-          <div className="w-12 h-16 rounded-lg flex-shrink-0 flex items-center justify-center"
-            style={{ background: '#E5E7EB' }}>
-            <svg className="w-8 h-8" viewBox="0 0 24 24" fill="none" stroke="#6B7280" strokeWidth={1.5} strokeLinecap="round">
+          <div className="w-12 h-16 rounded-xl flex-shrink-0 flex items-center justify-center border"
+            style={{
+              background: themeColors.surface,
+              borderColor: themeColors.border,
+            }}
+          >
+            <svg className="w-8 h-8" viewBox="0 0 24 24" fill="none" stroke="var(--color-brand-muted)" strokeWidth={1.8} strokeLinecap="round">
               <rect x="4" y="2" width="16" height="20" rx="2"/>
               <line x1="4" y1="8" x2="20" y2="8"/>
               <circle cx="12" cy="14" r="3"/>
             </svg>
           </div>
           <div>
-            <p className="font-bold font-brand text-sm" style={{ color: '#111827' }}>Stripe Reader M2 (STRM2-01 B)</p>
-            <div className="mt-2 space-y-0.5">
+            <p className="font-extrabold font-brand text-sm" style={{ color: themeColors.text }}>Stripe Reader M2 (STRM2-01 B)</p>
+            <div className="mt-2.5 space-y-1.5">
               {[
                 ['Connection',   'Bluetooth 5.0'],
                 ['Model',        'STRM2-01 B'],
@@ -498,8 +573,8 @@ export default function PaymentTab() {
                 ['LED Indicator','Solid white = ready · Flashing = pairing'],
                 ['Charging',     'USB-C · ~2 h for full charge'],
               ].map(([k, v]) => (
-                <p key={k} className="text-xs font-brand" style={{ color: '#6B7280' }}>
-                  <span className="font-semibold" style={{ color: '#374151' }}>{k}: </span>{v}
+                <p key={k} className="text-xs font-brand" style={{ color: themeColors.muted }}>
+                  <span className="font-bold" style={{ color: themeColors.text }}>{k}: </span>{v}
                 </p>
               ))}
             </div>

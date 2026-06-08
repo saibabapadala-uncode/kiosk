@@ -11,6 +11,7 @@ import { useAuthStore } from '@/store/authStore';
 import { useKioskChannelStore } from '@/store/kioskChannelStore';
 import { useStoreConfigStore } from '@/store/storeConfigStore';
 import { useSettingsStore } from '@/store/settingsStore';
+import { useStripeInitialize } from '@/hooks/useStripeInitialize';
 
 import AttractScreen       from '@/screens/AttractScreen';
 import CatalogScreen       from '@/screens/CatalogScreen';
@@ -31,6 +32,8 @@ function AppBootstrap() {
   const bootstrapAuth        = useAuthStore((s) => s.bootstrap);
   const bootstrapChannel     = useKioskChannelStore((s) => s.bootstrap);
   const bootstrapStoreConfig = useStoreConfigStore((s) => s.bootstrap);
+
+  useStripeInitialize();
 
   useEffect(() => {
     void Promise.all([

@@ -2,6 +2,7 @@
 import { usePayment } from '@/hooks/usePayment';
 import { USE_STATIC_PAYMENT_FLOW } from '@/services/stripe/static.mock';
 import type { PaymentFlowState } from '@/services/stripe/types';
+import { themeColors, themeRGBA } from '@/utils/themeColors';
 
 // ─── State labels ────────────────────────────────────────────────────────────
 
@@ -80,7 +81,7 @@ function NFCIllustration() {
         className="relative z-10 w-40 h-[100px] rounded-2xl"
         style={{
           background:  'linear-gradient(135deg, var(--color-brand-primary) 0%, var(--color-brand-secondary) 100%)',
-          boxShadow:   '0 16px 48px rgba(245,158,11,0.40), 0 4px 12px rgba(0,0,0,0.12)',
+          boxShadow:   '0 16px 48px rgba(var(--color-brand-primary-rgb),0.40), 0 4px 12px rgba(0,0,0,0.12)',
         }}
       >
         {/* Chip */}
@@ -111,7 +112,7 @@ function NativeCollectUI({ readerLabel, onCancel }: { readerLabel: string; onCan
     <div className="flex flex-col items-center justify-center flex-1 gap-6 px-8 text-center">
       <div
         className="px-4 py-1.5 rounded-full text-xs font-bold font-brand uppercase tracking-wider"
-        style={{ background: 'rgba(245,158,11,0.10)', color: 'var(--color-brand-primary)', border: '1px solid rgba(245,158,11,0.28)' }}
+        style={{ background: themeRGBA('primary', 0.12), color: 'var(--color-brand-primary)', border: `1.5px solid ${themeRGBA('primary', 0.25)}` }}
       >
         {readerLabel}
       </div>
@@ -126,11 +127,11 @@ function NativeCollectUI({ readerLabel, onCancel }: { readerLabel: string; onCan
           Present your card to the reader
         </p>
         <div className="flex items-center justify-center gap-1.5 mt-2">
-          <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} style={{ color: '#f59e0b' }}>
+          <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} style={{ color: 'var(--color-brand-primary)' }}>
             <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
             <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
           </svg>
-          <p className="text-xs font-brand" style={{ color: '#f59e0b' }}>
+          <p className="text-xs font-brand font-medium" style={{ color: 'var(--color-brand-primary)' }}>
             Keep your card in place until payment confirms
           </p>
         </div>
@@ -159,7 +160,7 @@ function WebSimulatorUI({ onSimulate }: { onSimulate: () => void }) {
     <div className="flex flex-col items-center justify-center flex-1 gap-6 px-8 text-center">
       <div
         className="px-3 py-1.5 rounded-full text-xs font-bold font-brand uppercase tracking-wider"
-        style={{ background: 'rgba(245,158,11,0.15)', color: '#f59e0b', border: '1px solid rgba(245,158,11,0.30)' }}
+        style={{ background: themeRGBA('primary', 0.15), color: 'var(--color-brand-primary)', border: `1.5px solid ${themeRGBA('primary', 0.30)}` }}
       >
         ⚡ Dev · Simulator Mode
       </div>

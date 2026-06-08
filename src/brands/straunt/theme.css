@@ -81,20 +81,34 @@
 
 /* ── Dark mode ─────────────────────────────────────────────────────── */
 :root[data-brand='straunt'][data-theme='dark'] {
-  --color-brand-bg:          #1A1209;
-  --color-brand-surface:     #251A0E;
-  --color-brand-surface-alt: #2E2014;
-  --color-brand-text:        #FDF4E7;
-  --color-brand-muted:       #A8957E;
-  --color-brand-border:      rgba(249,115,22,0.15);
-  --color-ui-card:           #251A0E;
-  --color-ui-sidebar:        #1A1209;
-  --color-ui-header:         #1A1209;
-  --ui-glass-bg:             rgba(26,18,9,0.92);
-  --ui-glass-border:         rgba(249,115,22,0.12);
-  --gradient-placeholder:    linear-gradient(150deg, #251A0E 0%, #2E2014 100%);
-  --card-shadow:             0 2px 10px rgba(0,0,0,0.40);
-  --card-shadow-hover:       0 14px 34px rgba(0,0,0,0.60);
+  --color-brand-primary:         #D97706;   /* Rich amber-orange from reference image */
+  --color-brand-secondary:       #B45309;
+  --color-brand-accent:          #D97706;
+  --color-brand-bg:              #111214;   /* Deep charcoal/black main background */
+  --color-brand-surface:         #1A1B1D;   /* Dark charcoal for card surfaces */
+  --color-brand-surface-alt:     #232528;   /* Medium charcoal for inputs / nesting */
+  --color-brand-text:            #F3F4F6;   /* Off-white primary text */
+  --color-brand-muted:           #9CA3AF;   /* Cool gray secondary text */
+  --color-brand-border:          #26282C;   /* Subtle dark borders */
+  --color-ui-card:               #1A1B1D;
+  --color-ui-sidebar:            #111214;   /* Dark sidebar background */
+  --color-ui-header:             #111214;   /* Dark header background */
+  --color-ui-surface-alt:        #232528;
+  --ui-glass-bg:                 rgba(26,27,30,0.92);
+  --ui-glass-border:             rgba(255,255,255,0.08);
+  --gradient-placeholder:        linear-gradient(150deg, #1A1B1D 0%, #232528 100%);
+  --card-shadow:                 0 4px 16px rgba(0,0,0,0.30);
+  --card-shadow-hover:           0 16px 36px rgba(0,0,0,0.50);
+
+  /* RGB triplets */
+  --color-brand-primary-rgb:     217,119,6;
+  --color-brand-secondary-rgb:   180,83,9;
+  --color-brand-accent-rgb:      217,119,6;
+  --color-brand-text-rgb:        243,244,246;
+  --color-brand-muted-rgb:       156,163,175;
+  --color-brand-error-rgb:       239,68,68;
+  --color-brand-success-rgb:     16,185,129;
+  --color-brand-warning-rgb:     245,158,11;
 }
 
 /* ── High contrast ──────────────────────────────────────────────────── */

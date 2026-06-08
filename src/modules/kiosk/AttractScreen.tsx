@@ -107,9 +107,11 @@ function BrandDoodles({ doodles }: { doodles: string[] }) {
             position: 'absolute',
             top: pos.top,
             ...(('left' in pos) ? { left: pos.left } : { right: (pos as { right: string }).right }),
-            fontSize: 56 + (i % 3) * 8, lineHeight: 1,
+            fontSize: `calc(var(--doodle-size-base, 56px) + ${(i % 3) * 8}px)`,
+            lineHeight: 1,
             opacity: pos.opacity,
             transform: `rotate(${pos.rot}deg)`,
+            transition: 'font-size 0.3s ease',
           }}>
             {emoji}
           </div>
@@ -249,11 +251,11 @@ const BADGE_ICONS = [
 
 function FeatureBadges({ labels }: { labels: string[] }) {
   return (
-    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center',
-      flexWrap: 'wrap', gap: 'clamp(6px,1.5vw,16px)', marginBottom: 'clamp(14px,2.5vh,24px)' }}>
+    <div className="feature-badges-container" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center',
+      flexWrap: 'wrap', gap: 'clamp(6px,1.5vw,16px)', marginBottom: 'var(--badges-margin-bottom)' }}>
       {labels.map((label, i) => (
         <span key={i} style={{ display: 'flex', alignItems: 'center', gap: 6,
-          fontSize: 'clamp(0.78rem,1.4vw,0.92rem)', fontWeight: 600, color: C.stone700 }}>
+          fontSize: 'var(--badge-font-size, clamp(0.78rem,1.4vw,0.92rem))', fontWeight: 600, color: C.stone700 }}>
           {BADGE_ICONS[i]}
           {label}
           {i < labels.length - 1 && (
@@ -271,12 +273,12 @@ function BrowseMenu({ categories, onStart, categoryIconMap }: { categories: Cate
   const { t } = useTranslation();
   return (
     <div style={{
-      flexShrink: 0, padding: 'clamp(14px,2.2vh,20px) clamp(16px,3vw,32px) clamp(10px,1.8vh,16px)',
+      flexShrink: 0, padding: 'var(--browse-menu-padding)',
       background: C.white, borderTop: `1px solid rgba(0,0,0,0.06)`,
     }}>
       {/* Section title with amber rules */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, justifyContent: 'center',
-        marginBottom: 'clamp(10px,1.8vh,16px)' }}>
+        marginBottom: 'var(--browse-menu-title-margin)' }}>
         <div style={{ flex: 1, height: 1.5, background: `linear-gradient(to right, transparent, ${C.amber})` }} />
         <span style={{ fontWeight: 800, fontSize: 'clamp(0.72rem,1.3vw,0.84rem)',
           color: C.amber, letterSpacing: '0.12em', textTransform: 'uppercase' as const }}>
@@ -286,21 +288,29 @@ function BrowseMenu({ categories, onStart, categoryIconMap }: { categories: Cate
       </div>
 
       {/* Category chips */}
-      <div style={{ display: 'flex', gap: 'clamp(8px,1.4vw,14px)', overflowX: 'auto',
-        scrollbarWidth: 'none', justifyContent: 'center', flexWrap: 'wrap' }}
-        className="no-scrollbar">
+      <div style={{
+        display: 'flex',
+        gap: 'var(--browse-chip-gap, clamp(8px,1.4vw,14px))',
+        overflowX: 'auto',
+        scrollbarWidth: 'none',
+        flexWrap: 'nowrap',
+        justifyContent: categories.length > 5 ? 'flex-start' : 'center',
+        paddingLeft: '12px',
+        paddingRight: '12px',
+      }}
+        className="no-scrollbar browse-chips-container">
         {categories.map((cat) => (
           <button key={cat.id} type="button"
             onClick={(e) => { e.stopPropagation(); onStart(); }}
             style={{
               flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'center',
-              gap: 6, padding: 'clamp(10px,1.6vh,14px) clamp(14px,2vw,20px)',
+              gap: 6, padding: 'var(--browse-chip-padding)',
               borderRadius: 'clamp(12px,1.8vw,18px)',
               background: C.white,
               border: `1.5px solid ${C.stone300}`,
               boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
               cursor: 'pointer', transition: 'all 140ms',
-              minWidth: 'clamp(72px,10vw,96px)',
+              minWidth: 'var(--browse-chip-min-width)',
             }}
             onMouseEnter={(e) => {
               const el = e.currentTarget as HTMLButtonElement;
@@ -313,15 +323,15 @@ function BrowseMenu({ categories, onStart, categoryIconMap }: { categories: Cate
               el.style.boxShadow = '0 2px 8px rgba(0,0,0,0.06)';
             }}
           >
-            <span style={{ fontSize: 'clamp(1.6rem,3vw,2rem)', lineHeight: 1 }}>
+            <span style={{ fontSize: 'var(--browse-chip-icon-size)', lineHeight: 1 }}>
               {catIcon(cat.name, categoryIconMap)}
             </span>
-            <span style={{ fontWeight: 700, fontSize: 'clamp(0.7rem,1.2vw,0.82rem)',
+            <span style={{ fontWeight: 700, fontSize: 'var(--browse-chip-font-size)',
               color: C.stone900, textAlign: 'center', lineHeight: 1.2 }}>
               {cat.name}
             </span>
             {(cat.itemCount ?? 0) > 0 && (
-              <span style={{ fontWeight: 700, fontSize: 'clamp(0.6rem,1vw,0.7rem)',
+              <span style={{ fontWeight: 700, fontSize: 'calc(var(--browse-chip-font-size) - 0.08rem)',
                 color: C.amber }}>
                 {padCount(cat.itemCount ?? 0)} Items
               </span>
@@ -342,7 +352,7 @@ function FooterBar() {
       flexShrink: 0,
       display: 'flex', alignItems: 'center', justifyContent: 'center',
       flexWrap: 'wrap', gap: '4px 24px',
-      padding: 'clamp(8px,1.4vh,12px) clamp(16px,3vw,32px)',
+      padding: 'var(--footer-padding)',
       background: 'rgba(255,255,255,0.75)',
       borderTop: `1px solid rgba(0,0,0,0.06)`,
       backdropFilter: 'blur(8px)',
@@ -435,6 +445,7 @@ export default function AttractScreenContent() {
 
   return (
     <div
+      className="attract-screen-root"
       style={{
         position:      'relative',
         display:       'flex',
@@ -447,6 +458,117 @@ export default function AttractScreenContent() {
       }}
       onClick={handleStart}
     >
+      <style>{`
+        .attract-screen-root {
+          /* Default / Portrait values */
+          --hero-padding: clamp(24px, 4vh, 48px) clamp(20px, 5vw, 80px) clamp(12px, 2vh, 24px);
+          --welcome-margin-bottom: clamp(6px, 1.2vh, 10px);
+          --welcome-font-size: clamp(0.7rem, 1.2vw, 0.82rem);
+          --hero-font-size: clamp(4rem, 12vw, 9rem);
+          --badges-margin-top: clamp(14px, 2.5vh, 22px);
+          --badges-margin-bottom: clamp(14px, 2.5vh, 24px);
+          --badge-font-size: clamp(0.78rem, 1.4vw, 0.92rem);
+          --instruction-margin-bottom: clamp(16px, 3vh, 28px);
+          --instruction-font-size: clamp(0.8rem, 1.5vw, 0.96rem);
+          
+          --cta-width: clamp(240px, 52vw, 440px);
+          --cta-height: clamp(58px, 8.5vh, 76px);
+          --cta-font-size: clamp(1rem, 2vw, 1.2rem);
+          --cta-icon-circle-size: clamp(34px, 5vw, 44px);
+          --cta-arrow-circle-size: clamp(28px, 4vw, 38px);
+          
+          --browse-menu-padding: clamp(14px, 2.2vh, 20px) clamp(16px, 3vw, 32px) clamp(10px, 1.8vh, 16px);
+          --browse-menu-title-margin: clamp(10px, 1.8vh, 16px);
+          --browse-chip-padding: clamp(10px, 1.6vh, 14px) clamp(14px, 2vw, 20px);
+          --browse-chip-min-width: clamp(72px, 10vw, 96px);
+          --browse-chip-icon-size: clamp(1.6rem, 3vw, 2rem);
+          --browse-chip-font-size: clamp(0.7rem, 1.2vw, 0.82rem);
+          
+          --doodle-size-base: 56px;
+          
+          --footer-padding: clamp(8px, 1.4vh, 12px) clamp(16px, 3vw, 32px);
+          --loader-margin-top: clamp(10px, 1.8vh, 16px);
+        }
+
+        /* Smooth orientation changes */
+        .attract-screen-root .hero-section-container,
+        .attract-screen-root .welcome-wrapper,
+        .attract-screen-root .order-title-container span,
+        .attract-screen-root .feature-badges-container,
+        .attract-screen-root .instruction-text,
+        .attract-screen-root button,
+        .attract-screen-root .browse-chips-container {
+          transition: all 0.25s ease-in-out;
+        }
+
+        /* Tablets and landscape viewports with restricted height */
+        @media (max-height: 768px) {
+          .attract-screen-root {
+            --hero-padding: clamp(14px, 2.5vh, 28px) clamp(16px, 4vw, 48px) clamp(10px, 1.8vh, 18px);
+            --welcome-margin-bottom: clamp(4px, 0.8vh, 8px);
+            --welcome-font-size: clamp(0.65rem, 1.2vh, 0.76rem);
+            --hero-font-size: clamp(2.8rem, 11vh, 5.5rem);
+            --badges-margin-top: clamp(8px, 1.8vh, 14px);
+            --badges-margin-bottom: clamp(8px, 1.8vh, 14px);
+            --badge-font-size: clamp(0.7rem, 1.2vh, 0.84rem);
+            --instruction-margin-bottom: clamp(10px, 2vh, 18px);
+            --instruction-font-size: clamp(0.72rem, 1.4vh, 0.84rem);
+            
+            --cta-width: clamp(210px, 45vw, 340px);
+            --cta-height: clamp(46px, 7.5vh, 56px);
+            --cta-font-size: clamp(0.85rem, 1.8vh, 1rem);
+            --cta-icon-circle-size: clamp(28px, 4.2vh, 34px);
+            --cta-arrow-circle-size: clamp(24px, 3vh, 30px);
+            
+            --browse-menu-padding: clamp(10px, 1.8vh, 16px) clamp(16px, 3vw, 32px) clamp(8px, 1.4vh, 12px);
+            --browse-menu-title-margin: clamp(8px, 1.4vh, 12px);
+            --browse-chip-padding: clamp(6px, 1.2vh, 10px) clamp(12px, 1.8vw, 16px);
+            --browse-chip-min-width: clamp(64px, 8vw, 84px);
+            --browse-chip-icon-size: clamp(1.2rem, 2.5vh, 1.6rem);
+            --browse-chip-font-size: clamp(0.65rem, 1.2vh, 0.76rem);
+            
+            --doodle-size-base: 36px;
+            
+            --footer-padding: clamp(6px, 1.2vh, 10px) clamp(16px, 3vw, 32px);
+            --loader-margin-top: clamp(6px, 1.2vh, 12px);
+          }
+        }
+
+        /* Very short screen heights (e.g. landscape kiosk/tablet) */
+        @media (max-height: 600px) {
+          .attract-screen-root {
+            --hero-padding: clamp(8px, 1.8vh, 16px) clamp(12px, 3vw, 32px) clamp(6px, 1.2vh, 12px);
+            --welcome-margin-bottom: clamp(2px, 0.5vh, 4px);
+            --hero-font-size: clamp(2.2rem, 12vh, 4.2rem);
+            --instruction-margin-bottom: clamp(6px, 1.5vh, 12px);
+            
+            --cta-width: clamp(180px, 40vw, 280px);
+            --cta-height: clamp(38px, 7vh, 46px);
+            --cta-font-size: clamp(0.78rem, 1.8vh, 0.9rem);
+            --cta-icon-circle-size: clamp(24px, 3.8vh, 28px);
+            --cta-arrow-circle-size: clamp(20px, 2.8vh, 24px);
+            
+            --browse-menu-padding: clamp(6px, 1.4vh, 12px) clamp(12px, 3vw, 24px) clamp(6px, 1.2vh, 10px);
+            --browse-menu-title-margin: clamp(6px, 1.2vh, 10px);
+            --browse-chip-padding: clamp(4px, 1vh, 8px) clamp(8px, 1.5vw, 12px);
+            --browse-chip-min-width: clamp(56px, 7vw, 76px);
+            --browse-chip-icon-size: clamp(1rem, 2.2vh, 1.3rem);
+            --browse-chip-font-size: clamp(0.6rem, 1.1vh, 0.7rem);
+            
+            --doodle-size-base: 24px;
+            --loader-margin-top: clamp(4px, 1vh, 8px);
+          }
+          
+          /* Hide non-essential layout blocks on very restricted heights to prevent overlap */
+          .attract-screen-root .feature-badges-container {
+            display: none !important;
+          }
+          .attract-screen-root .instruction-text {
+            display: none !important;
+          }
+        }
+      `}</style>
+
       {/* Age verification gate — Holiq brand only, once per session */}
       {showAgeGate && (
         <AgeVerificationGate
@@ -471,20 +593,20 @@ export default function AttractScreenContent() {
       </div>
 
       {/* ② Hero — fills remaining vertical space */}
-      <div style={{ flex: 1, position: 'relative', display: 'flex',
+      <div className="hero-section-container" style={{ flex: 1, position: 'relative', display: 'flex',
         flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-        padding: 'clamp(24px,4vh,48px) clamp(20px,5vw,80px) clamp(12px,2vh,24px)',
+        padding: 'var(--hero-padding)',
         textAlign: 'center', overflow: 'hidden' }}>
 
         <BrandDoodles doodles={brandDoodles} />
 
         {/* "WELCOME TO" with flanking rules */}
-        <div style={{ position: 'relative', zIndex: 2,
+        <div className="welcome-wrapper" style={{ position: 'relative', zIndex: 2,
           display: 'flex', alignItems: 'center', gap: 12,
-          marginBottom: 'clamp(6px,1.2vh,10px)', width: '100%', maxWidth: 520 }}>
+          marginBottom: 'var(--welcome-margin-bottom)', width: '100%', maxWidth: 520 }}>
           <div style={{ flex: 1, height: 1.5,
             background: `linear-gradient(to right, transparent, ${C.amber})` }} />
-          <span style={{ fontWeight: 800, fontSize: 'clamp(0.7rem,1.2vw,0.82rem)',
+          <span style={{ fontWeight: 800, fontSize: 'var(--welcome-font-size)',
             color: C.amber, letterSpacing: '0.14em', textTransform: 'uppercase' as const, whiteSpace: 'nowrap' }}>
             {t('attract.welcomeTo')}
           </span>
@@ -493,11 +615,11 @@ export default function AttractScreenContent() {
         </div>
 
         {/* "Order" — dark */}
-        <div style={{ position: 'relative', zIndex: 2, lineHeight: 0.88,
+        <div className="order-title-container" style={{ position: 'relative', zIndex: 2, lineHeight: 0.88,
           marginBottom: 0 }}>
           <span style={{
             display: 'block', fontWeight: 900,
-            fontSize: 'clamp(4rem,12vw,9rem)',
+            fontSize: 'var(--hero-font-size)',
             color: C.stone900, letterSpacing: '-0.048em', lineHeight: 0.9,
           }}>
             {t('attract.orderHero1')}
@@ -505,7 +627,7 @@ export default function AttractScreenContent() {
 
           {/* "Here." — amber with sparkle dots matching reference */}
           <span style={{ position: 'relative', display: 'inline-block', fontWeight: 900,
-            fontSize: 'clamp(4rem,12vw,9rem)',
+            fontSize: 'var(--hero-font-size)',
             color: C.amber, letterSpacing: '-0.048em', lineHeight: 0.9 }}>
             {t('attract.orderHero2')}
             {/* Decorative sparkle dots (reference has 3 orange dots beside the period) */}
@@ -529,7 +651,7 @@ export default function AttractScreenContent() {
         </div>
 
         {/* Feature badges */}
-        <div style={{ position: 'relative', zIndex: 2, marginTop: 'clamp(14px,2.5vh,22px)' }}>
+        <div className="feature-badges-container" style={{ position: 'relative', zIndex: 2, marginTop: 'var(--badges-margin-top)' }}>
           <FeatureBadges labels={[
             t('attract.badge1'),
             t('attract.badge2'),
@@ -538,9 +660,9 @@ export default function AttractScreenContent() {
         </div>
 
         {/* Instruction */}
-        <p style={{ position: 'relative', zIndex: 2,
-          margin: '0 0 clamp(16px,3vh,28px)',
-          fontWeight: 400, fontSize: 'clamp(0.8rem,1.5vw,0.96rem)',
+        <p className="instruction-text" style={{ position: 'relative', zIndex: 2,
+          margin: '0 0 var(--instruction-margin-bottom)',
+          fontWeight: 400, fontSize: 'var(--instruction-font-size)',
           color: C.stone500, letterSpacing: '0.01em' }}>
           {t('attract.tapToOrder')}
         </p>
@@ -553,13 +675,14 @@ export default function AttractScreenContent() {
             position:       'relative', zIndex: 2,
             display:        'flex', alignItems: 'center', justifyContent: 'center',
             gap:            'clamp(8px,1.5vw,14px)',
-            width:          'clamp(240px,52vw,440px)',
-            height:         'clamp(58px,8.5vh,76px)',
+            width:          'var(--cta-width)',
+            height:         'var(--cta-height)',
+            flexShrink:     0,
             borderRadius:   999,
             background:     `linear-gradient(135deg, ${C.amberLight}, ${C.amber})`,
             color:          C.white,
             fontWeight:     800,
-            fontSize:       'clamp(1rem,2vw,1.2rem)',
+            fontSize:       'var(--cta-font-size)',
             letterSpacing:  '-0.01em',
             border:         'none',
             cursor:         'pointer',
@@ -580,7 +703,7 @@ export default function AttractScreenContent() {
           {/* Fork & knife icon circle */}
           <span style={{
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            width: 'clamp(34px,5vw,44px)', height: 'clamp(34px,5vw,44px)',
+            width: 'var(--cta-icon-circle-size)', height: 'var(--cta-icon-circle-size)',
             borderRadius: '50%', background: 'rgba(255,255,255,0.22)', flexShrink: 0,
           }}>
             <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth={2} strokeLinecap="round"
@@ -595,7 +718,7 @@ export default function AttractScreenContent() {
           {/* Arrow icon */}
           <span style={{
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            width: 'clamp(28px,4vw,38px)', height: 'clamp(28px,4vw,38px)',
+            width: 'var(--cta-arrow-circle-size)', height: 'var(--cta-arrow-circle-size)',
             borderRadius: '50%', background: 'rgba(255,255,255,0.18)', flexShrink: 0,
           }}>
             <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth={2.5}
@@ -610,7 +733,7 @@ export default function AttractScreenContent() {
         {/* Catalogue loading indicator */}
         {catalogLoading && (
           <div style={{ position: 'relative', zIndex: 2,
-            marginTop: 'clamp(10px,1.8vh,16px)',
+            marginTop: 'var(--loader-margin-top)',
             display: 'flex', alignItems: 'center', gap: 6 }}>
             <span style={{ width: 7, height: 7, borderRadius: '50%',
               background: C.amber, display: 'block', animation: 'pulse 1.5s ease infinite' }} />

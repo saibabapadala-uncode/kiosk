@@ -17,6 +17,7 @@ import { getKioskChannelsDirect, type MerchantSalesChannel } from '@/services/st
 import { loadStoreDetails } from '@/services/storefront.service';
 import { useStoreConfigStore } from '@/store/storeConfigStore';
 import { logger } from '@/utils/logger';
+import { themeColors } from '@/utils/themeColors';
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
 
@@ -97,12 +98,12 @@ function SelectCard({
       {/* Text */}
       <div className="flex-1 min-w-0">
         <p className="font-semibold font-brand text-sm leading-tight truncate"
-          style={{ color: selected ? 'white' : '#111827' }}>
+          style={{ color: selected ? 'white' : themeColors.text }}>
           {title}
         </p>
         {subtitle && (
           <p className="font-brand text-xs mt-0.5 truncate"
-            style={{ color: selected ? 'rgba(255,255,255,0.75)' : '#6B7280' }}>
+            style={{ color: selected ? 'rgba(255,255,255,0.75)' : themeColors.muted }}>
             {subtitle}
           </p>
         )}
@@ -114,7 +115,7 @@ function SelectCard({
           className="flex-shrink-0 text-[10px] font-bold px-2 py-0.5 rounded-full"
           style={selected
             ? { background: 'rgba(255,255,255,0.20)', color: 'white' }
-            : { background: '#F3F4F6', color: '#6B7280' }}
+            : { background: themeColors.badgeBg, color: themeColors.muted }}
         >
           {badge}
         </span>
@@ -299,12 +300,12 @@ export default function LoginScreen() {
               style={{ background: 'rgba(254,215,170,0.25)' }} />
           </div>
 
-          {/* White card */}
+          {/* Card */}
           <div
             className="relative z-10 flex flex-col items-center w-full max-w-md mx-4 animate-fade-in-up"
             style={{
-              background:    '#FFFFFF',
-              border:        '1px solid #E5E7EB',
+              background:    themeColors.surface,
+              border:        `1px solid ${themeColors.border}`,
               borderRadius:  '1.75rem',
               boxShadow:     '0 8px 40px rgba(0,0,0,0.08), 0 1px 4px rgba(0,0,0,0.04)',
             }}
@@ -326,17 +327,17 @@ export default function LoginScreen() {
                   {kioskName[0]}
                 </div>
               )}
-              <h1 className="text-2xl font-bold font-brand" style={{ color: '#111827' }}>
+              <h1 className="text-2xl font-bold font-brand" style={{ color: themeColors.text }}>
                 {kioskName}
               </h1>
-              <p className="text-sm font-brand mt-0.5 text-center" style={{ color: '#6B7280' }}>
+              <p className="text-sm font-brand mt-0.5 text-center" style={{ color: themeColors.muted }}>
                 {subHeading}
               </p>
             </div>
 
             {/* Divider */}
             <div className="w-full px-8">
-              <div style={{ height: '1px', background: '#F3F4F6' }} />
+              <div style={{ height: '1px', background: themeColors.border }} />
             </div>
 
             {/* Form body */}
@@ -346,7 +347,7 @@ export default function LoginScreen() {
               {error && (
                 <div
                   className="flex flex-col gap-2.5 px-4 py-3 rounded-xl text-sm font-brand animate-fade-in"
-                  style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.20)', color: 'var(--color-brand-error)' }}
+                  style={{ background: 'rgba(255,107,107,0.10)', border: `1px solid ${themeColors.error}40`, color: themeColors.error }}
                   role="alert"
                 >
                   <div className="flex items-start gap-2.5">
@@ -383,12 +384,12 @@ export default function LoginScreen() {
                   <div className="flex flex-col gap-1.5">
                     <label htmlFor="login-email"
                       className="text-xs font-semibold font-brand uppercase tracking-wider"
-                      style={{ color: '#374151' }}>
+                      style={{ color: themeColors.text }}>
                       Email or Username
                     </label>
                     <div className="relative">
                       <div className="absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none"
-                        style={{ color: '#9CA3AF' }}>
+                        style={{ color: themeColors.muted }}>
                         <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round">
                           <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/>
                         </svg>
@@ -400,12 +401,12 @@ export default function LoginScreen() {
                         placeholder="Enter email or username"
                         autoComplete="email" autoCorrect="off" autoCapitalize="off" spellCheck={false}
                         className="w-full pl-10 pr-4 py-3.5 rounded-xl font-brand text-base focus:outline-none transition-colors"
-                        style={{ background: '#F9FAFB', border: '1.5px solid #E5E7EB', color: '#111827' }}
+                        style={{ background: themeColors.input, border: `1.5px solid ${themeColors.border}`, color: themeColors.text }}
                       />
                     </div>
                     {hasSaved && email && (
-                      <p className="text-xs font-brand flex items-center gap-1" style={{ color: '#6B7280' }}>
-                        <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="#22C55E" strokeWidth={2.5}>
+                      <p className="text-xs font-brand flex items-center gap-1" style={{ color: themeColors.muted }}>
+                        <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke={themeColors.success} strokeWidth={2.5}>
                           <polyline points="20 6 9 17 4 12"/>
                         </svg>
                         Stored credentials loaded
@@ -417,12 +418,12 @@ export default function LoginScreen() {
                   <div className="flex flex-col gap-1.5">
                     <label htmlFor="login-password"
                       className="text-xs font-semibold font-brand uppercase tracking-wider"
-                      style={{ color: '#374151' }}>
+                      style={{ color: themeColors.text }}>
                       Password
                     </label>
                     <div className="relative">
                       <div className="absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none"
-                        style={{ color: '#9CA3AF' }}>
+                        style={{ color: themeColors.muted }}>
                         <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round">
                           <rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/>
                         </svg>
@@ -434,7 +435,7 @@ export default function LoginScreen() {
                         onKeyDown={handleKeyDown}
                         placeholder="Enter password" autoComplete="current-password"
                         className="w-full pl-10 pr-12 py-3.5 rounded-xl font-brand text-base focus:outline-none"
-                        style={{ background: '#F9FAFB', border: '1.5px solid #E5E7EB', color: '#111827' }}
+                        style={{ background: themeColors.input, border: `1.5px solid ${themeColors.border}`, color: themeColors.text }}
                       />
                       <button type="button" onClick={() => setShowPwd((v) => !v)}
                         aria-label={showPwd ? 'Hide password' : 'Show password'}
@@ -442,7 +443,7 @@ export default function LoginScreen() {
                           position: 'absolute', right: '0.875rem', top: '50%',
                           transform: 'translateY(-50%)', background: 'transparent',
                           border: 'none', padding: '0.25rem', margin: 0, boxShadow: 'none',
-                          outline: 'none', cursor: 'pointer', color: '#9CA3AF', lineHeight: 0,
+                          outline: 'none', cursor: 'pointer', color: themeColors.muted, lineHeight: 0,
                           display: 'flex', alignItems: 'center', justifyContent: 'center',
                           '--background': 'transparent', '--background-hover': 'transparent',
                           '--background-activated': 'transparent', '--border-color': 'transparent',
@@ -459,14 +460,14 @@ export default function LoginScreen() {
               {step === 'loading' && (
                 <div className="flex flex-col items-center justify-center gap-4 py-6 animate-fade-in">
                   <Spinner size="lg" variant="brand" />
-                  <p className="font-brand text-sm" style={{ color: '#374151' }}>{loadingMessage}</p>
+                  <p className="font-brand text-sm" style={{ color: themeColors.text }}>{loadingMessage}</p>
                 </div>
               )}
 
               {/* ── STEP: channel-select ──────────────────────────────────── */}
               {step === 'channel-select' && (
                 <div className="flex flex-col gap-3 animate-fade-in">
-                  <p className="text-xs font-brand" style={{ color: '#6B7280' }}>
+                  <p className="text-xs font-brand" style={{ color: themeColors.muted }}>
                     {channels.length} kiosk channel{channels.length !== 1 ? 's' : ''} available
                   </p>
 
@@ -534,7 +535,7 @@ export default function LoginScreen() {
                   type="button"
                   onClick={() => history.replace('/brand-select')}
                   className="text-xs font-brand text-center"
-                  style={{ background: 'transparent', border: 'none', color: '#9CA3AF', cursor: 'pointer' }}
+                  style={{ background: 'transparent', border: 'none', color: themeColors.muted, cursor: 'pointer' }}
                 >
                   ← Change Brand
                 </button>
@@ -543,7 +544,7 @@ export default function LoginScreen() {
 
             {/* Footer */}
             <div className="w-full px-8 pb-6 text-center">
-              <p className="text-xs font-brand" style={{ color: '#9CA3AF' }}>
+              <p className="text-xs font-brand" style={{ color: themeColors.muted }}>
                 Kiosk Application · {kioskName}
               </p>
             </div>

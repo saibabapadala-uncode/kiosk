@@ -9,7 +9,9 @@
       "WebSearch",
       "WebFetch(domain:mobbin.com)",
       "WebFetch(domain:brand.toasttab.com)",
-      "Bash(npx tsc *)"
+      "Bash(npx tsc *)",
+      "Bash(Get-ChildItem -Path \"d:\\\\merchant_New_design\\\\Holiq_Active_ext-t-store-p\" -Directory)",
+      "Bash(Select-Object Name)"
     ]
   }
 }

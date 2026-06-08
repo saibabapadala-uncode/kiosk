@@ -83,20 +83,31 @@
 
 /* ── Dark mode ─────────────────────────────────────────────────────── */
 :root[data-brand='restro'][data-theme='dark'] {
-  --color-brand-bg:          #021A0B;
-  --color-brand-surface:     #062312;
-  --color-brand-surface-alt: #0B3019;
-  --color-brand-text:        #DCFCE7;
-  --color-brand-muted:       #86EFAC;
-  --color-brand-border:      rgba(22,163,74,0.20);
-  --color-ui-card:           #062312;
-  --color-ui-sidebar:        #021A0B;
-  --color-ui-header:         #021A0B;
-  --ui-glass-bg:             rgba(2,26,11,0.93);
-  --ui-glass-border:         rgba(22,163,74,0.15);
-  --gradient-placeholder:    linear-gradient(150deg, #062312 0%, #0B3019 100%);
-  --card-shadow:             0 2px 10px rgba(0,0,0,0.40);
-  --card-shadow-hover:       0 14px 34px rgba(0,0,0,0.60);
+  --color-brand-bg:          #111214;   /* Deep charcoal/black main background */
+  --color-brand-surface:     #1A1B1D;   /* Dark charcoal for card surfaces */
+  --color-brand-surface-alt: #232528;   /* Medium charcoal for inputs / nesting */
+  --color-brand-text:            #F3F4F6;   /* Off-white primary text */
+  --color-brand-muted:           #9CA3AF;   /* Cool gray secondary text */
+  --color-brand-border:          #26282C;   /* Subtle dark borders */
+  --color-ui-card:               #1A1B1D;
+  --color-ui-sidebar:            #111214;
+  --color-ui-header:             #111214;
+  --color-ui-surface-alt:        #232528;
+  --ui-glass-bg:                 rgba(26,27,30,0.92);
+  --ui-glass-border:             rgba(255,255,255,0.08);
+  --gradient-placeholder:        linear-gradient(150deg, #1A1B1D 0%, #232528 100%);
+  --card-shadow:                 0 4px 16px rgba(0,0,0,0.30);
+  --card-shadow-hover:           0 16px 36px rgba(0,0,0,0.50);
+
+  /* RGB triplets */
+  --color-brand-primary-rgb:     22,163,74;
+  --color-brand-secondary-rgb:   21,128,61;
+  --color-brand-accent-rgb:      74,222,128;
+  --color-brand-text-rgb:        243,244,246;
+  --color-brand-muted-rgb:       156,163,175;
+  --color-brand-error-rgb:       239,68,68;
+  --color-brand-success-rgb:     16,185,129;
+  --color-brand-warning-rgb:     245,158,11;
 }
 
 /* ── High contrast ──────────────────────────────────────────────────── */

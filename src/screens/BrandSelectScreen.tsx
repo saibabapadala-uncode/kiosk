@@ -7,6 +7,7 @@ import { IonPage, IonContent, useIonViewWillEnter } from '@ionic/react';
 import { useHistory } from 'react-router-dom';
 import { useSettingsStore } from '@/store/settingsStore';
 import type { BrandId } from '@/brands/types';
+import { themeColors } from '@/utils/themeColors';
 
 // ─── Inline brand definitions ─────────────────────────────────────────────────
 
@@ -62,14 +63,14 @@ function BrandCard({
       onClick={onClick}
       onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') onClick(); }}
       style={{
-        background:    '#FFFFFF',
+        background:    themeColors.surface,
         borderRadius:  '1.25rem',
         boxShadow:     selected
-          ? `0 4px 24px ${brand.primary}33, 0 1px 4px rgba(0,0,0,0.06)`
-          : '0 2px 12px rgba(0,0,0,0.07), 0 1px 3px rgba(0,0,0,0.04)',
+          ? `0 4px 24px ${brand.primary}33, var(--ui-card-shadow)`
+          : 'var(--card-shadow)',
         border:        selected
           ? `2.5px solid ${brand.primary}`
-          : '1.5px solid #E5E7EB',
+          : `1.5px solid ${themeColors.border}`,
         minHeight:     '180px',
         padding:       '1.5rem',
         cursor:        'pointer',
@@ -127,20 +128,21 @@ function BrandCard({
 
       {/* Text */}
       <div style={{ flex: 1, minWidth: 0 }}>
-        <p style={{ fontWeight: 700, fontSize: '1.0625rem', lineHeight: 1.2, color: '#111827', margin: 0 }}>
+        <p style={{ fontWeight: 700, fontSize: '1.0625rem', lineHeight: 1.2, color: themeColors.text, margin: 0, fontFamily: 'var(--font-brand)' }}>
           {brand.name}
         </p>
         <p style={{
           fontSize:      '0.75rem',
-          fontWeight:    600,
+          fontWeight:    700,
           color:         brand.primary,
           margin:        '0.25rem 0 0.375rem',
           textTransform: 'uppercase',
           letterSpacing: '0.04em',
+          fontFamily:    'var(--font-brand)',
         }}>
           {brand.type}
         </p>
-        <p style={{ fontSize: '0.8125rem', color: '#6B7280', margin: 0, lineHeight: 1.4 }}>
+        <p style={{ fontSize: '0.8125rem', color: themeColors.muted, margin: 0, lineHeight: 1.4, fontFamily: 'var(--font-brand)' }}>
           {brand.description}
         </p>
       </div>
@@ -149,7 +151,7 @@ function BrandCard({
       <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem' }}>
         <div style={{ width: '1rem', height: '1rem', borderRadius: '50%', background: brand.primary, flexShrink: 0 }} />
         <div style={{ width: '0.75rem', height: '0.75rem', borderRadius: '50%', background: brand.secondary, flexShrink: 0 }} />
-        <span style={{ fontSize: '0.6875rem', color: '#9CA3AF', fontFamily: 'monospace', marginLeft: '0.125rem' }}>
+        <span style={{ fontSize: '0.6875rem', color: themeColors.muted, fontFamily: 'monospace', marginLeft: '0.125rem' }}>
           {brand.primary}
         </span>
       </div>
@@ -168,7 +170,7 @@ function BrandCard({
             ? `linear-gradient(135deg, ${brand.primary} 0%, ${brand.secondary} 100%)`
             : `${brand.primary}18`,
           color:        selected ? '#FFFFFF' : brand.primary,
-          fontWeight:   600,
+          fontWeight:   700,
           fontSize:     '0.875rem',
           cursor:       'pointer',
           display:      'flex',
@@ -179,6 +181,7 @@ function BrandCard({
           boxShadow:    selected ? `0 2px 8px ${brand.primary}40` : 'none',
           outline:      'none',
           flexShrink:   0,
+          fontFamily:   'var(--font-brand)',
         }}
       >
         {selected ? (
@@ -244,7 +247,7 @@ export default function BrandSelectScreen() {
       <IonContent fullscreen scrollY>
         <div style={{
           minHeight:      '100%',
-          background:     '#F8FAFC',
+          background:     themeColors.bg,
           display:        'flex',
           flexDirection:  'column',
           alignItems:     'center',
@@ -253,10 +256,10 @@ export default function BrandSelectScreen() {
 
           {/* Header */}
           <div style={{
-            background:    '#FFFFFF',
+            background:    themeColors.surface,
             borderRadius:  '1.25rem',
-            boxShadow:     '0 2px 12px rgba(0,0,0,0.07)',
-            border:        '1px solid #E5E7EB',
+            boxShadow:     'var(--ui-card-shadow)',
+            border:        `1px solid ${themeColors.border}`,
             padding:       '2rem 2.5rem',
             textAlign:     'center',
             marginBottom:  '2rem',
@@ -267,13 +270,14 @@ export default function BrandSelectScreen() {
               margin:        0,
               fontSize:      'clamp(1.5rem, 4vw, 2rem)',
               fontWeight:    800,
-              color:         '#111827',
+              color:         themeColors.text,
               letterSpacing: '-0.02em',
               lineHeight:    1.2,
+              fontFamily:    'var(--font-brand)',
             }}>
               Choose Your Brand
             </h1>
-            <p style={{ margin: '0.5rem 0 0', fontSize: '1rem', color: '#6B7280', lineHeight: 1.5 }}>
+            <p style={{ margin: '0.5rem 0 0', fontSize: '1rem', color: themeColors.muted, lineHeight: 1.5, fontFamily: 'var(--font-brand)' }}>
               {selectedId
                 ? `${BRANDS.find(b => b.id === selectedId)?.name} selected — tap again to continue`
                 : 'Tap a brand to select it, then tap again to continue'}
@@ -314,7 +318,7 @@ export default function BrandSelectScreen() {
                   minHeight:    '56px',
                   borderRadius: '1rem',
                   border:       'none',
-                  background:   confirming ? '#9CA3AF' :
+                  background:   confirming ? themeColors.muted :
                     `linear-gradient(135deg, ${BRANDS.find(b => b.id === selectedId)!.primary} 0%, ${BRANDS.find(b => b.id === selectedId)!.secondary} 100%)`,
                   color:        '#FFFFFF',
                   fontWeight:   700,
@@ -328,6 +332,7 @@ export default function BrandSelectScreen() {
                   opacity:      confirming ? 0.7 : 1,
                   boxShadow:    confirming ? 'none' :
                     `0 6px 20px ${BRANDS.find(b => b.id === selectedId)!.primary}40`,
+                  fontFamily:   'var(--font-brand)',
                 }}
               >
                 {confirming ? (
@@ -351,9 +356,10 @@ export default function BrandSelectScreen() {
           <p style={{
             marginTop:     '2.5rem',
             fontSize:      '0.75rem',
-            color:         '#9CA3AF',
+            color:         themeColors.muted,
             textAlign:     'center',
             letterSpacing: '0.01em',
+            fontFamily:    'var(--font-brand)',
           }}>
             Powered by AJR Kiosk
           </p>

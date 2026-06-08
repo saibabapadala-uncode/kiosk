@@ -12,6 +12,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useSettingsStore } from '@/store/settingsStore';
+import { themeColors, themeRGBA } from '@/utils/themeColors';
 
 const PIN_LENGTH = 4;
 
@@ -93,6 +94,10 @@ export default function StaffPinModal({ isOpen, onSuccess, onCancel }: Props) {
   // Don't render anything when PIN gate is disabled or modal is closed
   if (!isOpen || !staffPinEnabled) return null;
 
+  const overlayBg = 'var(--color-ui-overlay)';
+  const bodyBg = themeColors.surface;
+  const borderCol = themeColors.border;
+
   return (
     <div
       role="dialog"
@@ -105,7 +110,7 @@ export default function StaffPinModal({ isOpen, onSuccess, onCancel }: Props) {
         display:        'flex',
         alignItems:     'center',
         justifyContent: 'center',
-        background:     'rgba(0,0,0,0.55)',
+        background:     overlayBg,
         backdropFilter: 'blur(6px)',
         padding:        '24px',
       }}
@@ -113,9 +118,10 @@ export default function StaffPinModal({ isOpen, onSuccess, onCancel }: Props) {
     >
       <div
         style={{
-          background:    '#FFFFFF',
+          background:    bodyBg,
           borderRadius:  '24px',
-          boxShadow:     '0 24px 64px rgba(0,0,0,0.22)',
+          boxShadow:     'var(--ui-shadow)',
+          border:        `1px solid ${borderCol}`,
           padding:       '32px 28px 28px',
           width:         '100%',
           maxWidth:      '340px',
@@ -142,13 +148,13 @@ export default function StaffPinModal({ isOpen, onSuccess, onCancel }: Props) {
         `}</style>
 
         {/* Header */}
-        <div style={{ textAlign: 'center' }}>
+        <div style={{ textAlign: 'center', width: '100%' }}>
           <div style={{
             width: 48, height: 48, borderRadius: '50%',
-            background: 'linear-gradient(135deg,#F59E0B,#F97316)',
+            background: 'var(--gradient-cta)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             margin: '0 auto 12px',
-            boxShadow: '0 4px 14px rgba(245,158,11,0.35)',
+            boxShadow: '0 4px 14px rgba(var(--color-brand-primary-rgb),0.35)',
           }}>
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none"
               stroke="white" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
@@ -156,21 +162,22 @@ export default function StaffPinModal({ isOpen, onSuccess, onCancel }: Props) {
               <path d="M7 11V7a5 5 0 0110 0v4"/>
             </svg>
           </div>
-          <h2 style={{ margin: 0, fontWeight: 800, fontSize: '1.2rem', color: '#111827', letterSpacing: '-0.02em' }}>
+          <h2 style={{ margin: 0, fontWeight: 800, fontSize: '1.2rem', color: themeColors.text, letterSpacing: '-0.02em', fontFamily: 'var(--font-brand)' }}>
             Staff Access
           </h2>
-          <p style={{ margin: '4px 0 0', fontSize: '0.82rem', color: '#6B7280' }}>
+          <p style={{ margin: '4px 0 0', fontSize: '0.82rem', color: themeColors.muted, fontFamily: 'var(--font-brand)' }}>
             Enter your 4-digit PIN to continue
           </p>
           {/* Hint shown only while the factory-default PIN has not been changed */}
           {staffPin === '1234' && (
             <div style={{
-              marginTop: 10, padding: '8px 12px', borderRadius: 10,
-              background: '#FFFBEB', border: '1px solid #FDE68A',
+              marginTop: 12, padding: '8px 12px', borderRadius: 12,
+              background: themeRGBA('warning', 0.12), border: `1.5px solid ${themeRGBA('warning', 0.3)}`,
               display: 'flex', alignItems: 'flex-start', gap: 7,
+              textAlign: 'left',
             }}>
               <span style={{ fontSize: '0.9rem', lineHeight: 1 }}>⚠️</span>
-              <p style={{ margin: 0, fontSize: '0.76rem', color: '#92400E', lineHeight: 1.45 }}>
+              <p style={{ margin: 0, fontSize: '0.76rem', color: 'var(--color-brand-primary)', lineHeight: 1.45, fontFamily: 'var(--font-brand)' }}>
                 Default PIN is active.&nbsp;
                 <strong>Enter 1234</strong> to continue, then change it in
                 Settings → Kiosk Behavior.
@@ -183,13 +190,14 @@ export default function StaffPinModal({ isOpen, onSuccess, onCancel }: Props) {
         <div style={{ display: 'flex', gap: 14, alignItems: 'center' }}>
           {Array.from({ length: PIN_LENGTH }).map((_, i) => {
             const filled = i < digits.length;
+            const activeColor = error ? themeColors.error : themeColors.primary;
             return (
               <div key={i} style={{
                 width:        filled ? 18 : 14,
                 height:       filled ? 18 : 14,
                 borderRadius: '50%',
-                background:   filled ? (error ? '#DC2626' : '#F59E0B') : 'transparent',
-                border:       `2px solid ${filled ? (error ? '#DC2626' : '#F59E0B') : '#D1D5DB'}`,
+                background:   filled ? activeColor : 'transparent',
+                border:       `2px solid ${filled ? activeColor : themeColors.border}`,
                 transition:   'all 150ms cubic-bezier(0.34,1.56,0.64,1)',
               }} />
             );
@@ -199,7 +207,7 @@ export default function StaffPinModal({ isOpen, onSuccess, onCancel }: Props) {
         {/* Error */}
         <div style={{ height: 18, display: 'flex', alignItems: 'center' }}>
           {error && (
-            <p style={{ margin: 0, fontSize: '0.78rem', color: '#DC2626', fontWeight: 600 }}>
+            <p style={{ margin: 0, fontSize: '0.78rem', color: themeColors.error, fontWeight: 600, fontFamily: 'var(--font-brand)' }}>
               {error}
             </p>
           )}
@@ -216,16 +224,23 @@ export default function StaffPinModal({ isOpen, onSuccess, onCancel }: Props) {
                 aria-label={isBack ? 'Delete' : key}
                 style={{
                   height: 64, borderRadius: 16,
-                  border: '1.5px solid #E5E7EB',
-                  background: isBack ? '#F9FAFB' : '#FFFFFF',
-                  color: '#111827',
+                  border: `1.5px solid ${themeColors.border}`,
+                  background: isBack ? themeColors.surfaceAlt : themeColors.surface,
+                  color: themeColors.text,
                   fontWeight: isBack ? 500 : 700,
                   fontSize:   isBack ? '1.1rem' : '1.4rem',
                   cursor: 'pointer',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                   transition: 'transform 100ms, background 100ms',
                   userSelect: 'none',
-                  boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
+                  boxShadow: 'var(--ui-card-shadow)',
+                  fontFamily: 'var(--font-brand)',
+                }}
+                onMouseEnter={(e) => {
+                  (e.currentTarget as HTMLButtonElement).style.borderColor = 'var(--color-brand-primary)';
+                }}
+                onMouseLeave={(e) => {
+                  (e.currentTarget as HTMLButtonElement).style.borderColor = themeColors.border;
                 }}
               >
                 {key}
@@ -239,9 +254,13 @@ export default function StaffPinModal({ isOpen, onSuccess, onCancel }: Props) {
           style={{
             background: 'transparent', border: 'none',
             padding: '4px 16px', fontSize: '0.84rem',
-            color: '#9CA3AF', fontWeight: 500,
+            color: themeColors.muted, fontWeight: 500,
             cursor: 'pointer', borderRadius: 8,
+            fontFamily: 'var(--font-brand)',
+            transition: 'color 150ms',
           }}
+          onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.color = themeColors.text; }}
+          onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.color = themeColors.muted; }}
         >
           Cancel
         </button>

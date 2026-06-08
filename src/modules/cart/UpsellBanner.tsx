@@ -5,6 +5,8 @@ import { getStaticRecommendations } from '@/services/static.catalog';
 import { formatPrice } from '@/utils/format';
 import type { Product } from '@/types/catalog';
 
+import { themeRGBA } from '@/utils/themeColors';
+
 // ─── Mini card for upsell items ────────────────────────────────────────────────
 
 function UpsellCard({ product }: { product: Product }) {
@@ -88,7 +90,7 @@ export default function UpsellBanner() {
   if (!data?.length) return null;
 
   return (
-    <section aria-labelledby="upsell-title" className="py-3 border-b border-brand-border" style={{ background: '#FFF8E7' }}>
+    <section aria-labelledby="upsell-title" className="py-3 border-b border-brand-border" style={{ background: themeRGBA('primary', 0.08) }}>
       <h3
         id="upsell-title"
         className="text-xs font-bold font-brand text-brand-muted uppercase tracking-wider px-4 mb-2"

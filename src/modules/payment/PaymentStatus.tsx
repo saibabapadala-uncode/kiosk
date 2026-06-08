@@ -68,12 +68,12 @@ function Succeeded() {
         <div
           className="absolute inset-0 rounded-full"
           style={{
-            background:  'linear-gradient(135deg, var(--color-brand-success), #16a34a)',
-            boxShadow:   '0 0 0 0 rgba(34,197,94,0), 0 8px 40px rgba(34,197,94,0.45)',
+            background:  'var(--color-brand-success)',
+            boxShadow:   '0 8px 40px rgba(34,197,94,0.35)',
           }}
         />
         <div className="absolute inset-0 flex items-center justify-center">
-          <svg viewBox="0 0 48 48" className="w-16 h-16" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+          <svg viewBox="0 0 48 48" className="w-16 h-16" fill="none" stroke="white" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round">
             <polyline points="10,24 20,34 38,14" className="animate-check-draw"/>
           </svg>
         </div>
@@ -102,9 +102,9 @@ function Failed({ error, onRetry, onCancel }: { error?: string | null; onRetry?:
       {/* Error icon */}
       <div
         className="w-24 h-24 rounded-full flex items-center justify-center"
-        style={{ background: 'rgba(239,68,68,0.12)', border: '2px solid rgba(239,68,68,0.25)' }}
+        style={{ background: 'rgba(255,107,107,0.12)', border: '2px solid rgba(255,107,107,0.25)' }}
       >
-        <svg className="w-10 h-10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" style={{ color: 'var(--color-brand-error)' }}>
+        <svg className="w-10 h-10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" style={{ color: 'var(--color-brand-error)' }}>
           <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
         </svg>
       </div>
@@ -122,12 +122,12 @@ function Failed({ error, onRetry, onCancel }: { error?: string | null; onRetry?:
 
       <div className="flex flex-col sm:flex-row gap-3 w-full max-w-xs">
         {onRetry && (
-          <button onClick={onRetry} className="ui-btn-primary flex-1 py-4 text-base" style={{ borderRadius: 'var(--radius-2xl)' }}>
+          <button onClick={onRetry} className="ui-btn-primary flex-1 py-4 text-base font-bold" style={{ borderRadius: 'var(--radius-2xl)' }}>
             {t('payment.tryAgain')}
           </button>
         )}
         {onCancel && (
-          <button onClick={onCancel} className="flex-1 py-4 rounded-2xl font-brand font-semibold text-base transition-all active:scale-95"
+          <button onClick={onCancel} className="flex-1 py-4 rounded-2xl font-brand font-bold text-base transition-all active:scale-95 border"
             style={{ border: '1.5px solid var(--ui-glass-border)', color: 'var(--color-brand-text)', background: 'transparent' }}>
             {t('payment.goBack')}
           </button>
