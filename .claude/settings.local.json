@@ -11,7 +11,9 @@
       "WebFetch(domain:brand.toasttab.com)",
       "Bash(npx tsc *)",
       "Bash(Get-ChildItem -Path \"d:\\\\merchant_New_design\\\\Holiq_Active_ext-t-store-p\" -Directory)",
-      "Bash(Select-Object Name)"
+      "Bash(Select-Object Name)",
+      "PowerShell(node --version; npm --version; java -version 2>&1; echo \"ANDROID_HOME: $env:ANDROID_HOME\"; echo \"ANDROID_SDK_ROOT: $env:ANDROID_SDK_ROOT\")",
+      "PowerShell(ls d:\\\\AJR_Kiosk\\\\android\\\\app\\\\src\\\\main\\\\ -Recurse | Where-Object { -not $_.PSIsContainer } | Select-Object FullName)"
     ]
   }
 }

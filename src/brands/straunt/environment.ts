@@ -172,6 +172,17 @@ export const strauntEnvironment: BrandEnvironment = {
     'curry':     '🍛',
   },
 
+  altPayment: {
+    // Industry ID for Straunt — sent as `industry_id` in phone-pay API calls.
+    // Override with VITE_STRAUNT_INDUSTRY_ID in your .env file.
+    industryId:           import.meta.env.VITE_STRAUNT_INDUSTRY_ID           || '',
+    // Default / anonymous customer used for QR-Pay cart creation.
+    defaultCustomerId:    import.meta.env.VITE_STRAUNT_DEFAULT_CUSTOMER_ID   || '',
+    defaultCustomerPhone: import.meta.env.VITE_STRAUNT_DEFAULT_PHONE         || '0000000000',
+    // Base URL for the anonymous cart viewer (QR code destination).
+    anonymousProjectUrl:  import.meta.env.VITE_ANONYMOUS_PROJECT_URL         || 'https://straunt.com',
+  },
+
   searchHints: [
     'What are you craving today?',
     'Search for chicken wings…',

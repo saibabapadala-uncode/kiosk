@@ -9,7 +9,7 @@ import { useSessionStore } from '@/store/sessionStore';
 import { formatPrice } from '@/utils/format';
 import CartItem from '@/modules/cart/CartItem';
 import CartSummary from '@/modules/cart/CartSummary';
-import UpsellBanner from '@/modules/cart/UpsellBanner';
+
 
 export default function CartScreen() {
   const { t }      = useTranslation();
@@ -64,9 +64,6 @@ export default function CartScreen() {
                   <CartItem key={item.cartItemId} item={item} />
                 ))}
               </div>
-
-              {/* Upsell */}
-              <UpsellBanner />
 
               {/* Summary */}
               <div className="px-4 pt-4 pb-2">

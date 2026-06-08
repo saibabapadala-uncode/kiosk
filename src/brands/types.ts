@@ -165,4 +165,41 @@ export interface BrandEnvironment {
    * Falls back to generic hints when absent.
    */
   searchHints?: string[];
+
+  /**
+   * Configuration for alternative payment methods (Phone Pay / QR Pay).
+   * These mirror fields from kiosk_straunt_storefront's merchant-details config
+   * and are needed to call the uncodeapi.com payment gateway correctly.
+   * Optional — when absent, Phone Pay and QR Pay are hidden.
+   */
+  altPayment?: BrandAltPaymentConfig;
+}
+
+// ─── Alternative payment config ───────────────────────────────────────────────
+
+export interface BrandAltPaymentConfig {
+  /**
+   * Industry identifier for the brand — sent as `industry_id` in the phone
+   * order access-key request. Comes from the store details in the old project
+   * (storeDetails.store.industry_id); stored here for offline/fast access.
+   */
+  industryId: string;
+
+  /**
+   * Default / anonymous customer ID used for QR Pay cart creation.
+   * The old project uses marchantDetails[env].default_customer.id.
+   */
+  defaultCustomerId: string;
+
+  /**
+   * Default / anonymous customer phone number used for QR Pay cart creation.
+   */
+  defaultCustomerPhone: string;
+
+  /**
+   * Base URL for the anonymous cart / AI-cart viewer.
+   * QR URL format: {anonymousProjectUrl}/aicart/{storeCode}/{customerId}/{suId}
+   * Example: 'https://straunt.com'
+   */
+  anonymousProjectUrl: string;
 }

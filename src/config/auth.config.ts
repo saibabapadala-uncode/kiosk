@@ -63,4 +63,20 @@ export const AUTH_CONFIG = {
 
   // ── Token renewal window ─────────────────────────────────────────────────────
   TOKEN_RENEWAL_INTERVAL_MS: 15 * 60 * 1000,
+
+  // ── Alternative payment method endpoints (Phone Pay + QR Pay) ───────────────
+  // These mirror the kiosk_straunt_storefront constants and call into the
+  // uncodeapi.com / uncodesoftware.com gateway layer — different base URLs from
+  // the main brand API (settings.api.apiBaseUrl).
+  //
+  // Defaults point to the production uncodeapi gateway.
+  // Override per-environment with VITE_ prefixed env vars in .env.* files.
+  ALT_PAYMENT_BASE_URL:    e.VITE_ALT_PAYMENT_BASE_URL    || 'https://api.uncodeapi.com/v1',
+  ALT_PAYMENT_APP_ID:      e.VITE_ALT_PAYMENT_APP_ID      || 'e7792b2df8864e058a2e9a462cfcf249',
+  ALT_PAYMENT_GATEWAY_URL: e.VITE_ALT_PAYMENT_GATEWAY_URL || 'https://gateway.uncodesoftware.com/api',
+  ALT_PAYMENT_API_KEY:     e.VITE_ALT_PAYMENT_API_KEY     || 'becca70d6ea142689e647de3351a4e4d',
+
+  // ── Payment session ──────────────────────────────────────────────────────────
+  /** Seconds before an alternative-payment (phone/QR) session expires */
+  ALT_PAYMENT_SESSION_SECONDS: 120,
 } as const;

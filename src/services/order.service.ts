@@ -9,6 +9,7 @@ import { useSessionStore } from '@/store/sessionStore';
 import { useSettingsStore } from '@/store/settingsStore';
 import { usePaymentStore } from '@/store/paymentStore';
 import { USE_STATIC_PAYMENT_FLOW, delay, getFlowDelay } from './stripe/static.mock';
+import type { PaymentMethod } from '@/types/altPayment';
 
 // ─── Payload type ──────────────────────────────────────────────────────────────
 
@@ -35,6 +36,8 @@ export interface OrderPayload {
   tipAmount: number;
   total: number;
   paymentIntentId: string | null;
+  /** Which physical tender was used: 'card' (Stripe Terminal), 'phone', or 'qr'. */
+  paymentMethod: PaymentMethod;
   currency: 'usd';
   locale: string;
   timezone: string;
@@ -113,6 +116,7 @@ function buildPayload(): OrderPayload {
     tipAmount,
     total,
     paymentIntentId,
+    paymentMethod: 'card',
     currency: 'usd',
     locale: localization.locale,
     timezone: localization.timezone,
@@ -127,9 +131,13 @@ function buildPayload(): OrderPayload {
  * On network failure the payload is added to an offline queue and
  * automatically retried when connectivity is restored.
  * Never throws — calling code does not need to handle errors here.
+ *
+ * @param overrides  Optional field overrides — used by alt-payment methods to
+ *                   supply the correct paymentMethod ('phone' | 'qr') since
+ *                   they don't go through Stripe Terminal.
  */
-export async function submitOrder(): Promise<void> {
-  const payload = buildPayload();
+export async function submitOrder(overrides?: Partial<OrderPayload>): Promise<void> {
+  const payload = { ...buildPayload(), ...overrides };
 
   if (USE_STATIC_PAYMENT_FLOW) {
     await delay(getFlowDelay('submitOrderMs', 300));

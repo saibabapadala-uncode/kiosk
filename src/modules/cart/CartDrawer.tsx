@@ -9,7 +9,7 @@ import { useProductPanelStore } from '@/store/productPanelStore';
 import { formatPrice } from '@/utils/format';
 import CartItem from './CartItem';
 import CartSummary from './CartSummary';
-import UpsellBanner from './UpsellBanner';
+
 
 // ─── Floating cart button ──────────────────────────────────────────────────────
 
@@ -181,8 +181,7 @@ export default function CartDrawer() {
                     <CartItem key={item.cartItemId} item={item} />
                   ))}
                 </div>
-                {/* Upsell */}
-                <UpsellBanner />
+
               </div>
 
               {/* Footer */}
