@@ -8,19 +8,25 @@ import type {
   CollectPaymentOptions,
   ConfirmPaymentResult,
   OfflineStatus,
+  BluetoothDevice,
 } from './definitions';
-import { STATIC_READERS, delay, getFlowDelay } from '@/services/stripe/static.mock';
+import { delay, getFlowDelay } from '@/services/stripe/static.mock';
 import { logger } from '@/utils/logger';
 
 const SIMULATED_READER: TerminalReader = {
-  serialNumber: STATIC_READERS[0].serialNumber,
-  label: STATIC_READERS[0].label,
-  deviceType: 'unknown',
+  serialNumber: 'STRM-SIM-001',
+  label: 'Stripe Reader M2 (Simulator)',
+  deviceType: 'stripeM2',
   status: 'online',
   batteryLevel: 1,
-  locationId: STATIC_READERS[0].locationId,
-  ipAddress: STATIC_READERS[0].ipAddress,
   isSimulated: true,
+};
+
+const SIMULATED_BLUETOOTH_DEVICE: BluetoothDevice = {
+  name: SIMULATED_READER.label,
+  address: '00:11:22:33:44:55',
+  bonded: true,
+  deviceClass: 'simulated',
 };
 
 export class StripeTerminalWeb extends WebPlugin implements StripeTerminalPlugin {
@@ -33,19 +39,32 @@ export class StripeTerminalWeb extends WebPlugin implements StripeTerminalPlugin
     logger.info('[StripeTerminal/web] initialized static simulator');
   }
 
-  async fetchConnectionToken(): Promise<{ secret: string }> {
-    await delay(getFlowDelay('connectionTestMs', 200));
-    return { secret: `pst_static_${Date.now()}` };
+  async fetchConnectionToken(_options: { secret: string }): Promise<void> {
+    // Web: no-op — the token is pushed by JS to native in response to _connectionTokenRequest
   }
 
   async discoverReaders(): Promise<void> {
     await delay(getFlowDelay('discoverReadersMs', 400));
-    this.connectedReader = null;
     this.notifyListeners('readersDiscovered', { readers: [SIMULATED_READER] });
   }
 
   async cancelDiscovery(): Promise<void> {
     // no-op on web
+  }
+
+  async listBluetoothDevices(): Promise<{ devices: BluetoothDevice[] }> {
+    return { devices: [SIMULATED_BLUETOOTH_DEVICE] };
+  }
+
+  async scanBluetoothDevices(): Promise<{ devices: BluetoothDevice[] }> {
+    await delay(getFlowDelay('discoverReadersMs', 400));
+    this.notifyListeners('bluetoothDevicesUpdated', { devices: [SIMULATED_BLUETOOTH_DEVICE] });
+    return { devices: [SIMULATED_BLUETOOTH_DEVICE] };
+  }
+
+  async pairBluetoothDevice(): Promise<{ status: 'paired'; device: BluetoothDevice }> {
+    this.notifyListeners('bluetoothPairingStatus', { status: 'paired', device: SIMULATED_BLUETOOTH_DEVICE });
+    return { status: 'paired', device: SIMULATED_BLUETOOTH_DEVICE };
   }
 
   async connectBluetoothReader(): Promise<TerminalReader> {

@@ -10,24 +10,35 @@ export function useNetworkStatus(): void {
   const { setOnline, setConnectionType } = useNetworkStore();
 
   useEffect(() => {
+    let isCleanedUp = false;
     let pluginListener: { remove(): Promise<void> } | null = null;
+    let webCleanup: (() => void) | null = null;
 
     async function setupNative() {
       try {
         const { Network } = await import('@capacitor/network');
         const status = await Network.getStatus();
+        if (isCleanedUp) return;
         setOnline(status.connected);
         setConnectionType(status.connectionType as ConnectionType);
         logger.info(`[network] initial — online=${status.connected} type=${status.connectionType}`);
 
-        pluginListener = await Network.addListener('networkStatusChange', (s) => {
+        const handle = await Network.addListener('networkStatusChange', (s) => {
           setOnline(s.connected);
           setConnectionType(s.connectionType as ConnectionType);
           logger.info(`[network] changed — online=${s.connected} type=${s.connectionType}`);
         });
+
+        if (isCleanedUp) {
+          void handle.remove();
+        } else {
+          pluginListener = handle;
+        }
       } catch {
         // Plugin not available on web — fall through to DOM events
-        setupWeb();
+        if (!isCleanedUp) {
+          webCleanup = setupWeb();
+        }
       }
     }
 
@@ -47,7 +58,9 @@ export function useNetworkStatus(): void {
     void setupNative();
 
     return () => {
-      void pluginListener?.remove();
+      isCleanedUp = true;
+      if (pluginListener) void pluginListener.remove();
+      if (webCleanup) webCleanup();
     };
   }, [setOnline, setConnectionType]);
 }

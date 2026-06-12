@@ -10,7 +10,8 @@ export function useKioskManager() {
       try {
         await KioskManager.keepScreenAwake({ enabled: true });
         await KioskManager.setImmersiveMode({ enabled: true });
-        await KioskManager.lockOrientation({ orientation: 'sensor_landscape' });
+        // 'sensor' allows both portrait and landscape based on device mounting
+        await KioskManager.lockOrientation({ orientation: 'sensor' as any });
         logger.info('[kiosk] hardening applied');
       } catch (err) {
         logger.warn('[kiosk] hardening partial', err);

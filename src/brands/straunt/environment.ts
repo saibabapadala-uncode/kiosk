@@ -172,6 +172,27 @@ export const strauntEnvironment: BrandEnvironment = {
     'curry':     '🍛',
   },
 
+  stripeTerminalLocations: [
+    {
+      id:    import.meta.env.VITE_STRIPE_TERMINAL_LOCATION_1_ID    || 'tml_F1fBQAfxoU9GYl',
+      label: import.meta.env.VITE_STRIPE_TERMINAL_LOCATION_1_LABEL || 'Production',
+    },
+    {
+      id:    import.meta.env.VITE_STRIPE_TERMINAL_LOCATION_2_ID    || 'tml_FpGEggUfbQbXbj',
+      label: import.meta.env.VITE_STRIPE_TERMINAL_LOCATION_2_LABEL || 'Development',
+    },
+    {
+      id:    import.meta.env.VITE_STRIPE_TERMINAL_LOCATION_3_ID    || 'tml_GDZfGw5YgxC9I1',
+      label: import.meta.env.VITE_STRIPE_TERMINAL_LOCATION_3_LABEL || 'S700 Reader',
+    },
+    {
+      // QA / M2 location used by kiosk_straunt_storefront — M2 reader (STRM26146036943) is registered here.
+      // Last char is the LETTER l (not digit 1): tml_GRORFwWvvm8B3d
+      id:    import.meta.env.VITE_STRIPE_TERMINAL_LOCATION_4_ID    || 'tml_GRORFwWvvm8B3d',
+      label: import.meta.env.VITE_STRIPE_TERMINAL_LOCATION_4_LABEL || 'QA / M2',
+    },
+  ].filter((loc) => loc.id),
+
   altPayment: {
     // Industry ID for Straunt — sent as `industry_id` in phone-pay API calls.
     // Override with VITE_STRAUNT_INDUSTRY_ID in your .env file.

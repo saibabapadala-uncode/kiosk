@@ -274,7 +274,7 @@ export default function QrPayScreen({ onBack }: QrPayScreenProps) {
         <div style={{
           flexShrink: 0,
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          padding: '14px 20px',
+          padding: '8px 16px',
           borderBottom: '1px solid var(--ui-glass-border)',
           background: 'var(--color-ui-header)',
           boxShadow: '0 2px 8px rgba(0,0,0,0.05)',
@@ -315,7 +315,7 @@ export default function QrPayScreen({ onBack }: QrPayScreenProps) {
           flex: 1, overflowY: 'auto',
           display: 'flex', flexDirection: 'column',
           alignItems: 'center', justifyContent: 'center',
-          padding: '20px 20px 28px', gap: 20,
+          padding: '12px 16px 16px', gap: 12,
         }}>
 
           {/* ── Loading ── */}
@@ -323,7 +323,7 @@ export default function QrPayScreen({ onBack }: QrPayScreenProps) {
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16 }}>
               {/* QR loading placeholder */}
               <div style={{
-                width: 264, height: 264, borderRadius: 16,
+                width: 220, height: 220, borderRadius: 16,
                 background: 'var(--color-ui-card)',
                 boxShadow: 'var(--card-shadow)',
                 display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 12,
@@ -412,8 +412,8 @@ export default function QrPayScreen({ onBack }: QrPayScreenProps) {
                   <img
                     src={qrImg}
                     alt={`QR code for payment — ${qrUrl}`}
-                    width={240}
-                    height={240}
+                    width={200}
+                    height={200}
                     style={{ display: 'block', borderRadius: 8 }}
                     onError={() => {
                       // Fall back to the data URL if qrserver.com is unavailable
@@ -423,7 +423,7 @@ export default function QrPayScreen({ onBack }: QrPayScreenProps) {
                 ) : (
                   /* Fallback: text URL */
                   <div style={{
-                    width: 240, height: 240, display: 'flex', alignItems: 'center',
+                    width: 200, height: 200, display: 'flex', alignItems: 'center',
                     justifyContent: 'center', padding: 8, textAlign: 'center' as const,
                   }}>
                     <p style={{ margin: 0, fontSize: '0.6rem', color: '#1C1917',

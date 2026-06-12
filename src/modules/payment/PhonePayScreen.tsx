@@ -141,7 +141,7 @@ function Keypad({ onDigit, onDelete, onConfirm, canConfirm }: KeypadProps) {
               onDigit(key.value);
             }}
             style={{
-              height:         64,
+              height:         54,
               borderRadius:   14,
               border:         isConfirm
                 ? `2px solid ${disabled ? 'var(--color-brand-border)' : 'var(--color-brand-primary)'}`
@@ -339,7 +339,7 @@ export default function PhonePayScreen({ onBack }: PhonePayScreenProps) {
           display:       'flex',
           alignItems:    'center',
           justifyContent:'space-between',
-          padding:       '14px 20px',
+          padding:       '8px 16px',
           borderBottom:  '1px solid var(--ui-glass-border)',
           background:    'var(--color-ui-header)',
           boxShadow:     '0 2px 8px rgba(0,0,0,0.05)',
@@ -382,8 +382,8 @@ export default function PhonePayScreen({ onBack }: PhonePayScreenProps) {
           flexDirection: 'column',
           alignItems:    'center',
           justifyContent:'center',
-          padding:       '20px 20px 28px',
-          gap:           20,
+          padding:       '12px 16px 16px',
+          gap:           12,
         }}>
 
           {/* ── Success state ── */}

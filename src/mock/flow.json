@@ -1,17 +1,4 @@
 {
-  "useStaticPaymentFlow": true,
-  "readers": [
-    {
-      "serialNumber": "SIM-STATIC-001",
-      "label": "Static Demo Reader",
-      "deviceType": "simulated",
-      "batteryLevel": 1,
-      "simulated": true,
-      "locationId": "tml_static_demo",
-      "status": "online",
-      "ipAddress": "192.168.0.25"
-    }
-  ],
   "delays": {
     "connectionTestMs": 250,
     "catalogMs": 250,

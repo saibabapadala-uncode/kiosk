@@ -5,7 +5,13 @@ import tailwindcss from '@tailwindcss/vite';
 import { resolve } from 'path';
 
 export default defineConfig(({ mode }) => {
-  const isProd = mode !== 'development';
+  // Prod only when mode ends with '-prod' (e.g. straunt-prod, holiq-prod).
+  // Legacy bare-brand modes (straunt, holiq, restro) also build as prod for
+  // backward compatibility.  Dev-server mode ('development') and *-dev/*-qa
+  // modes get sourcemaps and skip minification.
+  const isProd =
+    mode.endsWith('-prod') ||
+    (!mode.endsWith('-dev') && !mode.endsWith('-qa') && mode !== 'development');
 
   return {
     plugins: [

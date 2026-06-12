@@ -1,27 +1,18 @@
 // src/screens/PaymentScreen.tsx
-// ─────────────────────────────────────────────────────────────────────────────
-// Payment method router — central entry point for all payment flows.
-//
-// Flow:
-//   1. selectedMethod === null  → PaymentMethodSelector (choose card/phone/QR)
-//   2. selectedMethod === 'card' → existing Stripe Terminal card reader flow
-//   3. selectedMethod === 'phone' → PhonePayScreen (SMS link)
-//   4. selectedMethod === 'qr'   → QrPayScreen (QR code scan)
-//
-// On success (all methods): navigate to /confirmation.
-// On cancel / back:         clear selectedMethod → return to selector.
-// ─────────────────────────────────────────────────────────────────────────────
-
 import { useEffect, useCallback } from 'react';
 import { useHistory }             from 'react-router-dom';
 import { IonPage, IonContent }    from '@ionic/react';
 
-import { usePayment }             from '@/hooks/usePayment';
 import { usePaymentStore }        from '@/store/paymentStore';
 import { useCartStore }           from '@/store/cartStore';
 import { formatPrice }            from '@/utils/format';
 import { useKioskName }           from '@/hooks/useKioskName';
 import { useTranslation }         from 'react-i18next';
+import {
+  runPaymentFlow,
+  cancelPaymentFlow,
+}                                 from '@/services/stripe.service';
+import { adapterCancelCollect }   from '@/services/stripe/terminal.adapter';
 
 import PaymentMethodSelector      from '@/modules/payment/PaymentMethodSelector';
 import PhonePayScreen             from '@/modules/payment/PhonePayScreen';
@@ -35,7 +26,8 @@ const COLLECTING_STATES = new Set([
 ]);
 
 // ─── Card payment sub-screen ──────────────────────────────────────────────────
-// Extracted so the effect/callbacks only run when this view is mounted.
+// Mounts only when selectedMethod === 'card'. Starts payment once on mount
+// via a [] dependency effect — no loops, no startedRef needed.
 
 function CardPayView({ onBack }: { onBack: () => void }) {
   const { t }       = useTranslation();
@@ -43,27 +35,48 @@ function CardPayView({ onBack }: { onBack: () => void }) {
   const kioskName   = useKioskName();
   const total       = useCartStore((s) => s.total);
 
-  const { flowState, error, startPayment, retryPayment, cancelPayment } = usePayment();
+  // Targeted selectors — does NOT subscribe to the entire store, preventing
+  // re-renders from unrelated store changes from re-evaluating effect deps.
+  const flowState       = usePaymentStore((s) => s.flowState);
+  const error           = usePaymentStore((s) => s.error);
   const connectedReader = usePaymentStore((s) => s.connectedReader);
 
-  // Auto-start when reader is connected
+  // Start payment exactly once on mount. runPaymentFlow() has a paymentInFlight
+  // guard so even if this somehow fires twice the second call is a no-op.
+  // Cleanup cancels any in-progress card collection when the user navigates away.
   useEffect(() => {
-    if (connectedReader) startPayment();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [connectedReader]);
+    void runPaymentFlow();
+    return () => { void adapterCancelCollect(); };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
-  // Navigate away on terminal outcomes
+  // Navigate on terminal outcomes. flowState is 'idle' when this component
+  // first mounts (PaymentMethodSelector.reset() guarantees this), so neither
+  // branch fires on mount — only on actual state transitions.
   useEffect(() => {
     if (flowState === 'succeeded') history.replace('/confirmation');
     if (flowState === 'canceled')  history.replace('/tip');
   }, [flowState, history]);
+
+  const handleCancel = useCallback(async () => {
+    if (flowState === 'idle' || flowState === 'failed') {
+      onBack();
+      return;
+    }
+    await cancelPaymentFlow();
+  }, [flowState, onBack]);
+
+  const handleRetry = useCallback(() => {
+    usePaymentStore.getState().reset();
+    void runPaymentFlow();
+  }, []);
 
   return (
     <div className="flex flex-col h-full" style={{ background: 'var(--color-brand-bg)' }}>
 
       {/* Header */}
       <div
-        className="flex-shrink-0 flex items-center justify-between px-6 py-4"
+        className="flex-shrink-0 flex items-center justify-between px-4 py-2.5"
         style={{ borderBottom: '1px solid var(--ui-glass-border)' }}
       >
         <div>
@@ -86,30 +99,31 @@ function CardPayView({ onBack }: { onBack: () => void }) {
             {formatPrice(total)}
           </div>
 
-          {/* Back to method selector */}
-          {!connectedReader && flowState === 'idle' && (
-            <button type="button" onClick={onBack}
-              aria-label={t('common.back')}
-              className="flex items-center gap-1.5 text-sm font-brand font-semibold"
-              style={{
-                background: 'none', border: 'none', cursor: 'pointer',
-                color: 'var(--color-brand-muted)',
-              }}>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
-                stroke="currentColor" strokeWidth={2.5} strokeLinecap="round">
-                <polyline points="15,18 9,12 15,6"/>
-              </svg>
-              {t('common.back')}
-            </button>
-          )}
+          {/* Cancel/back button */}
+          <button type="button" onClick={handleCancel}
+            aria-label={flowState === 'idle' ? t('common.back') : t('payment.cancel')}
+            className="flex items-center gap-1.5 text-sm font-brand font-semibold"
+            style={{
+              background: 'none', border: 'none', cursor: 'pointer',
+              color: 'var(--color-brand-muted)',
+            }}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" strokeWidth={2.5} strokeLinecap="round">
+              <polyline points="15,18 9,12 15,6"/>
+            </svg>
+            {flowState === 'idle' ? t('common.back') : t('payment.cancel')}
+          </button>
         </div>
       </div>
 
       {/* Dynamic content */}
       <div className="flex flex-col flex-1 min-h-0">
-        {!connectedReader && (
+        {/* ── Connecting / initializing — let CardReaderScreen show the spinner ── */}
+        {COLLECTING_STATES.has(flowState) && <CardReaderScreen />}
+
+        {/* ── No reader after flow settled to idle/failed (not during connecting) ── */}
+        {!connectedReader && (flowState === 'idle' || flowState === 'failed') && (
           <div className="flex flex-col items-center justify-center flex-1 gap-6 px-6 py-8">
-            {/* Card reader icon */}
             <div className="w-20 h-20 rounded-2xl flex items-center justify-center"
               style={{ background: 'rgba(245,158,11,0.1)', border: '2px solid rgba(245,158,11,0.3)' }}>
               <svg className="w-10 h-10" viewBox="0 0 24 24" fill="none"
@@ -155,13 +169,12 @@ function CardPayView({ onBack }: { onBack: () => void }) {
           </div>
         )}
 
-        {connectedReader && COLLECTING_STATES.has(flowState) && <CardReaderScreen />}
         {flowState === 'processing' && <PaymentStatus status="processing" />}
         {flowState === 'failed' && (
           <PaymentStatus
             status="failed"
             error={error}
-            onRetry={retryPayment}
+            onRetry={handleRetry}
             onCancel={() => history.replace('/tip')}
           />
         )}
@@ -191,22 +204,22 @@ export default function PaymentScreen() {
   const history        = useHistory();
   const selectedMethod = usePaymentStore((s) => s.selectedMethod);
   const setMethod      = usePaymentStore((s) => s.setSelectedMethod);
-  const resetPayment   = usePaymentStore((s) => s.reset);
 
-  // Clear method on unmount so the selector shows fresh next time
+  // Clear method on unmount so the selector shows fresh next time.
   useEffect(() => {
     return () => { setMethod(null); };
   }, [setMethod]);
 
   const handleBack = useCallback(() => {
-    resetPayment();
+    void cancelPaymentFlow();
+    usePaymentStore.getState().reset();
     setMethod(null);
-  }, [resetPayment, setMethod]);
+  }, [setMethod]);
 
   const handleBackToTip = useCallback(() => {
-    resetPayment();
+    usePaymentStore.getState().reset();
     history.replace('/tip');
-  }, [resetPayment, history]);
+  }, [history]);
 
   return (
     <IonPage>

@@ -6,12 +6,10 @@
 import { Capacitor } from '@capacitor/core';
 import {
   initializeAdapter,
-  adapterDiscoverReaders,
-  adapterConnectReader,
-  adapterDisconnect,
-  adapterCreatePaymentIntent,
-  adapterCollectPayment,
-  adapterConfirm,
+  adapterConnectBluetoothReader,
+  adapterConnectInternetReader,
+  adapterConnectLocalMobileReader,
+  adapterGetConnectedReader,
   adapterCancelCollect,
 } from './stripe/terminal.adapter';
 import {
@@ -36,6 +34,8 @@ import { useCartStore } from '@/store/cartStore';
 import { useSessionStore } from '@/store/sessionStore';
 import { useSettingsStore } from '@/store/settingsStore';
 import { submitOrder } from './order.service';
+import { printOrderReceipt } from './receipt.service';
+import { StarPrinterNative } from '@/plugins/star-printer';
 
 export type { TerminalReader, PaymentFlowState };
 export { TERMINAL_ERROR_MESSAGES };
@@ -59,7 +59,13 @@ function setErr(err: unknown) {
 
 // ─── Main payment orchestration ────────────────────────────────────────────────
 
+// Prevents concurrent calls from firing two parallel payment flows.
+let paymentInFlight = false;
+
 export async function runPaymentFlow(): Promise<void> {
+  if (paymentInFlight) return;
+
+  paymentInFlight = true;
   const payStore  = usePaymentStore.getState();
   const settings  = useSettingsStore.getState();
   const { subtotal, taxAmount, tipAmount } = useCartStore.getState();
@@ -75,40 +81,73 @@ export async function runPaymentFlow(): Promise<void> {
   };
 
   try {
-    if (Capacitor.isNativePlatform() && !USE_STATIC_PAYMENT_FLOW) {
+    if (Capacitor.isNativePlatform()) {
       // ── Real native Stripe Terminal path ─────────────────────────────────────
       setState('initializing');
       const ok = await initializeAdapter();
-      if (!ok) { await runStaticFlow(intentParams); return; }
+      if (!ok) throw new StripeTerminalError('TERMINAL_NOT_INITIALIZED', 'Stripe Terminal failed to initialize.', false);
 
       payStore.setIsWebFallback(false);
 
-      setState('discovering');
-      const readers = await adapterDiscoverReaders(settings.payment.terminalLocationId);
-      const targetSerial = settings.payment.readerSerialNumber.trim();
-      const reader: TerminalReader | undefined = targetSerial
-        ? readers.find((r) => r.serialNumber === targetSerial)
-        : readers.find((r) => r.status === 'online') ?? readers[0];
+      // Reuse an already-connected reader (kiosk_straunt_storefront pattern: connect once in
+      // Settings, keep the reader connected across all payments).  Only reconnect if the SDK
+      // reports no active connection — avoids a 15-second BLE re-discovery on every order.
+      let activeReader = await adapterGetConnectedReader();
 
-      if (!reader) throw new StripeTerminalError('READER_NOT_FOUND', 'No reader found. Please contact staff.', false);
+      if (!activeReader) {
+        const serialNumber = settings.payment.readerSerialNumber.trim();
+        const locationId   = settings.payment.terminalLocationId.trim();
+        const method       = (settings.payment.connectionMethod || 'bluetooth') as 'bluetooth' | 'internet' | 'localMobile';
 
-      setState('connecting');
-      await adapterConnectReader(reader.serialNumber);
-      payStore.setConnectedReader(reader);
+        if (!serialNumber && method !== 'localMobile') {
+          throw new StripeTerminalError(
+            'READER_NOT_FOUND',
+            'No payment reader connected. Open Settings → Payment Devices and connect a reader first.',
+            false,
+          );
+        }
 
-      setState('creating_intent');
-      const intent = await adapterCreatePaymentIntent(intentParams);
-      payStore.setPaymentIntentId(intent.paymentIntentId);
+        setState('connecting');
+        if (method === 'bluetooth') {
+          activeReader = await adapterConnectBluetoothReader(serialNumber, locationId);
+        } else if (method === 'internet') {
+          activeReader = await adapterConnectInternetReader(serialNumber);
+        } else {
+          activeReader = await adapterConnectLocalMobileReader(locationId);
+        }
+      }
+
+      payStore.setConnectedReader(activeReader);
 
       setState('collecting');
-      await adapterCollectPayment(intent.clientSecret);
+      const amountDollars = (subtotal + taxAmount + tipAmount);
 
-      setState('processing');
-      const confirmedId = await adapterConfirm();
-      useSessionStore.getState().confirmOrder(confirmedId);
-      setState('succeeded');
-      void submitOrder();
-      await adapterDisconnect();
+      // Read reader address from settings (set in Settings → Payment tab).
+      // Falls back to the address stored on the connected reader object.
+      const readerAddress =
+        settings.payment.readerSerialNumber.trim() ||
+        activeReader?.serialNumber ||
+        '';
+
+      const paymentResult = await StarPrinterNative.createAndProcessPayment({
+        deviceName:   activeReader?.label ?? readerAddress,
+        deviceAddress: readerAddress,
+        constructedObj: {
+          amount: amountDollars,
+          currency: 'usd',
+        },
+      }) as any;
+
+      if (paymentResult && (paymentResult.status === 'SUCCEEDED' || paymentResult.status === 'REQUIRES_CAPTURE')) {
+        setState('processing');
+        const confirmedId = paymentResult.id;
+        useSessionStore.getState().confirmOrder(confirmedId);
+        setState('succeeded');
+        void submitOrder({ paymentMethod: 'card' });
+        void printOrderReceipt();
+      } else {
+        throw new Error((paymentResult as any)?.status || 'Payment failed');
+      }
 
     } else {
       // ── Static / web demo path ────────────────────────────────────────────────
@@ -118,6 +157,8 @@ export async function runPaymentFlow(): Promise<void> {
     setErr(err);
     const code = err instanceof StripeTerminalError ? err.code : 'UNKNOWN';
     setState(code === 'PAYMENT_CANCELED' ? 'canceled' : 'failed');
+  } finally {
+    paymentInFlight = false;
   }
 }
 

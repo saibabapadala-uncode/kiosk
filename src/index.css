@@ -709,3 +709,37 @@ ion-header ion-toolbar {
     transition-duration: 0.01ms !important;
   }
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   VIEWPORT HEIGHT — ensures h-full works on all screen children
+═══════════════════════════════════════════════════════════════════════════════ */
+html {
+  height: 100%;
+}
+
+#root {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   PORTRAIT ORIENTATION SUPPORT
+   The kiosk can be mounted in portrait (vertical) orientation.
+   At <1024px width (most portrait tablets/monitors), Tailwind's `lg:` prefix
+   is inactive, so:
+   • SettingsScreen sidebar becomes a horizontal scrollable tab strip at the top
+   • Two-column tab grids (lg:grid-cols-2) stack to single column — fully usable
+   • Font sizes scale slightly for narrower viewports
+═══════════════════════════════════════════════════════════════════════════════ */
+@media (orientation: portrait) and (max-width: 1023px) {
+  :root {
+    --spacing-touch: 52px;
+    --sidebar-width: 240px;
+    --font-size-base: 0.8125rem;
+    --font-size-lg:   0.9375rem;
+  }
+}
+
+/* Portrait on wide monitors (1080px+ wide, rotated vertically): lg: triggers,
+   sidebar renders vertically — same as landscape. No overrides needed. */

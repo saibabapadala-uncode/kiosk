@@ -39,11 +39,10 @@ const config: CapacitorConfig = {
     Preferences: {
       group: `com.${brand}.kiosk.prefs`,
     },
-    // Screen locked to landscape at app level; the plugin call in
-    // useAppLifecycle() re-locks after resume in case the OS unlocked it.
-    ScreenOrientation: {
-      // Note: actual lock happens via ScreenOrientation.lock() in useAppLifecycle
-    },
+    // Orientation is unlocked at app level so the kiosk works in any mounting
+    // orientation (portrait or landscape). The KioskManager plugin re-applies
+    // 'sensor' mode on resume to follow device rotation.
+    ScreenOrientation: {},
     SplashScreen: {
       launchShowDuration: 1000,
       backgroundColor: '#000000',

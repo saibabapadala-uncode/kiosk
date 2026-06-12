@@ -1,15 +1,55 @@
-// src/modules/settings/tabs/ApiConfigTab.tsx
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useSettingsStore } from '@/store/settingsStore';
 import { testConnection } from '@/services/api.service';
-import { SettingsField, SettingsSection, SettingsInput, MaskedInput } from '../shared';
+import { MaskedInput, SettingsInput } from '../shared';
+import { themeColors, themeRGBA } from '@/utils/themeColors';
 
 type TestState = 'idle' | 'testing' | 'ok' | 'error';
+
+function ActionButton({
+  onClick,
+  disabled,
+  loading,
+  children,
+}: {
+  onClick: () => void;
+  disabled?: boolean;
+  loading?: boolean;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled || loading}
+      className="px-4 py-2.5 rounded-xl text-sm font-bold font-brand text-white active:scale-95 disabled:opacity-45 disabled:cursor-not-allowed transition-all flex items-center gap-2"
+      style={{ background: 'var(--gradient-cta)', boxShadow: '0 4px 14px rgba(var(--color-brand-primary-rgb),0.28)' }}
+    >
+      {loading && <span className="w-3.5 h-3.5 rounded-full border-2 border-white/40 border-t-white animate-spin" />}
+      {children}
+    </button>
+  );
+}
+
+function FieldCard({ title, hint, children }: { title: string; hint: string; children: React.ReactNode }) {
+  return (
+    <div className="rounded-2xl p-4.5 space-y-2.5" style={{ background: themeColors.surface, border: `1.5px solid ${themeColors.border}` }}>
+      <div>
+        <p className="text-sm font-bold font-brand" style={{ color: themeColors.text }}>{title}</p>
+        <p className="text-xs font-brand mt-0.5 leading-relaxed" style={{ color: themeColors.muted }}>{hint}</p>
+      </div>
+      {children}
+    </div>
+  );
+}
 
 export default function ApiConfigTab() {
   const { api, setApi } = useSettingsStore();
   const [testState, setTestState] = useState<TestState>('idle');
   const [testResult, setTestResult] = useState<{ latencyMs: number; error?: string } | null>(null);
+  const [lastCheckedAt, setLastCheckedAt] = useState<Date | null>(null);
+
+  const canTest = useMemo(() => api.apiBaseUrl.trim().length > 0, [api.apiBaseUrl]);
 
   async function handleTest() {
     setTestState('testing');
@@ -17,113 +57,86 @@ export default function ApiConfigTab() {
     const result = await testConnection();
     setTestResult({ latencyMs: result.latencyMs, error: result.error });
     setTestState(result.ok ? 'ok' : 'error');
+    setLastCheckedAt(new Date());
   }
 
   return (
-    <div className="p-5">
-      <SettingsSection title="Endpoint">
-        <SettingsField
-          label="API Base URL"
-          htmlFor="api-base-url"
-          description="All API requests are made relative to this URL."
-        >
-          <SettingsInput
-            id="api-base-url"
-            type="url"
-            value={api.apiBaseUrl}
-            onChange={(e) => setApi({ apiBaseUrl: (e.target as HTMLInputElement).value.trim() })}
-            placeholder="https://api.example.com/v1"
-          />
-        </SettingsField>
+    <div className="p-5 max-w-3xl mx-auto space-y-5">
 
-        <SettingsField
-          label="API Key"
-          htmlFor="api-key"
-          description="Sent as X-Api-Key header on every request."
-        >
-          <MaskedInput
-            id="api-key"
-            value={api.apiKey}
-            onChange={(v) => setApi({ apiKey: v })}
-            placeholder="sk-••••••••••••••••"
-            aria-label="API key"
-          />
-        </SettingsField>
 
-        <SettingsField
-          label="Brand Header"
-          htmlFor="brand-header"
-          description="Value sent as X-Brand-Header to identify this brand."
-        >
-          <SettingsInput
-            id="brand-header"
-            type="text"
-            value={api.brandHeader}
-            onChange={(e) => setApi({ brandHeader: (e.target as HTMLInputElement).value.trim() })}
-            placeholder="your-brand-id"
-          />
-        </SettingsField>
-      </SettingsSection>
+      <FieldCard
+        title="Server address"
+        hint="Where this kiosk sends all API requests."
+      >
+        <SettingsInput
+          id="api-base-url"
+          type="url"
+          value={api.apiBaseUrl}
+          onChange={(e) => setApi({ apiBaseUrl: (e.target as HTMLInputElement).value.trim() })}
+          placeholder="https://api.example.com/v1"
+        />
+      </FieldCard>
 
-      {/* Connection test */}
-      <SettingsSection title="Connectivity">
-        <SettingsField
-          label="Test Connection"
-          description="Sends a request to GET /health using the current settings."
-        >
-          <div className="flex flex-col gap-3">
-            <button
-              onClick={handleTest}
-              disabled={testState === 'testing'}
-              aria-label="Test API connection"
-              className={[
-                'px-5 py-2.5 rounded-brand text-sm font-bold font-brand',
-                'transition-all active:scale-95 touch-target',
-                'focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-primary',
-                testState === 'testing'
-                  ? 'bg-brand-border text-brand-muted cursor-wait'
-                  : 'bg-brand-primary text-white hover:opacity-90',
-              ].join(' ')}
-            >
-              {testState === 'testing' ? (
-                <span className="flex items-center gap-2">
-                  <span className="w-3.5 h-3.5 rounded-full border-2 border-white border-t-transparent animate-spin" />
-                  Testing…
-                </span>
-              ) : 'Test Connection'}
-            </button>
+      <FieldCard
+        title="Access key"
+        hint="Used to authenticate this kiosk with your backend."
+      >
+        <MaskedInput
+          id="api-key"
+          value={api.apiKey}
+          onChange={(v) => setApi({ apiKey: v })}
+          placeholder="sk-••••••••••••••••"
+          aria-label="API key"
+        />
+      </FieldCard>
 
-            {testState === 'ok' && testResult && (
-              <div
-                role="status"
-                aria-live="polite"
-                className="flex items-center gap-2 text-sm font-brand"
-              >
-                <span className="w-5 h-5 rounded-full bg-brand-success flex items-center justify-center text-white text-xs font-bold">✓</span>
-                <span className="text-brand-success font-semibold">Connected</span>
-                <span className="text-brand-muted">— {testResult.latencyMs}ms</span>
-              </div>
-            )}
+      <FieldCard
+        title="Brand code"
+        hint="Sent with requests to identify which brand this kiosk belongs to."
+      >
+        <SettingsInput
+          id="brand-header"
+          type="text"
+          value={api.brandHeader}
+          onChange={(e) => setApi({ brandHeader: (e.target as HTMLInputElement).value.trim() })}
+          placeholder="your-brand-id"
+        />
+      </FieldCard>
 
-            {testState === 'error' && testResult && (
-              <div
-                role="alert"
-                aria-live="assertive"
-                className="flex flex-col gap-1 text-sm font-brand"
-              >
-                <div className="flex items-center gap-2">
-                  <span className="w-5 h-5 rounded-full bg-brand-error flex items-center justify-center text-white text-xs font-bold">✕</span>
-                  <span className="text-brand-error font-semibold">Connection failed</span>
-                  <span className="text-brand-muted">— {testResult.latencyMs}ms</span>
-                </div>
-                {testResult.error && (
-                  <p className="text-xs text-brand-muted font-mono ml-7">{testResult.error}</p>
-                )}
-              </div>
-            )}
+      <div className="rounded-2xl p-5 space-y-3.5" style={{ background: themeColors.surface, border: `1.5px solid ${themeColors.border}` }}>
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <p className="text-sm font-bold font-brand" style={{ color: themeColors.text }}>Connection check</p>
+            <p className="text-xs font-brand mt-0.5" style={{ color: themeColors.muted }}>
+              Run a quick health check with the details above.
+            </p>
           </div>
-        </SettingsField>
-      </SettingsSection>
+          <ActionButton onClick={handleTest} loading={testState === 'testing'} disabled={!canTest}>
+            {testState === 'testing' ? 'Checking…' : 'Test connection'}
+          </ActionButton>
+        </div>
+
+        {lastCheckedAt && (
+          <p className="text-xs font-brand" style={{ color: themeColors.muted }}>
+            Last checked: {lastCheckedAt.toLocaleTimeString()}
+          </p>
+        )}
+
+        {testState === 'ok' && testResult && (
+          <div className="rounded-xl px-3.5 py-3" style={{ background: themeRGBA('success', 0.08), border: `1px solid ${themeRGBA('success', 0.24)}` }}>
+            <p className="text-sm font-bold font-brand" style={{ color: themeColors.success }}>Connected</p>
+            <p className="text-xs font-brand mt-0.5" style={{ color: themeColors.muted }}>Response time: {testResult.latencyMs}ms</p>
+          </div>
+        )}
+
+        {testState === 'error' && testResult && (
+          <div className="rounded-xl px-3.5 py-3" style={{ background: themeRGBA('error', 0.08), border: `1px solid ${themeRGBA('error', 0.24)}` }}>
+            <p className="text-sm font-bold font-brand" style={{ color: themeColors.error }}>Could not connect</p>
+            <p className="text-xs font-brand mt-0.5" style={{ color: themeColors.muted }}>Response time: {testResult.latencyMs}ms</p>
+            {testResult.error && <p className="text-xs font-mono mt-1.5" style={{ color: themeColors.error }}>{testResult.error}</p>}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

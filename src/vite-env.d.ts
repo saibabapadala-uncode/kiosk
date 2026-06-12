@@ -30,6 +30,30 @@ interface ImportMetaEnv {
 
   // ── Kiosk sales channel service ID (pending backend) ─────────────────────────
   readonly VITE_AUTH_KIOSK_CHANNEL_SERVICE_ID: string;
+
+  // ── Stripe Terminal location IDs ─────────────────────────────────────────────
+  readonly VITE_STRIPE_TERMINAL_LOCATION_ID: string;
+  readonly VITE_STRIPE_TERMINAL_LOCATION_1_ID: string;
+  readonly VITE_STRIPE_TERMINAL_LOCATION_1_LABEL: string;
+  readonly VITE_STRIPE_TERMINAL_LOCATION_2_ID: string;
+  readonly VITE_STRIPE_TERMINAL_LOCATION_2_LABEL: string;
+  readonly VITE_STRIPE_TERMINAL_LOCATION_3_ID: string;
+  readonly VITE_STRIPE_TERMINAL_LOCATION_3_LABEL: string;
+  readonly VITE_STRIPE_TERMINAL_LOCATION_4_ID: string;
+  readonly VITE_STRIPE_TERMINAL_LOCATION_4_LABEL: string;
+
+  // ── Uncode payment credentials (connection-token endpoint) ───────────────────
+  readonly VITE_STRIPE_PAY_KEY: string;
+  readonly VITE_STRIPE_MERCHANT_ID: string;
+  readonly VITE_STRIPE_STORE_ID: string;
+  readonly VITE_STRIPE_ENV_TYPE: string;
+
+  // ── Alt-payment / QR-pay ─────────────────────────────────────────────────────
+  readonly VITE_STRAUNT_INDUSTRY_ID: string;
+  readonly VITE_STRAUNT_DEFAULT_CUSTOMER_ID: string;
+  readonly VITE_STRAUNT_DEFAULT_PHONE: string;
+  readonly VITE_ANONYMOUS_PROJECT_URL: string;
+  readonly VITE_DISPLAY_NAME: string;
 }
 
 interface ImportMeta {

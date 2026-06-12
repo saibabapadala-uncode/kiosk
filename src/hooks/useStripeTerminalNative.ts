@@ -22,51 +22,61 @@ export function useStripeTerminalNative() {
 
   // ── Register event listeners once ──────────────────────────────────────────
   useEffect(() => {
+    let isCleanedUp = false;
+
     async function subscribe() {
-      const ls = await Promise.all([
+      try {
+        const ls = await Promise.all([
+          StripeTerminalNative.addListener('readersDiscovered', ({ readers }) => {
+            logger.info(`[ST] discovered ${readers.length} reader(s)`);
+          }),
 
-        StripeTerminalNative.addListener('readersDiscovered', ({ readers }) => {
-          logger.info(`[ST] discovered ${readers.length} reader(s)`);
-        }),
-
-        StripeTerminalNative.addListener('readerConnectionStatusChange', ({ status }) => {
-          logger.info(`[ST] connection status: ${status}`);
-          if (status === 'not_connected') {
-            const { flowState } = usePaymentStore.getState();
-            if (flowState === 'collecting' || flowState === 'processing') {
-              setErr('Card reader disconnected during payment. Please try again.');
-              usePaymentStore.getState().setFlowState('failed');
+          StripeTerminalNative.addListener('readerConnectionStatusChange', ({ status }) => {
+            logger.info(`[ST] connection status: ${status}`);
+            if (status === 'not_connected') {
+              const { flowState } = usePaymentStore.getState();
+              if (flowState === 'collecting' || flowState === 'processing') {
+                setErr('Card reader disconnected during payment. Please try again.');
+                usePaymentStore.getState().setFlowState('failed');
+              }
             }
-          }
-        }),
+          }),
 
-        StripeTerminalNative.addListener('paymentStatusChange', ({ status }) => {
-          logger.debug(`[ST] payment status: ${status}`);
-        }),
+          StripeTerminalNative.addListener('paymentStatusChange', ({ status }) => {
+            logger.debug(`[ST] payment status: ${status}`);
+          }),
 
-        StripeTerminalNative.addListener('readerDisplayMessage', ({ message }) => {
-          logger.info(`[ST] display: ${message}`);
-        }),
+          StripeTerminalNative.addListener('readerDisplayMessage', ({ message }) => {
+            logger.info(`[ST] display: ${message}`);
+          }),
 
-        StripeTerminalNative.addListener('readerInputOptions', ({ options }) => {
-          logger.debug(`[ST] input options: ${options.join(', ')}`);
-        }),
+          StripeTerminalNative.addListener('readerInputOptions', ({ options }) => {
+            logger.debug(`[ST] input options: ${options.join(', ')}`);
+          }),
 
-        StripeTerminalNative.addListener('offlineStatusChange', (data) => {
-          logger.warn('[ST] offline status', data);
-        }),
+          StripeTerminalNative.addListener('offlineStatusChange', (data) => {
+            logger.warn('[ST] offline status', data);
+          }),
 
-        StripeTerminalNative.addListener('unexpectedReaderDisconnect', ({ reader }) => {
-          logger.warn(`[ST] unexpected disconnect: ${reader.serialNumber}`);
-          usePaymentStore.getState().setConnectedReader(null);
-        }),
-      ]);
+          StripeTerminalNative.addListener('unexpectedReaderDisconnect', ({ reader }) => {
+            logger.warn(`[ST] unexpected disconnect: ${reader.serialNumber}`);
+            usePaymentStore.getState().setConnectedReader(null);
+          }),
+        ]);
 
-      listenerRefs.current = ls;
+        if (isCleanedUp) {
+          ls.forEach((l) => void l.remove());
+        } else {
+          listenerRefs.current = ls;
+        }
+      } catch (err) {
+        logger.error('[ST] listener setup failed', err);
+      }
     }
 
     void subscribe();
     return () => {
+      isCleanedUp = true;
       listenerRefs.current.forEach((l) => void l.remove());
       listenerRefs.current = [];
     };

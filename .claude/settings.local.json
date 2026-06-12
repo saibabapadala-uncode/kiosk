@@ -13,7 +13,26 @@
       "Bash(Get-ChildItem -Path \"d:\\\\merchant_New_design\\\\Holiq_Active_ext-t-store-p\" -Directory)",
       "Bash(Select-Object Name)",
       "PowerShell(node --version; npm --version; java -version 2>&1; echo \"ANDROID_HOME: $env:ANDROID_HOME\"; echo \"ANDROID_SDK_ROOT: $env:ANDROID_SDK_ROOT\")",
-      "PowerShell(ls d:\\\\AJR_Kiosk\\\\android\\\\app\\\\src\\\\main\\\\ -Recurse | Where-Object { -not $_.PSIsContainer } | Select-Object FullName)"
+      "PowerShell(ls d:\\\\AJR_Kiosk\\\\android\\\\app\\\\src\\\\main\\\\ -Recurse | Where-Object { -not $_.PSIsContainer } | Select-Object FullName)",
+      "WebFetch(domain:repo1.maven.org)",
+      "WebFetch(domain:search.maven.org)",
+      "WebFetch(domain:stripe.com)",
+      "WebFetch(domain:stripe.dev)",
+      "Bash(xargs grep -l \"starprinterplugin\")",
+      "Bash(dir \"d:\\\\POS\\\\pos_straunt_storefront\" /s /b)",
+      "Bash(findstr /E \"\\\\.\\(ts|tsx|js|json\\)$\")",
+      "Bash(findstr /I \"stripe terminal reader payment\")",
+      "Bash(Get-ChildItem -Path \"d:\\\\AJR_Kiosk\" -Directory)",
+      "Bash(Get-ChildItem -Path \"src/modules/settings/tabs/PrintersTab.tsx\" -ErrorAction SilentlyContinue)",
+      "Bash(Write-Output)",
+      "Bash(Get-ChildItem -Path \"src/hooks/useStarPrinter.ts\" -ErrorAction SilentlyContinue)",
+      "Skill(run)",
+      "Skill(run:*)",
+      "Bash(xargs grep -l \"stripe\\\\|Stripe\" -i)",
+      "Bash(dir /B /S \"d:\\\\AJR_Kiosk\\\\starprinterplugin\\\\\" 2>&1)",
+      "PowerShell(tree.com /A /F \"d:\\\\AJR_Kiosk\\\\starprinterplugin\" 2>&1)",
+      "PowerShell(head -100)",
+      "PowerShell(Get-ChildItem -Path \"d:\\\\AJR_Kiosk\\\\starprinterplugin\" -Directory | ForEach-Object { Write-Output $_.Name })"
     ]
   }
 }

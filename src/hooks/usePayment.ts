@@ -18,10 +18,13 @@ export function usePayment() {
     await runWebPayment();
   }, []);
 
+  // Use getState() directly so retryPayment has empty deps and never gets
+  // recreated on store updates (previously depended on `store` which changed
+  // on every state update, causing downstream effect loops).
   const retryPayment = useCallback(async () => {
-    store.reset();
+    usePaymentStore.getState().reset();
     await runPaymentFlow();
-  }, [store]);
+  }, []);
 
   const cancelPayment = useCallback(async () => {
     await cancelPaymentFlow();

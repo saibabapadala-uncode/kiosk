@@ -116,7 +116,7 @@ function buildPayload(): OrderPayload {
     tipAmount,
     total,
     paymentIntentId,
-    paymentMethod: 'card',
+    paymentMethod: (usePaymentStore.getState().selectedMethod ?? 'card') as PaymentMethod,
     currency: 'usd',
     locale: localization.locale,
     timezone: localization.timezone,

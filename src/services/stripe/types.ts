@@ -43,6 +43,11 @@ export type TerminalErrorCode =
   | 'NETWORK_ERROR'
   | 'TIMEOUT'
   | 'ALREADY_CONNECTED'
+  // ── Permission / hardware errors ──────────────────────────────────────────
+  | 'BLUETOOTH_DISABLED'
+  | 'BLUETOOTH_PERMISSION_DENIED'
+  | 'LOCATION_PERMISSION_DENIED'
+  | 'NFC_UNAVAILABLE'
   | 'UNKNOWN';
 
 export class StripeTerminalError extends Error {
@@ -61,9 +66,9 @@ export const TERMINAL_ERROR_MESSAGES: Record<TerminalErrorCode, string> = {
   TERMINAL_NOT_INITIALIZED:
     'Card reader system not ready. Please contact staff.',
   READER_NOT_FOUND:
-    'No card reader found at this location. Please contact staff.',
+    'No card reader found. Make sure it is powered on and nearby.',
   READER_OFFLINE:
-    'Card reader is offline. Please contact staff.',
+    'Card reader is offline. Power it on and try again.',
   READER_BUSY:
     'Card reader is busy. Please wait a moment and try again.',
   CARD_DECLINED:
@@ -77,11 +82,19 @@ export const TERMINAL_ERROR_MESSAGES: Record<TerminalErrorCode, string> = {
   PAYMENT_CANCELED:
     'Payment was canceled.',
   NETWORK_ERROR:
-    'Network error. Please check the connection and try again.',
+    'No internet connection. Check your network and try again.',
   TIMEOUT:
-    'Payment timed out. Please try again.',
+    'Connection timed out. Make sure the reader is on and nearby, then try again.',
   ALREADY_CONNECTED:
-    'Already connected to a reader.',
+    'A reader is already connected.',
+  BLUETOOTH_DISABLED:
+    'Bluetooth is turned off. Please enable Bluetooth in your device settings.',
+  BLUETOOTH_PERMISSION_DENIED:
+    'Bluetooth permission is required to connect a card reader. Please allow it in Settings.',
+  LOCATION_PERMISSION_DENIED:
+    'Location access is required to scan for Bluetooth devices on Android. Please allow it in Settings.',
+  NFC_UNAVAILABLE:
+    'NFC is not available on this device. Tap to Pay is not supported.',
   UNKNOWN:
     'An unexpected error occurred. Please try again.',
 };

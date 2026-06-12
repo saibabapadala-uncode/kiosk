@@ -43,12 +43,34 @@ export interface PaymentSettings {
   autoReconnect: boolean;
   /** Disconnect reader after N minutes of no payment activity (0 = never) */
   sessionTimeoutMinutes: number;
+  /** ISO timestamp of when the reader was last successfully connected; null if never */
+  lastConnectedAt: string | null;
+  /**
+   * Uncode payment key — "pay-stripe_connect-platform-XXXX".
+   * Used as the `key` field in the connection-token request payload.
+   * Matches kiosk_straunt_storefront environment.pay_key.
+   */
+  stripePayKey: string;
+  /**
+   * Uncode merchant ID — numeric string from the platform.
+   * Matches kiosk_straunt_storefront environment.merchant_id.
+   */
+  merchantId: string;
+  /**
+   * Uncode store ID — numeric string from the platform.
+   * Matches kiosk_straunt_storefront environment.store_id.
+   */
+  storeId: string;
+  /**
+   * Environment type: 'qa' or 'prod'.
+   * Matches kiosk_straunt_storefront environment.env_type.
+   */
+  envType: 'qa' | 'prod';
 }
 
 export interface KioskSettings {
   idleTimeoutSeconds: number; // clamped 30–300, default 120
   attractLoopEnabled: boolean;
-  receiptPrinterIp: string;
   barcodeScannerEnabled: boolean;
   taxRate: number; // e.g. 0.0825 for 8.25%
   highContrastMode: boolean;
@@ -56,6 +78,43 @@ export interface KioskSettings {
   staffPinEnabled: boolean;
   /** 4-digit PIN used when staffPinEnabled = true. */
   staffPin: string;
+  receiptPrinterIp: string;
+}
+
+export type PrinterConnectionType = 'bluetooth' | 'lan' | 'none';
+
+export interface SinglePrinterSettings {
+  connectionType: PrinterConnectionType;
+  defaultPrinterName: string;
+  defaultPrinterAddress: string;
+  lanPrinterIp: string;
+  lanPrinterModel: string;
+}
+
+export interface PrinterSettings {
+  /** Friendly name of the default printer device */
+  defaultPrinterName: string;
+  /** Bluetooth MAC address or IP address of the default printer */
+  defaultPrinterAddress: string;
+  /** How to connect to the printer */
+  connectionType: PrinterConnectionType;
+  /** IP address for LAN/Wi-Fi Epson printers (legacy ESC/POS over HTTP) */
+  lanPrinterIp: string;
+  /** Model for LAN/Wi-Fi printer (e.g. 'TSP143', 'SP700', 'Epson') */
+  lanPrinterModel: string;
+  /** ISO timestamp of when the printer was last successfully connected */
+  lastConnectedAt: string | null;
+
+  customer: SinglePrinterSettings;
+  kitchen: SinglePrinterSettings;
+
+  /** Print customer receipt after payment */
+  printCustomerReceipt: boolean;
+  /** Print kitchen ticket (KOT) after payment.
+   *  If true but kitchen printer not configured, falls back to customer printer. */
+  printKitchenReceipt: boolean;
+  /** Automatically print 1 s after successful payment (mirrors storefront printButton setTimeout) */
+  autoPrintAfterPayment: boolean;
 }
 
 /** All supported UI locales. RTL languages have their own dir attribute. */
@@ -92,12 +151,14 @@ export interface SettingsState {
   theme: ThemeSettings;
   api: ApiSettings;
   payment: PaymentSettings;
+  printer: PrinterSettings;
   kiosk: KioskSettings;
   localization: LocalizationSettings;
 
   setTheme: (partial: Partial<ThemeSettings>) => void;
   setApi: (partial: Partial<ApiSettings>) => void;
   setPayment: (partial: Partial<PaymentSettings>) => void;
+  setPrinter: (partial: Partial<PrinterSettings>) => void;
   setKiosk: (partial: Partial<KioskSettings>) => void;
   setLocalization: (partial: Partial<LocalizationSettings>) => void;
   setBrandId: (id: string) => void;
@@ -120,7 +181,7 @@ export interface SettingsState {
 // ─── Default values (derived from brand environment at boot) ──────────────────
 
 function buildDefaults(): Omit<SettingsState, keyof Pick<SettingsState,
-  'setTheme' | 'setApi' | 'setPayment' | 'setKiosk' | 'setLocalization' |
+  'setTheme' | 'setApi' | 'setPayment' | 'setPrinter' | 'setKiosk' | 'setLocalization' |
   'setBrandId' | 'setLocationId' | 'resetToDefaults' |
   'applyBrandEnvironment' | 'selectBrand' | 'lockBrand' | 'clearBrand'
 >> {
@@ -153,21 +214,51 @@ function buildDefaults(): Omit<SettingsState, keyof Pick<SettingsState,
     },
     payment: {
       stripePublishableKey:   '',
-      terminalLocationId:     '',
+      terminalLocationId:     import.meta.env.VITE_STRIPE_TERMINAL_LOCATION_ID ?? '',
       readerSerialNumber:     '',
       connectionMethod:       'bluetooth' as const,
       autoReconnect:          true,
       sessionTimeoutMinutes:  30,
+      lastConnectedAt:        null,
+      stripePayKey:           import.meta.env.VITE_STRIPE_PAY_KEY ?? '',
+      merchantId:             import.meta.env.VITE_STRIPE_MERCHANT_ID ?? '',
+      storeId:                import.meta.env.VITE_STRIPE_STORE_ID ?? '',
+      envType:               (import.meta.env.VITE_STRIPE_ENV_TYPE ?? 'qa') as 'qa' | 'prod',
+    },
+    printer: {
+      defaultPrinterName:    '',
+      defaultPrinterAddress: '',
+      connectionType:        'none' as const,
+      lanPrinterIp:          '',
+      lanPrinterModel:       'TSP143',
+      lastConnectedAt:       null,
+      printCustomerReceipt:  true,
+      printKitchenReceipt:   true,
+      autoPrintAfterPayment: true,
+      customer: {
+        connectionType:      'none' as const,
+        defaultPrinterName:  '',
+        defaultPrinterAddress: '',
+        lanPrinterIp:        '',
+        lanPrinterModel:     'TSP143',
+      },
+      kitchen: {
+        connectionType:      'none' as const,
+        defaultPrinterName:  '',
+        defaultPrinterAddress: '',
+        lanPrinterIp:        '',
+        lanPrinterModel:     'TSP143',
+      },
     },
     kiosk: {
       idleTimeoutSeconds:  120,
       attractLoopEnabled:  true,
-      receiptPrinterIp:    '',
       barcodeScannerEnabled: false,
       taxRate:             env.defaultTaxRate,
       highContrastMode:    false,
       staffPinEnabled:     true,
       staffPin:            '1234',
+      receiptPrinterIp:    '',
     },
     localization: {
       locale:     env.defaultLocale as SupportedLocale,
@@ -209,6 +300,9 @@ export const useSettingsStore = create<SettingsState>()(
 
         setPayment: (partial) =>
           set((s) => ({ payment: { ...s.payment, ...partial } })),
+
+        setPrinter: (partial) =>
+          set((s) => ({ printer: { ...s.printer, ...partial } })),
 
         setKiosk: (partial) =>
           set((s) => ({
@@ -259,12 +353,12 @@ export const useSettingsStore = create<SettingsState>()(
             kiosk: {
               idleTimeoutSeconds:    env.businessRules?.kioskDefaults?.idleTimeoutSeconds ?? 120,
               attractLoopEnabled:    env.businessRules?.kioskDefaults?.attractLoopEnabled ?? true,
-              receiptPrinterIp:      '',
               barcodeScannerEnabled: false,
               taxRate:               env.defaultTaxRate,
               highContrastMode:      false,
               staffPinEnabled:       env.businessRules?.kioskDefaults?.staffPinEnabled ?? true,
               staffPin:              '1234',
+              receiptPrinterIp:      '',
             },
             localization: {
               locale:     env.defaultLocale as SupportedLocale,
@@ -307,12 +401,12 @@ export const useSettingsStore = create<SettingsState>()(
             kiosk: {
               idleTimeoutSeconds:    env.businessRules?.kioskDefaults?.idleTimeoutSeconds ?? 120,
               attractLoopEnabled:    env.businessRules?.kioskDefaults?.attractLoopEnabled ?? true,
-              receiptPrinterIp:      '',
               barcodeScannerEnabled: false,
               taxRate:               env.defaultTaxRate,
               highContrastMode:      false,
               staffPinEnabled:       env.businessRules?.kioskDefaults?.staffPinEnabled ?? true,
               staffPin:              '1234',
+              receiptPrinterIp:      '',
             },
             localization: {
               locale:     env.defaultLocale as SupportedLocale,
@@ -350,12 +444,12 @@ export const useSettingsStore = create<SettingsState>()(
             kiosk: {
               idleTimeoutSeconds:   120,
               attractLoopEnabled:   true,
-              receiptPrinterIp:     '',
               barcodeScannerEnabled: false,
               taxRate:              env.defaultTaxRate,
               highContrastMode:     false,
               staffPinEnabled:      false,
               staffPin:             '1234',
+              receiptPrinterIp:     '',
             },
             localization: {
               locale:     env.defaultLocale as SupportedLocale,
@@ -368,6 +462,21 @@ export const useSettingsStore = create<SettingsState>()(
       }),
       {
         name: 'ajr-kiosk-settings',
+        version: 1,
+        migrate: (persistedState, fromVersion) => {
+          const state = (persistedState ?? {}) as Record<string, unknown>;
+          if (fromVersion < 1) {
+            // Fix a known digit-1 / letter-l typo in the stored terminal location ID.
+            // The location 'tml_F1fBQAfxoU9GY1' (digit 1 at end) doesn't exist in Stripe;
+            // the correct Production ID ends with the letter l: 'tml_F1fBQAfxoU9GYl'.
+            // Migrate to the QA/M2 location that matches the reference app's registered reader.
+            const payment = (state.payment ?? {}) as Record<string, unknown>;
+            if (payment.terminalLocationId === 'tml_F1fBQAfxoU9GY1') {
+              state.payment = { ...payment, terminalLocationId: 'tml_GRORFwWvvm8B3d' };
+            }
+          }
+          return state;
+        },
         storage: createJSONStorage(() => capacitorStorage),
         // Persist brandId so runtime-detected brand survives device reboots.
         partialize: (s) => ({
@@ -378,9 +487,49 @@ export const useSettingsStore = create<SettingsState>()(
           theme:         s.theme,
           api:           s.api,
           payment:       s.payment,
+          printer:       s.printer,
           kiosk:         s.kiosk,
           localization:  s.localization,
         }),
+        // Deep-merge nested settings objects so new fields added in a schema upgrade
+        // always get their default values even when old persisted state is missing them.
+        // Zustand's default merge is shallow — it replaces `payment` wholesale, so new
+        // fields like stripePayKey / merchantId / storeId / envType would be undefined.
+        merge: (persisted, current) => {
+          const p = (persisted ?? {}) as Partial<SettingsState>;
+          const pPrinter = (p.printer ?? {}) as any;
+          const printerMerged = {
+            ...current.printer,
+            ...pPrinter,
+          };
+
+          // If old flat connection type exists, migrate to customer printer
+          if (p.printer && !pPrinter.customer) {
+            printerMerged.customer = {
+              connectionType:        pPrinter.connectionType ?? 'none',
+              defaultPrinterName:    pPrinter.defaultPrinterName ?? '',
+              defaultPrinterAddress: pPrinter.defaultPrinterAddress ?? '',
+              lanPrinterIp:          pPrinter.lanPrinterIp ?? '',
+              lanPrinterModel:       pPrinter.lanPrinterModel ?? 'TSP143',
+            };
+          }
+
+          // Ensure new boolean fields have defaults when missing from persisted state
+          if (printerMerged.printCustomerReceipt === undefined)  printerMerged.printCustomerReceipt  = true;
+          if (printerMerged.printKitchenReceipt === undefined)   printerMerged.printKitchenReceipt   = true;
+          if (printerMerged.autoPrintAfterPayment === undefined) printerMerged.autoPrintAfterPayment = true;
+
+          return {
+            ...current,
+            ...p,
+            theme:        { ...current.theme,        ...(p.theme        ?? {}) },
+            api:          { ...current.api,          ...(p.api          ?? {}) },
+            payment:      { ...current.payment,      ...(p.payment      ?? {}) },
+            printer:      printerMerged,
+            kiosk:        { ...current.kiosk,        ...(p.kiosk        ?? {}) },
+            localization: { ...current.localization, ...(p.localization ?? {}) },
+          };
+        },
       },
     ),
   ),

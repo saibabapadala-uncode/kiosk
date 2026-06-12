@@ -1,5 +1,5 @@
-// src/modules/payment/ReceiptScreen.tsx — visual layer only, all logic preserved
-import { useState } from 'react';
+// src/modules/payment/ReceiptScreen.tsx
+import { useState, useEffect } from 'react';
 import { useHistory } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useCartStore } from '@/store/cartStore';
@@ -9,6 +9,7 @@ import { useSettingsStore } from '@/store/settingsStore';
 import { useKioskName } from '@/hooks/useKioskName';
 import { api } from '@/services/api.service';
 import { USE_STATIC_PAYMENT_FLOW, delay, getFlowDelay } from '@/services/stripe/static.mock';
+import { printOrderReceipt } from '@/services/receipt.service';
 import { formatPrice } from '@/utils/format';
 
 type ReceiptStep = 'options' | 'sending' | 'sent' | 'error';
@@ -91,19 +92,29 @@ function EmailForm({ orderId, onDone }: { orderId: string; onDone: () => void })
 
 // ─── Print button ─────────────────────────────────────────────────────────────
 
-function PrintButton({ orderId }: { orderId: string }) {
-  const printerIp = useSettingsStore((s) => s.kiosk.receiptPrinterIp);
+function PrintButton() {
+  const { customer, kitchen } = useSettingsStore((s) => s.printer);
   const [status, setStatus] = useState<'idle' | 'printing' | 'done' | 'err'>('idle');
 
-  if (!printerIp) return null;
+  const isConfigured = (profile: any) =>
+    profile && profile.connectionType !== 'none' &&
+    (profile.connectionType === 'bluetooth'
+      ? Boolean(profile.defaultPrinterAddress)
+      : Boolean(profile.lanPrinterIp));
+
+  // Show if either customer or kitchen printer is configured
+  const hasPrinter = isConfigured(customer) || isConfigured(kitchen);
+
+  if (!hasPrinter) return null;
 
   async function print() {
     setStatus('printing');
     try {
-      if (USE_STATIC_PAYMENT_FLOW) { await delay(getFlowDelay('receiptPrintMs', 700)); }
-      else { await api.post(`/orders/${orderId}/receipt/print`, { printerIp }); }
+      await printOrderReceipt();
       setStatus('done');
-    } catch { setStatus('err'); }
+    } catch {
+      setStatus('err');
+    }
   }
 
   return (
@@ -117,6 +128,8 @@ function PrintButton({ orderId }: { orderId: string }) {
 
 // ─── Main screen ──────────────────────────────────────────────────────────────
 
+
+
 export default function ReceiptScreen() {
   const { t } = useTranslation();
   const history = useHistory();
@@ -126,7 +139,17 @@ export default function ReceiptScreen() {
   const clearCart  = useCartStore((s) => s.clearCart);
   const resetSession = useSessionStore((s) => s.resetSession);
   const resetPayment = usePaymentStore((s) => s.reset);
+  const autoPrintAfterPayment = useSettingsStore((s) => s.printer.autoPrintAfterPayment);
   const [showEmail, setShowEmail] = useState(false);
+
+  // Auto-print receipt 1 s after mount — mirrors kiosk_straunt_storefront printButton() call.
+  // Fire-and-forget; failure is non-fatal and the user can tap the Print button manually.
+  useEffect(() => {
+    if (autoPrintAfterPayment) {
+      const t = setTimeout(() => void printOrderReceipt(), 1_000);
+      return () => clearTimeout(t);
+    }
+  }, [autoPrintAfterPayment]);
 
   function startNewOrder() {
     clearCart(); resetSession(); resetPayment();
@@ -197,7 +220,7 @@ export default function ReceiptScreen() {
             >
               {t('receipt.emailReceipt')}
             </button>
-            <PrintButton orderId={orderId ?? ''} />
+            <PrintButton />
             <button onClick={startNewOrder} className="text-sm font-brand transition-colors mt-1" style={{ color: 'var(--color-brand-muted)' }}>
               {t('receipt.noThanks')}
             </button>

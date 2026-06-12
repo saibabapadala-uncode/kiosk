@@ -1,243 +1,258 @@
 // src/services/stripe/terminal.adapter.ts
-// Thin wrapper around the Capacitor Stripe Terminal plugin.
-// Supports Bluetooth (M2), Internet, and Local Mobile connection modes.
+// Thin wrapper around the Capacitor StarPrinterReceipt plugin for Stripe Terminal connections.
+// Bridges standard Stripe Terminal adapter signatures to unified native plugin calls.
 
-import { api } from '@/services/api.service';
+import { StarPrinterNative } from '@/plugins/star-printer';
 import { StripeTerminalNative } from '@/plugins/stripe-terminal';
-import type { TerminalReader as PluginReader } from '@/plugins/stripe-terminal';
-import {
-  STATIC_READERS,
-  USE_STATIC_PAYMENT_FLOW,
-  confirmStaticPaymentIntent,
-  createStaticPaymentIntent,
-  delay,
-  getFlowDelay,
-} from './static.mock';
+import { useSettingsStore } from '@/store/settingsStore';
 import {
   StripeTerminalError,
-  type CreatePaymentIntentParams,
-  type PaymentIntentResult,
+  type TerminalErrorCode,
   type TerminalReader,
 } from './types';
 
-let plugin: typeof StripeTerminalNative | null = null;
 let initialized = false;
-let staticPaymentIntentId = '';
 
-// ─── Mapping ──────────────────────────────────────────────────────────────────
+// ─── Permission / error message classifier ────────────────────────────────────
+function classifyErrorMessage(raw: string): TerminalErrorCode {
+  const msg = raw.toLowerCase();
 
-function mapReader(r: PluginReader): TerminalReader {
-  return {
-    serialNumber: r.serialNumber,
-    label:        r.label || r.serialNumber,
-    deviceType:   r.deviceType || 'unknown',
-    batteryLevel: r.batteryLevel >= 0 ? r.batteryLevel : undefined,
-    simulated:    r.isSimulated,
-    locationId:   r.locationId,
-    status:       r.status ?? 'unknown',
-    ipAddress:    r.ipAddress,
-  };
+  if (msg.includes('bluetooth is powered off') || msg.includes('bluetooth off') ||
+      msg.includes('bluetooth disabled') || msg.includes('bluetooth is off') ||
+      msg.includes('bluetooth_off') || msg.includes('bluetooth not enabled')) {
+    return 'BLUETOOTH_DISABLED';
+  }
+
+  if ((msg.includes('bluetooth') && (msg.includes('permission') || msg.includes('denied') || msg.includes('not authorized'))) ||
+      msg.includes('bluetooth_scan_permission') || msg.includes('bluetooth_connect_permission')) {
+    return 'BLUETOOTH_PERMISSION_DENIED';
+  }
+
+  if ((msg.includes('location') && (msg.includes('permission') || msg.includes('denied') || msg.includes('not authorized'))) ||
+      msg.includes('access_fine_location') || msg.includes('access_coarse_location')) {
+    return 'LOCATION_PERMISSION_DENIED';
+  }
+
+  if (msg.includes('nfc') && (msg.includes('unavailable') || msg.includes('not supported') || msg.includes('disabled'))) {
+    return 'NFC_UNAVAILABLE';
+  }
+
+  if (msg.includes('already') && msg.includes('connected')) {
+    return 'ALREADY_CONNECTED';
+  }
+
+  if (msg.includes('offline') || msg.includes('out of range') || msg.includes('not found') ||
+      msg.includes('range') || msg.includes('no reader')) {
+    return 'READER_OFFLINE';
+  }
+
+  if (msg.includes('network') || msg.includes('internet') || msg.includes('connection') ||
+      msg.includes('no route') || msg.includes('unreachable')) {
+    return 'NETWORK_ERROR';
+  }
+
+  if (msg.includes('timeout') || msg.includes('timed out')) {
+    return 'TIMEOUT';
+  }
+
+  if (msg.includes('declined'))       return 'CARD_DECLINED';
+  if (msg.includes('insufficient'))   return 'INSUFFICIENT_FUNDS';
+  if (msg.includes('expired'))        return 'CARD_EXPIRED';
+  if (msg.includes('cancel') || msg.includes('abort')) return 'PAYMENT_CANCELED';
+  if (msg.includes('incorrect pin'))  return 'INCORRECT_PIN';
+
+  return 'UNKNOWN';
 }
 
-function getPlugin(): typeof StripeTerminalNative {
-  if (!plugin || !initialized) {
-    throw new StripeTerminalError('TERMINAL_NOT_INITIALIZED', 'Terminal not initialized', false);
-  }
-  return plugin;
+function mapReader(r: any): TerminalReader {
+  return {
+    serialNumber: r.serialNumber || r.serial_no || '',
+    label:        r.label || r.serialNumber || r.serial_no || 'Stripe Reader',
+    deviceType:   r.deviceType || 'M2',
+    batteryLevel: r.batteryLevel >= 0 ? r.batteryLevel : undefined,
+    simulated:    false,
+    locationId:   r.locationId || r.location_id || '',
+    status:       'online',
+  };
 }
 
 // ─── Lifecycle ────────────────────────────────────────────────────────────────
 
 export async function initializeAdapter(): Promise<boolean> {
   if (initialized) return true;
-  if (USE_STATIC_PAYMENT_FLOW) { initialized = true; return true; }
 
-  plugin = StripeTerminalNative;
   try {
-    await plugin.initialize();
+    const { payment } = useSettingsStore.getState();
+    const payload = {
+      tenant_data_form: { mapper_fields: [] },
+      configurations: [{ priority: 1, key: payment.stripePayKey, Description: 'StripeConnect' }],
+      store_id: payment.storeId,
+      location_id: payment.terminalLocationId,
+      env_type: payment.envType,
+      merchant_id: payment.merchantId,
+    };
+
+    const res = await fetch(
+      'https://e5e667hh4-qpayment.uncodeapi.com/api/callback/connection_token',
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      },
+    );
+
+    if (!res.ok) throw new Error(`connection-token HTTP ${res.status}`);
+    const data = await res.json() as { secret?: string; data?: { secret: string } };
+    const secret = data?.secret ?? data?.data?.secret;
+
+    if (!secret) throw new Error('Secret not returned from connection token endpoint');
+
+    await StarPrinterNative.getConnectionToken({ Token: secret });
     initialized = true;
     return true;
   } catch (err) {
-    console.error('[StripeTerminal] init failed:', err);
+    console.error('[StarPrinter/StripeAdapter] initializeAdapter failed:', err);
     return false;
   }
 }
 
-// ─── Discovery ────────────────────────────────────────────────────────────────
-// Bluetooth (M2) needs a longer timeout — BLE scanning takes more time than
-// an HTTP-based internet discovery.
-
-export async function adapterDiscoverReaders(
-  locationId: string,
-  method: 'bluetooth' | 'internet' | 'localMobile' = 'bluetooth',
-): Promise<TerminalReader[]> {
-  if (USE_STATIC_PAYMENT_FLOW) {
-    await delay(getFlowDelay('discoverReadersMs', 700));
-    return STATIC_READERS.map((r) => ({ ...r, locationId }));
-  }
-
-  const terminal = getPlugin();
-  const TIMEOUT_MS = method === 'bluetooth' ? 15_000 : 5_000;
-
-  const readers = await new Promise<PluginReader[]>((resolve, reject) => {
-    let settled = false;
-    let listener: { remove(): Promise<void> } | null = null;
-
-    const finish = (list: PluginReader[]) => {
-      if (settled) return;
-      settled = true;
-      clearTimeout(timeoutId);
-      void listener?.remove();
-      void terminal.cancelDiscovery().catch(() => {});
-      resolve(list);
-    };
-    const fail = (err: unknown) => {
-      if (settled) return;
-      settled = true;
-      clearTimeout(timeoutId);
-      void listener?.remove();
-      reject(err);
-    };
-
-    const timeoutId = setTimeout(() => finish([]), TIMEOUT_MS);
-
-    terminal.addListener('readersDiscovered', ({ readers: found }) => finish(found))
-      .then((handle) => {
-        listener = handle;
-        return terminal.discoverReaders({ method, locationId, simulated: false });
-      })
-      .catch(fail);
-  });
-
-  return readers.map(mapReader);
-}
-
-// ─── Bluetooth connection — Stripe Reader M2 ──────────────────────────────────
+// ─── Bluetooth / Internet Connections ──────────────────────────────────────────
 
 export async function adapterConnectBluetoothReader(
   serialNumber: string,
-  locationId: string,
+  _locationId: string,
 ): Promise<TerminalReader> {
-  if (USE_STATIC_PAYMENT_FLOW) {
-    await delay(getFlowDelay('connectReaderMs', 600));
-    return {
-      serialNumber,
-      label:        `Stripe Reader M2 (${serialNumber.slice(-6)})`,
-      deviceType:   'stripeM2',
-      status:       'online',
-      simulated:    true,
-      batteryLevel: 0.85,
-    };
-  }
-
-  const terminal = getPlugin();
   try {
-    const reader = await terminal.connectBluetoothReader({ serialNumber, locationId });
+    await initializeAdapter();
+    await StarPrinterNative.getReaderDetails({
+      Reader: 'M2',
+      ReaderName: serialNumber,
+    });
+
+    const reader = await StarPrinterNative.getM2ReaderInfo();
+    if (!reader || !reader.serialNumber) {
+      throw new Error('Reader connection failed or returned invalid reader info');
+    }
+
     return mapReader(reader);
   } catch (err: unknown) {
-    const msg = (err instanceof Error ? err.message : String(err)).toLowerCase();
-    if (msg.includes('already') || msg.includes('connected')) {
-      throw new StripeTerminalError('ALREADY_CONNECTED', 'Reader is already connected', false);
-    }
-    if (msg.includes('offline') || msg.includes('not found') || msg.includes('range')) {
-      throw new StripeTerminalError(
-        'READER_OFFLINE',
-        'Reader not found. Ensure it is powered on and within Bluetooth range.',
-        true,
-      );
-    }
-    throw new StripeTerminalError('READER_NOT_FOUND', msg || 'Bluetooth connection failed', true);
-  }
-}
-
-// ─── Internet connection ──────────────────────────────────────────────────────
-
-export async function adapterConnectReader(serialNumber: string): Promise<void> {
-  if (USE_STATIC_PAYMENT_FLOW) {
-    await delay(getFlowDelay('connectReaderMs', 600));
-    return;
-  }
-
-  const terminal = getPlugin();
-  try {
-    await terminal.connectInternetReader({ serialNumber });
-  } catch (err: unknown) {
-    const msg = (err instanceof Error ? err.message : String(err)).toLowerCase();
-    if (msg.includes('offline') || msg.includes('not found')) {
-      throw new StripeTerminalError('READER_OFFLINE', 'Reader is offline', false);
-    }
-    throw new StripeTerminalError('READER_NOT_FOUND', msg || 'Could not connect to reader', true);
-  }
-}
-
-// ─── Disconnect ───────────────────────────────────────────────────────────────
-
-export async function adapterDisconnect(): Promise<void> {
-  if (USE_STATIC_PAYMENT_FLOW) return;
-  if (!plugin) return;
-  try { await plugin.disconnectReader(); } catch { /* best effort */ }
-}
-
-// ─── Payment ──────────────────────────────────────────────────────────────────
-
-export async function adapterCreatePaymentIntent(
-  params: CreatePaymentIntentParams,
-): Promise<PaymentIntentResult> {
-  if (USE_STATIC_PAYMENT_FLOW) {
-    const intent = await createStaticPaymentIntent(params.amount);
-    staticPaymentIntentId = intent.paymentIntentId;
-    return intent;
-  }
-  const { data } = await api.post<PaymentIntentResult>('/stripe/payment-intent', {
-    amount:   params.amount,
-    currency: params.currency,
-    metadata: params.metadata,
-  });
-  return data;
-}
-
-export async function adapterCollectPayment(clientSecret: string): Promise<void> {
-  if (USE_STATIC_PAYMENT_FLOW) {
-    await delay(getFlowDelay('collectPaymentMs', 1_500));
-    return;
-  }
-
-  const terminal = getPlugin();
-  try {
-    await terminal.collectPaymentMethod({ clientSecret });
-  } catch (err: unknown) {
-    const msg = (err instanceof Error ? err.message : String(err)).toLowerCase();
-    if (msg.includes('declined'))     throw new StripeTerminalError('CARD_DECLINED',      'Card was declined', true);
-    if (msg.includes('cancel') || msg.includes('abort'))
-                                      throw new StripeTerminalError('PAYMENT_CANCELED',   'Payment was canceled', true);
-    if (msg.includes('insufficient')) throw new StripeTerminalError('INSUFFICIENT_FUNDS', 'Insufficient funds', true);
-    if (msg.includes('expired'))      throw new StripeTerminalError('CARD_EXPIRED',       'Card expired', true);
-    if (msg.includes('network') || msg.includes('timeout'))
-                                      throw new StripeTerminalError('NETWORK_ERROR',      'Network error', true);
-    throw new StripeTerminalError('UNKNOWN', msg || 'Collection error', true);
-  }
-}
-
-export async function adapterConfirm(): Promise<string> {
-  if (USE_STATIC_PAYMENT_FLOW) {
-    return confirmStaticPaymentIntent(
-      staticPaymentIntentId || `pi_static_confirmed_${Date.now()}`,
+    const msg = err instanceof Error ? err.message : String(err);
+    const code = classifyErrorMessage(msg);
+    throw new StripeTerminalError(
+      code,
+      msg || 'Bluetooth connection failed',
+      code !== 'BLUETOOTH_PERMISSION_DENIED' && code !== 'BLUETOOTH_DISABLED',
     );
   }
+}
 
-  const terminal = getPlugin();
+export async function adapterConnectInternetReader(serialNumber: string): Promise<TerminalReader> {
   try {
-    const result = await terminal.confirmPaymentIntent();
-    return result.id;
+    await initializeAdapter();
+    await StarPrinterNative.getReaderDetails({
+      Reader: 'S700',
+      ReaderName: serialNumber,
+    });
+
+    const reader = await StarPrinterNative.getM2ReaderInfo();
+    if (!reader || !reader.serialNumber) {
+      throw new Error('Reader connection failed or returned invalid reader info');
+    }
+
+    return mapReader(reader);
   } catch (err: unknown) {
-    const msg = (err instanceof Error ? err.message : String(err)).toLowerCase();
-    if (msg.includes('declined')) throw new StripeTerminalError('CARD_DECLINED', 'Card was declined', true);
-    throw new StripeTerminalError('UNKNOWN', msg || 'Confirm error', true);
+    const msg = err instanceof Error ? err.message : String(err);
+    const code = classifyErrorMessage(msg);
+    throw new StripeTerminalError(code, msg || 'Internet connection failed', true);
+  }
+}
+
+export async function adapterConnectLocalMobileReader(_locationId: string): Promise<TerminalReader> {
+  throw new Error('Tap to Pay / Local Mobile is not supported by StarPrinterReceipt plugin');
+}
+
+export async function adapterConnectReader(serialNumber: string): Promise<void> {
+  await adapterConnectInternetReader(serialNumber);
+}
+
+// ─── Disconnect & Cancel ───────────────────────────────────────────────────────
+
+/**
+ * Reset the initialized flag so the next connection attempt fetches a fresh
+ * connection token. Call after a manual disconnect or unexpected drop to ensure
+ * the Stripe SDK is fully re-initialized before the next reader connection.
+ */
+export function resetAdapter(): void {
+  initialized = false;
+}
+
+export async function adapterDisconnect(): Promise<void> {
+  try {
+    await StripeTerminalNative.disconnectReader();
+  } catch {
+    // Reader may already be disconnected or the plugin is unavailable on web.
+  } finally {
+    // Force a fresh connection-token fetch on the next connect attempt so the
+    // Stripe SDK initializes cleanly rather than reusing a potentially stale session.
+    initialized = false;
   }
 }
 
 export async function adapterCancelCollect(): Promise<void> {
-  if (USE_STATIC_PAYMENT_FLOW) return;
-  if (!plugin || !initialized) return;
-  try { await plugin.cancelCollect(); } catch { /* best effort */ }
+  // StarPrinterReceipt handles collection cancellation natively.
+  return Promise.resolve();
+}
+
+// ─── Reader Status ────────────────────────────────────────────────────────────
+
+export async function adapterGetConnectedReader(): Promise<TerminalReader | null> {
+  try {
+    const reader = await StarPrinterNative.getM2ReaderInfo();
+    if (reader && reader.serialNumber) {
+      return mapReader(reader);
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+// ─── Mock compatibility layers ─────────────────────────────────────────────────
+
+export async function adapterListBluetoothDevices(): Promise<any[]> {
+  try {
+    const { devices } = await StarPrinterNative.fetchPairedDevices();
+    return devices;
+  } catch {
+    return [];
+  }
+}
+
+export async function adapterScanBluetoothDevices(): Promise<any[]> {
+  try {
+    await StarPrinterNative.startScan();
+    return [];
+  } catch {
+    return [];
+  }
+}
+
+export async function adapterDiscoverReaders(
+  _locationId: string,
+  _method: 'bluetooth' | 'internet' | 'localMobile' = 'bluetooth',
+): Promise<TerminalReader[]> {
+  // No discovery required since connection is direct via getReaderDetails
+  const connected = await adapterGetConnectedReader();
+  return connected ? [connected] : [];
+}
+
+// Empty placeholders since StarPrinterNative createAndProcessPayment wraps these natively
+export async function adapterCreatePaymentIntent(_params: any): Promise<any> {
+  return Promise.resolve({ clientSecret: '', paymentIntentId: '' });
+}
+export async function adapterCollectPayment(_clientSecret: string): Promise<void> {
+  return Promise.resolve();
+}
+export async function adapterConfirm(): Promise<string> {
+  return Promise.resolve('');
 }

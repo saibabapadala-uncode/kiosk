@@ -18,6 +18,13 @@ export interface TerminalReader {
   isSimulated: boolean;
 }
 
+export interface BluetoothDevice {
+  name: string;
+  address: string;
+  bonded: boolean;
+  deviceClass?: string;
+}
+
 export interface CollectPaymentOptions {
   clientSecret: string;
   skipTipping?: boolean;
@@ -57,8 +64,14 @@ export type ReaderDisplayMessage =
 export interface StripeTerminalPlugin {
   // ── Lifecycle ──────────────────────────────────────────────────────────────
   initialize(): Promise<void>;
-  /** Fetch and return the Stripe connection token from your backend. */
-  fetchConnectionToken(): Promise<{ secret: string }>;
+  /**
+   * Push a connection token to the native SDK.
+   * Call this in response to the '_connectionTokenRequest' event:
+   *   1. Native fires '_connectionTokenRequest' when the SDK needs a token
+   *   2. JS fetches the token from your backend
+   *   3. JS calls fetchConnectionToken({ secret }) to deliver it to the SDK
+   */
+  fetchConnectionToken(options: { secret: string }): Promise<void>;
 
   // ── Discovery ─────────────────────────────────────────────────────────────
   /** Start discovery (results arrive via 'readersDiscovered' events). */
@@ -68,6 +81,15 @@ export interface StripeTerminalPlugin {
     simulated?: boolean;
   }): Promise<void>;
   cancelDiscovery(): Promise<void>;
+
+  /** List devices already paired in Android Bluetooth settings. */
+  listBluetoothDevices(): Promise<{ devices: BluetoothDevice[] }>;
+
+  /** Start a native Android Bluetooth scan. Updates arrive via 'bluetoothDevicesUpdated'. */
+  scanBluetoothDevices(): Promise<{ devices: BluetoothDevice[] }>;
+
+  /** Ask Android to pair/bond a Bluetooth device, showing the system confirmation when needed. */
+  pairBluetoothDevice(options: { address: string }): Promise<{ status: 'paired' | 'pairing' | 'failed'; device?: BluetoothDevice }>;
 
   // ── Connection ────────────────────────────────────────────────────────────
   connectBluetoothReader(options: {
@@ -104,6 +126,16 @@ export interface StripeTerminalPlugin {
   ): Promise<{ remove(): Promise<void> }>;
 
   addListener(
+    event: 'bluetoothDevicesUpdated',
+    handler: (data: { devices: BluetoothDevice[] }) => void,
+  ): Promise<{ remove(): Promise<void> }>;
+
+  addListener(
+    event: 'bluetoothPairingStatus',
+    handler: (data: { status: 'paired' | 'pairing' | 'failed' | 'unpaired'; device: BluetoothDevice }) => void,
+  ): Promise<{ remove(): Promise<void> }>;
+
+  addListener(
     event: 'readerConnectionStatusChange',
     handler: (data: { status: 'connecting' | 'connected' | 'not_connected' }) => void,
   ): Promise<{ remove(): Promise<void> }>;
@@ -131,6 +163,15 @@ export interface StripeTerminalPlugin {
   addListener(
     event: 'unexpectedReaderDisconnect',
     handler: (data: { reader: TerminalReader }) => void,
+  ): Promise<{ remove(): Promise<void> }>;
+
+  /**
+   * Fired by the native SDK when it needs a new connection token.
+   * Respond by calling fetchConnectionToken({ secret }) with a token from your backend.
+   */
+  addListener(
+    event: '_connectionTokenRequest',
+    handler: () => void,
   ): Promise<{ remove(): Promise<void> }>;
 
   removeAllListeners(): Promise<void>;

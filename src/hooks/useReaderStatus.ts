@@ -1,11 +1,10 @@
 // src/hooks/useReaderStatus.ts
 // Monitors Stripe Terminal reader connection health.
-// Subscribes to plugin disconnect events and polls every POLL_MS when active.
+// Health is derived from the payment store (maintained by useReaderConnection).
+// Polls every POLL_MS as a secondary safety check.
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { usePaymentStore } from '@/store/paymentStore';
-import { useSettingsStore } from '@/store/settingsStore';
-import { adapterDiscoverReaders } from '@/services/stripe/terminal.adapter';
-import { StripeTerminalNative } from '@/plugins/stripe-terminal';
+import { adapterGetConnectedReader } from '@/services/stripe/terminal.adapter';
 import { logger } from '@/utils/logger';
 
 export type ReaderHealth = 'connected' | 'disconnected' | 'reconnecting' | 'unknown';
@@ -21,74 +20,53 @@ export function useReaderStatus(): UseReaderStatusReturn {
   const connectedReader = usePaymentStore((s) => s.connectedReader);
   const isWebFallback = usePaymentStore((s) => s.isWebFallback);
   const flowState = usePaymentStore((s) => s.flowState);
-  const locationId = useSettingsStore((s) => s.payment.terminalLocationId);
+  // Stable key: only re-subscribe the native listener when the physical reader changes,
+  // not on every battery/status micro-update (which would fire a new addListener each time).
+  const connectedSerial = connectedReader?.serialNumber ?? null;
 
   const [health, setHealth] = useState<ReaderHealth>('unknown');
   const [lastChecked, setLastChecked] = useState<Date | null>(null);
   const pollerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
+  // Use getConnectedReader instead of full discovery — discovery takes 15 s over BLE and
+  // would disrupt the terminal while payments are running. getConnectedReader is a cheap
+  // SDK call that returns the current connection state without any scanning.
   const checkHealth = useCallback(async () => {
     if (!connectedReader || isWebFallback) return;
-    if (!locationId) return;
-    // Don't poll during active payment — avoid interfering with the flow
     if (flowState === 'collecting' || flowState === 'processing') return;
 
     try {
-      const readers = await adapterDiscoverReaders(locationId);
-      const found = readers.find((r) => r.serialNumber === connectedReader.serialNumber);
-      const next: ReaderHealth = found?.status === 'online' ? 'connected' : 'disconnected';
+      const reader = await adapterGetConnectedReader();
+      const next: ReaderHealth = reader ? 'connected' : 'disconnected';
       setHealth(next);
       setLastChecked(new Date());
       if (next === 'disconnected') {
         logger.warn(`[readerStatus] reader ${connectedReader.serialNumber} appears offline`);
       }
     } catch {
-      // Discovery network error — don't flip to disconnected, keep last known
+      // Keep last known health on transient errors
     }
-  }, [connectedReader, isWebFallback, locationId, flowState]);
+  }, [connectedReader, isWebFallback, flowState]);
 
   // Initial state from connectedReader store
   useEffect(() => {
     if (isWebFallback) { setHealth('connected'); return; }
-    if (!connectedReader) { setHealth('disconnected'); return; }
+    if (!connectedSerial) { setHealth('disconnected'); return; }
     setHealth('connected');
-  }, [connectedReader, isWebFallback]);
+  }, [connectedSerial, isWebFallback]);
 
-  // Subscribe to terminal disconnect events from the plugin
-  useEffect(() => {
-    if (!connectedReader || isWebFallback) return;
-    let listener: { remove(): Promise<void> } | null = null;
-
-    async function subscribe() {
-      try {
-        listener = await StripeTerminalNative.addListener(
-          'readerConnectionStatusChange',
-          ({ status }) => {
-            if (status === 'not_connected') {
-              setHealth('disconnected');
-              logger.warn('[readerStatus] plugin reported reader disconnected');
-            } else if (status === 'connecting') {
-              setHealth('reconnecting');
-            } else if (status === 'connected') {
-              setHealth('connected');
-            }
-          },
-        );
-      } catch { /* plugin not available */ }
-    }
-
-    void subscribe();
-    return () => { void listener?.remove(); };
-  }, [connectedReader, isWebFallback]);
+  // useReaderConnection (via AppBootstrap) already subscribes to readerConnectionStatusChange
+  // and updates connectedReader in the store.  Registering a second listener here would
+  // produce duplicate add/remove cycles visible in Android logs and is unnecessary.
 
   // Periodic health poll
   useEffect(() => {
-    if (!connectedReader || isWebFallback) return;
+    if (!connectedSerial || isWebFallback) return;
     pollerRef.current = setInterval(() => void checkHealth(), POLL_MS);
     return () => {
       if (pollerRef.current) clearInterval(pollerRef.current);
     };
-  }, [connectedReader, isWebFallback, checkHealth]);
+  }, [connectedSerial, isWebFallback, checkHealth]);
 
   return { health, lastChecked };
 }

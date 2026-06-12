@@ -75,8 +75,24 @@ export function useCameraScanner(onScan: (result: ScanResult) => void): UseCamer
   const listenerRef = useRef<{ remove(): Promise<void> } | null>(null);
 
   useEffect(() => {
-    BarcodeScanner.addListener('scan', onScan).then((l) => { listenerRef.current = l; }).catch(logger.error);
-    return () => { void listenerRef.current?.remove(); };
+    let isCleanedUp = false;
+    BarcodeScanner.addListener('scan', onScan)
+      .then((l) => {
+        if (isCleanedUp) {
+          void l.remove();
+        } else {
+          listenerRef.current = l;
+        }
+      })
+      .catch(logger.error);
+
+    return () => {
+      isCleanedUp = true;
+      if (listenerRef.current) {
+        void listenerRef.current.remove();
+        listenerRef.current = null;
+      }
+    };
   }, [onScan]);
 
   const startScan = useCallback(async (options?: CameraScanOptions) => {

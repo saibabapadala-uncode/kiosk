@@ -173,6 +173,14 @@ export interface BrandEnvironment {
    * Optional — when absent, Phone Pay and QR Pay are hidden.
    */
   altPayment?: BrandAltPaymentConfig;
+
+  /**
+   * Pre-configured Stripe Terminal location IDs for this brand.
+   * Shown as a selector in the Payment settings tab so staff can pick the
+   * correct location without typing the ID manually.
+   * Optional — when absent, the tab falls back to a free-text input.
+   */
+  stripeTerminalLocations?: Array<{ id: string; label: string }>;
 }
 
 // ─── Alternative payment config ───────────────────────────────────────────────

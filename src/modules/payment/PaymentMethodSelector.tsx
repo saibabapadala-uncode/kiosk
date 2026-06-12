@@ -174,8 +174,8 @@ function MethodCard({
         gap:            12,
         flex:           '1 1 0',
         minWidth:       0,
-        minHeight:      180,
-        padding:        '24px 16px 20px',
+        minHeight:      150,
+        padding:        '16px 12px 14px',
         borderRadius:   20,
         border:         '2px solid transparent',
         background:     'var(--color-ui-card)',
@@ -245,8 +245,8 @@ function MethodCard({
 
       {/* Icon circle */}
       <div style={{
-        width:          72,
-        height:         72,
+        width:          56,
+        height:         56,
         borderRadius:   '50%',
         background:     gradient,
         display:        'flex',
@@ -314,13 +314,18 @@ interface PaymentMethodSelectorProps {
 export default function PaymentMethodSelector({ onBack }: PaymentMethodSelectorProps) {
   const { t }             = useTranslation();
   const setMethod         = usePaymentStore((s) => s.setSelectedMethod);
+  const resetPayment      = usePaymentStore((s) => s.reset);
   const total             = useCartStore((s) => s.total);
   const hasAltPay         = altPaymentAvailable();
   const isLandscape       = useIsLandscape();
 
   const select = useCallback((m: PaymentMethod) => {
+    // Reset flowState to 'idle' before mounting the payment view.
+    // Without this, a stale 'canceled'/'failed' flowState causes CardPayView's
+    // navigation effect to fire on mount and immediately navigate away.
+    resetPayment();
     setMethod(m);
-  }, [setMethod]);
+  }, [resetPayment, setMethod]);
 
   const methods: MethodCardProps[] = [
     {
@@ -378,7 +383,7 @@ export default function PaymentMethodSelector({ onBack }: PaymentMethodSelectorP
           display:      'flex',
           alignItems:   'center',
           justifyContent:'space-between',
-          padding:      '16px 24px',
+          padding:      '8px 16px',
           borderBottom: '1px solid var(--ui-glass-border)',
           background:   'var(--color-ui-header)',
           boxShadow:    '0 2px 12px rgba(0,0,0,0.06)',
@@ -474,13 +479,13 @@ export default function PaymentMethodSelector({ onBack }: PaymentMethodSelectorP
           flexDirection:'column',
           alignItems:  'center',
           justifyContent: 'center',
-          padding:     isLandscape ? '16px 32px' : '24px 20px',
-          gap:         16,
+          padding:     isLandscape ? '8px 24px' : '16px 16px',
+          gap:         12,
         }}>
 
           {/* Prompt */}
           <p style={{
-            margin:        '0 0 8px',
+            margin:        '0 0 4px',
             fontWeight:    600,
             fontSize:      'clamp(0.85rem, 1.5vw, 1rem)',
             color:         'var(--color-brand-muted)',
